@@ -173,6 +173,32 @@
     display:none;
   }
 
+  /* ===== Google Sheet live sync status ===== */
+  .sheet-status{
+    background:#F3F5FE;
+    border:1px solid var(--sidebar-line);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  .sheet-status-row{display:flex;align-items:center;gap:9px;}
+  .sheet-status .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--sidebar-muted);}
+  .sheet-status .dot-loading{background:#E0A339;animation:sheetPulse 1s ease-in-out infinite;}
+  .sheet-status .dot-ok{background:var(--ok);}
+  .sheet-status .dot-error{background:var(--broken);}
+  @keyframes sheetPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .sheet-status-text{flex:1;min-width:0;}
+  .sheet-status-text .main-txt{font-size:12px;font-weight:600;color:var(--sidebar-text);}
+  .sheet-status-text .sub-txt{font-size:10.5px;color:var(--sidebar-muted);margin-top:2px;line-height:1.4;}
+  .sheet-refresh-btn{
+    background:#fff;border:1px solid var(--sidebar-line);color:var(--sidebar-text);
+    width:28px;height:28px;border-radius:8px;flex-shrink:0;
+    cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;
+    transition:.15s;
+  }
+  .sheet-refresh-btn:hover{border-color:var(--ok);color:var(--ok);}
+  .sheet-refresh-btn.spinning{animation:sheetSpin .7s linear infinite;}
+  @keyframes sheetSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
   .field{display:flex;flex-direction:column;gap:5px;}
   .field label{font-size:12px;color:var(--sidebar-muted);font-weight:500;}
   .field select, .field input[type=text]{
@@ -895,17 +921,28 @@
     </div>
 
     <div class="side-section">
-      <div class="side-label">📥 นำเข้าข้อมูล</div>
+      <div class="side-label">🔗 เชื่อมต่อข้อมูล</div>
+      <div class="sheet-status" id="sheetStatus">
+        <div class="sheet-status-row">
+          <div class="dot dot-loading" id="sheetStatusDot"></div>
+          <div class="sheet-status-text">
+            <div class="main-txt" id="sheetStatusMain">กำลังเชื่อมต่อ Google Sheet...</div>
+            <div class="sub-txt" id="sheetStatusSub">ดึงข้อมูลแบบเรียลไทม์จากชีทกลาง</div>
+          </div>
+          <button class="sheet-refresh-btn" id="sheetRefreshBtn" title="รีเฟรชข้อมูลตอนนี้">🔄</button>
+        </div>
+      </div>
+
       <div class="upload-box" id="uploadBox">
         <div class="ic">📄</div>
         <div class="main-txt">คลิกหรือวางไฟล์ .xlsx / .csv</div>
-        <div class="sub-txt">ใช้แทนที่ข้อมูลตัวอย่างในแดชบอร์ด</div>
+        <div class="sub-txt">ใช้แทนที่ข้อมูลจาก Google Sheet ชั่วคราว</div>
       </div>
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
       <div class="file-chip" id="fileChip" style="display:none;">
         <div class="dot"></div>
         <div class="name" id="fileName"></div>
-        <button id="clearFile" title="ใช้ข้อมูลตัวอย่าง">✕</button>
+        <button id="clearFile" title="กลับไปใช้ข้อมูลจาก Google Sheet">✕</button>
       </div>
       <div class="file-error" id="fileError"></div>
     </div>
@@ -954,7 +991,7 @@
     </div>
 
     <div class="side-footer">
-      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · แดชบอร์ดนี้ทำงานได้โดยไม่ต้องเชื่อมต่ออินเทอร์เน็ต
+      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 1 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
     </div>
   </aside>
 
@@ -3289,6 +3326,85 @@ async function extractEmbeddedImages(entries, extract, sheetPath){
   return imagesByRow;
 }
 
+/* ======================= GOOGLE SHEET LIVE SYNC ======================= */
+// เชื่อมต่อกับ Google Sheet ที่แชร์แบบ "ทุกคนที่มีลิงก์ - ดูได้" โดยตรง
+// โดยดึงข้อมูลผ่าน Google Visualization API (gviz) ในรูปแบบ CSV ซึ่งอนุญาตให้
+// เรียกข้ามโดเมนจากเบราว์เซอร์ได้โดยไม่ต้องใช้ API key
+const GOOGLE_SHEET_ID = '1ssqSHSeRIIkdBnWyzYfQyotNWpWJMxM2NKTeS7zu4Dw';
+const GOOGLE_SHEET_TAB = 'Sheet1';
+const SHEET_REFRESH_MS = 60000; // ดึงข้อมูลใหม่อัตโนมัติทุก 60 วินาที เพื่อความ "เรียลไทม์"
+
+let dataSource = 'sheet'; // 'sheet' = ใช้ข้อมูลจาก Google Sheet, 'file' = ผู้ใช้อัปโหลดไฟล์เอง
+let sheetPollTimer = null;
+
+function sheetCsvUrls(){
+  // ใส่ timestamp กันเบราว์เซอร์แคชผลลัพธ์เก่า และลองสองรูปแบบ URL เผื่อรูปแบบใดรูปแบบหนึ่งใช้ไม่ได้
+  const ts = Date.now();
+  return [
+    `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GOOGLE_SHEET_TAB)}&_ts=${ts}`,
+    `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&id=${GOOGLE_SHEET_ID}&gid=1130129068&_ts=${ts}`
+  ];
+}
+
+function setSheetStatus(state, mainText, subText){
+  const dot = document.getElementById('sheetStatusDot');
+  const main = document.getElementById('sheetStatusMain');
+  const sub = document.getElementById('sheetStatusSub');
+  const btn = document.getElementById('sheetRefreshBtn');
+  if(!dot) return;
+  dot.className = 'dot dot-' + state; // loading | ok | error
+  main.textContent = mainText;
+  sub.textContent = subText || '';
+  if(btn) btn.classList.toggle('spinning', state === 'loading');
+}
+
+async function fetchSheetCsv(){
+  const urls = sheetCsvUrls();
+  let lastErr = null;
+  for(const url of urls){
+    try{
+      const res = await fetch(url, { cache:'no-store' });
+      if(!res.ok) { lastErr = new Error('HTTP ' + res.status + ' จาก ' + new URL(url).pathname); continue; }
+      const text = await res.text();
+      if(!text || /^\s*<(!doctype|html)/i.test(text)){ lastErr = new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้า HTML แทน CSV (อาจไม่ได้แชร์แบบสาธารณะ)'); continue; }
+      return text;
+    }catch(e){
+      lastErr = e; // มักเป็น TypeError: Failed to fetch เมื่อโดน CORS หรือเปิดไฟล์แบบ file://
+    }
+  }
+  throw lastErr || new Error('ไม่สามารถเชื่อมต่อได้');
+}
+
+async function loadFromGoogleSheet(isAutoRefresh){
+  if(dataSource !== 'sheet') return; // กำลังใช้ไฟล์ที่อัปโหลดเองอยู่ ไม่ไปทับข้อมูล
+  setSheetStatus('loading', isAutoRefresh ? 'กำลังซิงค์ข้อมูลอัตโนมัติ...' : 'กำลังเชื่อมต่อ Google Sheet...', '');
+  try{
+    const text = await fetchSheetCsv();
+    const json = parseCsv(text);
+    const rows = normalizeRows(json);
+    if(!rows.length) throw new Error('เชื่อมต่อสำเร็จ แต่ไม่พบคอลัมน์ที่ตรงกับรูปแบบข้อมูล');
+
+    currentData = rows;
+    filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+    refreshFilterOptions();
+    refreshAll();
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+    setSheetStatus('ok', '🟢 เชื่อมต่อ Google Sheet แล้ว', `ซิงค์ล่าสุด ${timeStr} น. · ${rows.length.toLocaleString('th-TH')} รายการ`);
+  }catch(err){
+    setSheetStatus('error', '⚠️ เชื่อมต่อ Google Sheet ไม่สำเร็จ', 'สาเหตุ: ' + err.message + ' · กดปุ่ม 🔄 เพื่อลองใหม่');
+    console.error('Google Sheet sync error:', err);
+  }
+}
+
+function startSheetPolling(){
+  if(sheetPollTimer) clearInterval(sheetPollTimer);
+  sheetPollTimer = setInterval(()=>loadFromGoogleSheet(true), SHEET_REFRESH_MS);
+}
+
+document.getElementById('sheetRefreshBtn').addEventListener('click', ()=>loadFromGoogleSheet(false));
+
 /* ======================= FILE UPLOAD ======================= */
 function showFileError(msg){
   const el = document.getElementById('fileError');
@@ -3313,6 +3429,7 @@ async function handleFile(file){
       showFileError('อ่านไฟล์สำเร็จ แต่ไม่พบคอลัมน์ที่ตรงกับรูปแบบข้อมูล (ต้องมีคอลัมน์ เช่น "เครื่องมือ", "หน่วยงาน" เป็นต้น)');
       return;
     }
+    dataSource = 'file'; // สลับไปใช้ไฟล์ที่อัปโหลดเอง หยุดให้ข้อมูลจาก Google Sheet เขียนทับชั่วคราว
     currentData = rows;
     filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
     tableFilterItem = null;
@@ -3320,6 +3437,7 @@ async function handleFile(file){
     document.getElementById('fileName').textContent = file.name;
     document.getElementById('fileChip').style.display='flex';
     document.getElementById('uploadBox').style.display='none';
+    setSheetStatus('error', '⏸️ หยุดซิงค์ Google Sheet ชั่วคราว', 'กำลังแสดงข้อมูลจากไฟล์ที่อัปโหลด · กดปุ่ม ✕ ที่ไฟล์เพื่อกลับไปใช้ Google Sheet');
     refreshFilterOptions();
     refreshAll();
   }catch(err){
@@ -3338,16 +3456,14 @@ uploadBox.addEventListener('drop', e=>{
   if(f) handleFile(f);
 });
 document.getElementById('clearFile').addEventListener('click', ()=>{
-  currentData = [];
-  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  dataSource = 'sheet'; // กลับไปใช้ข้อมูลเรียลไทม์จาก Google Sheet
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('fileChip').style.display='none';
   document.getElementById('uploadBox').style.display='block';
   showFileError('');
   fileInput.value='';
-  refreshFilterOptions();
-  refreshAll();
+  loadFromGoogleSheet(false);
 });
 
 /* ======================= EXPAND CHART TO FULLSCREEN ======================= */
@@ -3392,9 +3508,11 @@ function init(){
   initTopNControls();
   refreshFilterOptions();
   refreshAll();
+  loadFromGoogleSheet(false); // ดึงข้อมูลจาก Google Sheet ทันทีที่เปิดหน้า
+  startSheetPolling();        // แล้วซิงค์ซ้ำอัตโนมัติทุก 60 วินาทีหลังจากนั้น
 }
 init();
 </script>
 <div class="expand-overlay" id="expandOverlay" onclick="collapseExpandedPanel()"></div>
 </body>
-</html>
+</html>  
