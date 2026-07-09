@@ -1,0 +1,3400 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เครื่องมือตรวจวัดมลพิษ | กรมควบคุมมลพิษ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --bg: #F2F4FC;
+    --surface: #FFFFFF;
+    --surface-soft: #EAEDFA;
+    --ink: #1B2140;
+    --ink-soft: #4B5478;
+    --ink-faint: #8891C2;
+    --line: #DBDFF5;
+    --teal: #3D4FE0;
+    --teal-dark: #232F91;
+    --teal-tint: #E7EAFB;
+    --air: #3B82C4;
+    --water: #1E4E8C;
+    --soil: #B0793E;
+    --emergency: #C0503F;
+    --ok: #2FA36B;
+    --broken: #C0392B;
+    --sidebar-bg: #FFFFFF;
+    --sidebar-text: #1B2140;
+    --sidebar-muted: #7C879E;
+    --sidebar-line: #E7EAF3;
+    --frame: #D9DFF9;
+    --navy: #16213B;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,25,64,0.05), 0 6px 20px rgba(20,25,64,0.07);
+  }
+  [data-theme="dark"]{
+    --bg: #0E1226;
+    --surface: #171B36;
+    --surface-soft: #1E2348;
+    --ink: #E7E9F7;
+    --ink-soft: #AEB4DE;
+    --ink-faint: #7078A8;
+    --line: #2B3060;
+    --teal: #7C89F5;
+    --teal-dark: #93A0FF;
+    --teal-tint: #242A55;
+    --ok: #4ECB92;
+    --sidebar-bg: #141A56;
+    --sidebar-text: #EDEFFC;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.35);
+  }
+  [data-theme="dark"] body{background:var(--bg);color:var(--ink);}
+  [data-theme="dark"] #mapSection{
+    --map-ink:#E7E9F7;
+    --map-paper:#161A34;
+    --map-panel:#1E2348;
+    --map-line:#2B3060;
+    --map-teal:#7C89F5;
+    --map-teal-deep:#93A0FF;
+    --map-amber:#E0A339;
+    --map-muted:#9198C8;
+  }
+
+  /* ===== Theme toggle button ===== */
+  .theme-toggle{
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--line);
+    color:var(--ink-soft);border-radius:20px;
+    padding:7px 14px;font-family:'Sarabun',sans-serif;font-size:12.5px;
+    cursor:pointer;transition:.15s;
+  }
+  .theme-toggle:hover{border-color:var(--teal);color:var(--teal-dark);}
+  .theme-toggle .icon{font-size:14px;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Sarabun',-apple-system,'Noto Sans Thai',sans-serif;
+    background:linear-gradient(160deg,#DDE3FB 0%, #EAEEFC 40%, var(--bg) 100%);
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.5;
+  }
+  .num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+
+  .frame{
+    max-width:1500px;
+    margin:0 auto;
+    background:var(--frame);
+    border-radius:26px;
+    padding:14px;
+  }
+
+  .app{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:14px;
+    min-height:calc(100vh - 28px);
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar{
+    background:var(--sidebar-bg);
+    color:var(--sidebar-text);
+    padding:18px 16px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    position:sticky;
+    top:14px;
+    height:calc(100vh - 28px);
+    overflow-y:auto;
+    border-radius:18px;
+    box-shadow:var(--shadow);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:linear-gradient(155deg,#4C5FEF,#2E3F9E);
+    color:#fff;
+    padding:12px 14px;
+    border-radius:12px;
+  }
+  .brand-badge{
+    width:34px;height:34px;border-radius:9px;
+    background:rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;flex-shrink:0;
+  }
+  .brand-text{line-height:1.25;}
+  .brand-text .t1{font-weight:600;font-size:14px;letter-spacing:.2px;font-family:'Kanit',sans-serif;}
+  .brand-text .t2{font-size:11px;color:rgba(255,255,255,0.85);}
+
+  .side-section{display:flex;flex-direction:column;gap:10px;}
+  .side-label{
+    font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--sidebar-muted);
+  }
+
+  .upload-box{
+    border:1.5px dashed #C7CFF5;
+    border-radius:12px;
+    padding:16px 12px;
+    text-align:center;
+    cursor:pointer;
+    transition:.15s;
+    background:#F3F5FE;
+  }
+  .upload-box:hover, .upload-box.drag{
+    border-color:var(--ok);
+    background:#E7EAFC;
+  }
+  .upload-box .ic{font-size:22px;margin-bottom:6px;}
+  .upload-box .main-txt{font-size:12.5px;font-weight:500;color:var(--sidebar-text);}
+  .upload-box .sub-txt{font-size:11px;color:var(--sidebar-muted);margin-top:3px;}
+  #fileInput{display:none;}
+  .file-chip{
+    display:flex;align-items:center;gap:8px;
+    background:#F3F5FE;
+    border:1px solid var(--sidebar-line);
+    border-radius:10px;padding:8px 10px;
+    font-size:12px;
+  }
+  .file-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex-shrink:0;}
+  .file-chip .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+  .file-chip button{
+    background:none;border:none;color:var(--sidebar-muted);cursor:pointer;font-size:14px;padding:0;
+  }
+  .file-error{
+    font-size:11px;color:#B03A2E;background:#FDECEA;
+    border:1px solid #F3C6BF;border-radius:8px;padding:8px 10px;
+    display:none;
+  }
+
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12px;color:var(--sidebar-muted);font-weight:500;}
+  .field select, .field input[type=text]{
+    width:100%;
+    background:#F7F9FC;
+    border:1px solid var(--sidebar-line);
+    color:var(--sidebar-text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-family:'Sarabun',sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+  .field select option{color:#1B2140;}
+  .field select:focus, .field input:focus{border-color:var(--ok);}
+
+  .reset-btn{
+    margin-top:2px;
+    background:#F3F5FE;
+    border:1px solid #C7CFF5;
+    color:#2E3F9E;
+    padding:9px 10px;
+    border-radius:9px;
+    font-size:12.5px;
+    cursor:pointer;
+    font-family:'Sarabun',sans-serif;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .reset-btn:hover{background:#E7EAFC;}
+
+  .active-filters{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    display:flex;align-items:center;gap:6px;
+    background:#E7EAFC;
+    border:1px solid #C7CFF5;
+    color:#2E3F9E;
+    font-size:11.5px;
+    padding:5px 8px;border-radius:20px;
+  }
+  .chip button{background:none;border:none;color:#2E3F9E;cursor:pointer;font-size:12px;line-height:1;padding:0;}
+
+  .side-footer{
+    margin-top:auto;
+    font-size:10.5px;
+    color:var(--sidebar-muted);
+    padding-top:14px;
+    border-top:1px solid var(--sidebar-line);
+  }
+
+  /* ===== Main ===== */
+  .main{padding:0;}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;flex-wrap:wrap;gap:14px;
+    background:var(--navy);
+    color:#fff;
+    padding:16px 22px;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+  }
+  .topbar h1{
+    font-size:19px;margin:0 0 3px;font-weight:600;color:#fff;
+    letter-spacing:.1px;font-family:'Kanit',sans-serif;
+  }
+  .topbar .sub{font-size:12px;color:#B9C2D6;}
+  .asof{
+    font-size:11.5px;color:#C7CEE0;
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);
+    padding:6px 12px;border-radius:20px;
+  }
+
+  .kpi-row{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:20px;
+  }
+  .kpi{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+    border-top:4px solid var(--teal);
+    display:flex;flex-direction:column;gap:6px;
+    position:relative;
+  }
+  .kpi.k-total{border-top-color:var(--teal);}
+  .kpi.k-items{border-top-color:var(--air);}
+  .kpi.k-ok{border-top-color:var(--ok);}
+  .kpi.k-broken{border-top-color:var(--broken);}
+  .kpi .k-icon{
+    position:absolute; top:14px; right:16px;
+    width:34px;height:34px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;background:var(--teal-tint);
+  }
+  .kpi.k-total .k-icon{background:#E7EAFC;}
+  .kpi.k-items .k-icon{background:#E7F1FB;}
+  .kpi.k-ok .k-icon{background:#E4F5EA;}
+  .kpi.k-broken .k-icon{background:#FBEAE7;}
+  .kpi .label{font-size:12px;color:var(--ink-soft);font-weight:500;}
+  .kpi .value{font-size:28px;font-weight:700;}
+  .kpi .value.ok{color:var(--ok);}
+  .kpi .value.broken{color:var(--broken);}
+  .kpi .foot{font-size:11px;color:var(--ink-faint);}
+
+  .grid2{
+    display:grid;
+    grid-template-columns:1.35fr 1fr;
+    gap:18px;
+    margin-bottom:18px;
+  }
+  .grid2b{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-bottom:18px;
+  }
+  .grid-overview-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-bottom:18px;
+  }
+  .grid-overview-3{
+    display:grid;
+    grid-template-columns:0.85fr 1.05fr 1.05fr;
+    gap:18px;
+    margin-bottom:18px;
+  }
+  .section-divider{
+    display:flex;align-items:center;gap:10px;
+    margin:6px 0 4px;color:var(--ink-faint);font-size:12.5px;font-weight:600;
+  }
+  .section-divider::after{content:'';flex:1;height:1px;background:var(--line);}
+  .top10-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;font-size:12.5px;}
+  .top10-row .t-label{width:78px;flex-shrink:0;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .top10-row .t-track{flex:1;background:var(--surface-soft);border-radius:6px;height:14px;overflow:hidden;}
+  .top10-row .t-fill{height:100%;border-radius:6px;}
+  .top10-row .t-val{width:44px;text-align:right;flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  @media (max-width:1000px){
+    .grid-overview-2, .grid-overview-3{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--surface);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px 18px 14px;
+    display:flex;flex-direction:column;
+  }
+  .panel h2{
+    font-size:14.5px;margin:0 0 2px;font-weight:600;color:var(--ink);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .panel .hint{font-size:11px;color:var(--ink-faint);margin-bottom:10px;}
+  .clickable-note{font-size:10.5px;color:var(--ink-faint);font-style:italic;font-weight:400;}
+
+  .chart-switch{display:flex;gap:3px;background:var(--surface-soft);padding:3px;border-radius:9px;margin-bottom:10px;width:fit-content;}
+  .chart-switch button{
+    border:none;background:transparent;color:var(--ink-soft);
+    font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;
+    font-family:'Sarabun',sans-serif;white-space:nowrap;
+  }
+  .chart-switch button.active{background:var(--surface);color:var(--teal-dark);font-weight:600;box-shadow:0 1px 2px rgba(20,25,64,0.12);}
+  .chart-switch button:hover:not(.active){color:var(--ink);}
+
+  .chart-controls-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+  .chart-controls-row .chart-switch{margin-bottom:0;}
+  .topn-select{
+    background:var(--surface-soft);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:9px;
+    padding:6px 10px;
+    font-family:'Sarabun',sans-serif;
+    font-size:11.5px;
+    outline:none;
+    cursor:pointer;
+  }
+  .topn-select:focus{border-color:var(--teal);}
+
+  .expand-btn{
+    margin-left:auto; background:var(--surface-soft); border:1px solid var(--line); color:var(--ink-soft);
+    width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .expand-btn:hover{background:var(--surface);color:var(--teal-dark);border-color:var(--teal);}
+  .expand-overlay{position:fixed;inset:0;background:rgba(10,25,24,.55);z-index:590;display:none;}
+  .expand-overlay.show{display:block;}
+  .panel.expanded{
+    position:fixed; inset:16px; z-index:600; overflow:auto;
+    box-shadow:0 24px 70px rgba(0,0,0,.4);
+  }
+  @media (max-width:700px){ .panel.expanded{inset:8px;} }
+
+  .chart-flex{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;}
+  .chart-flex.compact{max-width:640px;}
+  .chart-flex.compact .legend-col{flex:0 1 auto;min-width:180px;}
+  .svgchart{width:100%;}
+  .svgchart svg{width:100%;height:100%;display:block;overflow:visible;}
+  .legend-wrap{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;}
+  .legend-col{display:flex;flex-direction:column;flex-wrap:wrap;gap:7px 22px;max-height:260px;overflow-y:auto;overflow-x:auto;min-width:160px;flex:1 1 220px;padding-right:4px;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:3px 5px;border-radius:6px;white-space:nowrap;}
+  .legend-item:hover{background:var(--surface-soft);}
+  .legend-item .sw{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  .legend-item.dim{opacity:0.4;}
+  .legend-item .n{color:var(--ink-faint);margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;font-size:11.5px;color:var(--ink-soft);
+    border-bottom:1px solid var(--line);padding:8px 10px;font-weight:600;
+    position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none;
+  }
+  thead th:hover{color:var(--teal-dark);}
+  tbody td{padding:8px 10px;border-bottom:1px solid var(--surface-soft);}
+  tbody tr{cursor:pointer;transition:background .1s;}
+  tbody tr:hover{background:var(--teal-tint);}
+  tbody tr.sel{background:var(--teal-tint);box-shadow:inset 3px 0 0 var(--teal);}
+  .bar-cell{display:flex;align-items:center;gap:8px;}
+  .bar-cell .track{flex:1;height:7px;border-radius:4px;background:var(--surface-soft);overflow:hidden;}
+  .bar-cell .fill{height:100%;background:var(--teal);border-radius:4px;}
+  .table-wrap{max-height:360px;overflow-y:auto;}
+  .tool-thumb{
+    width:44px;height:44px;border-radius:9px;object-fit:cover;
+    background:var(--surface-soft);border:1px solid var(--line);display:block;
+    cursor:zoom-in;
+  }
+  .tool-thumb-placeholder{
+    width:44px;height:44px;border-radius:9px;background:var(--surface-soft);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+    font-size:17px;color:var(--ink-faint);
+  }
+  .table-search{
+    display:flex;align-items:center;gap:8px;margin-bottom:10px;
+    background:var(--surface-soft);border-radius:9px;padding:7px 12px;
+  }
+  .table-search input{
+    border:none;background:transparent;outline:none;font-family:'Sarabun',sans-serif;
+    font-size:13px;flex:1;color:var(--ink);
+  }
+  .empty-state{
+    padding:30px 10px;text-align:center;color:var(--ink-faint);font-size:13px;
+  }
+  .empty-state-main{
+    background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:60px 20px;text-align:center;margin-bottom:18px;
+  }
+  .empty-state-main .empty-ic{font-size:40px;margin-bottom:14px;}
+  .empty-state-main .empty-title{font-size:17px;font-weight:700;color:var(--teal-dark);margin-bottom:6px;}
+  .empty-state-main .empty-sub{font-size:13px;color:var(--ink-soft);}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#C6CBF0;border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  [data-theme="dark"] ::-webkit-scrollbar-thumb{background:#3A4080;}
+
+  @media (max-width:1000px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;}
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .grid2, .grid2b{grid-template-columns:1fr;}
+    .chart-flex{flex-direction:column;}
+  }
+
+  /* ===================== embedded equipment map ===================== */
+#mapSection{
+    --map-ink:#1B2140;
+    --map-paper:#F2F4FC;
+    --map-panel:#ffffff;
+    --map-line:#DBDFF5;
+    --map-teal:#3D4FE0;
+    --map-teal-deep:#232F91;
+    --map-amber:#e0a339;
+    --map-muted:#5F6693;
+    --map-radius:10px;
+  }#mapSection /* ===== Sidebar ===== */
+  #sidebar{
+    width:380px;
+    min-width:0;
+    background:var(--map-panel);
+    border-right:1px solid var(--map-line);
+    display:flex;
+    flex-direction:column;
+    transition:width .25s ease, min-width .25s ease;
+    overflow:hidden;
+    position:relative;
+    flex-shrink:0;
+  }#mapSection #sidebar.collapsed{border-right:none;}#mapSection #sidebar.resizing{transition:none;}#mapSection #sidebarInner{
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+  }#mapSection #sidebarResizer{
+    position:absolute;
+    top:0; right:0;
+    width:6px; height:100%;
+    cursor:col-resize;
+    z-index:25;
+    background:transparent;
+    touch-action:none;
+  }#mapSection #sidebarResizer:hover, #mapSection #sidebarResizer.active{background:var(--map-teal); opacity:.35;}#mapSection #sidebar.collapsed #sidebarResizer{display:none;}#mapSection #sidebarHead{
+    background:var(--map-teal);
+    color:#fff;
+    padding:18px 20px 16px;
+    flex-shrink:0;
+  }#mapSection #sidebarHead h1{
+    font-size:16px;
+    margin:0 0 3px;
+    font-weight:700;
+    letter-spacing:.2px;
+  }#mapSection #sidebarHead p{
+    margin:0;
+    font-size:12px;
+    color:#C9D0FA;
+  }#mapSection .sb-section{
+    padding:16px 20px;
+    border-bottom:1px solid var(--map-line);
+  }#mapSection .sb-section h2{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--map-muted);
+    margin:0 0 10px;
+    font-weight:700;
+  }#mapSection .upload-box{
+    position:relative;
+    border:1.5px dashed #B9BFE0;
+    border-radius:12px;
+    padding:16px 14px;
+    text-align:center;
+    cursor:pointer;
+    background:linear-gradient(180deg,#F7F8FE,#F2F4FC);
+    transition:.18s ease;
+    font-size:13px;
+    color:var(--map-muted);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    overflow:hidden;
+  }#mapSection .upload-box .up-icon{
+    width:38px;height:38px;
+    border-radius:50%;
+    background:#E7EAFB;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    color:var(--map-teal);
+    transition:.18s ease;
+  }#mapSection .upload-box .up-title{font-weight:700; color:var(--map-teal-deep); font-size:13px;}#mapSection .upload-box .up-sub{font-size:11px; color:var(--map-muted); line-height:1.5;}#mapSection .upload-box .up-sub b{color:var(--map-teal);}#mapSection .upload-box:hover{
+    border-color:var(--map-teal);
+    border-style:solid;
+    background:linear-gradient(180deg,#EFF2FC,#E7EAFB);
+    box-shadow:0 3px 10px rgba(15,76,76,.10);
+    transform:translateY(-1px);
+  }#mapSection .upload-box:hover .up-icon{background:var(--map-teal); color:#fff; transform:scale(1.08);}#mapSection .upload-box:active{transform:translateY(0); box-shadow:none;}#mapSection .upload-box input{display:none;}#mapSection #uploadStatus{font-size:12px; margin-top:8px; color:var(--map-muted); line-height:1.5;}#mapSection #uploadStatus b{color:var(--map-teal);}#mapSection .btn-row{display:flex; gap:8px; margin-top:10px;}#mapSection .btn-clear{
+    flex:1;
+    border:1px solid var(--map-line);
+    background:var(--map-panel);
+    color:#b03a2e;
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:12.5px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    transition:.15s;
+  }#mapSection .btn-clear:hover{background:#fdecea; border-color:#e6b3ac;}#mapSection .btn-clear:disabled{opacity:.45; cursor:not-allowed; background:var(--map-panel);}#mapSection .chip-grid{display:flex; flex-wrap:wrap; gap:6px;}#mapSection .chip{
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:12px;
+    border:1px solid var(--map-line);
+    background:var(--map-panel);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition:.12s;
+  }#mapSection .chip:hover{border-color:var(--map-teal);}#mapSection .chip.active{background:var(--map-teal); color:#fff; border-color:var(--map-teal);}#mapSection .chip .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}#mapSection .chip .count{
+    font-size:10px; background:rgba(0,0,0,.08); border-radius:999px; padding:1px 6px;
+  }#mapSection .chip.active .count{background:rgba(255,255,255,.25);}#mapSection #detailPane{padding:16px 20px; flex:1;}#mapSection #detailPane .empty{
+    color:var(--map-muted); font-size:13px; text-align:center; padding:40px 10px; line-height:1.7;
+  }#mapSection .region-title{
+    display:flex; align-items:center; gap:8px; margin-bottom:4px;
+  }#mapSection .region-title .swatch{width:14px;height:14px;border-radius:4px;flex-shrink:0;}#mapSection .region-title h3{font-size:16px; margin:0; color:var(--map-teal-deep);}#mapSection .province-list{font-size:12px; color:var(--map-muted); margin:0 0 10px; line-height:1.6;}#mapSection .stat-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}#mapSection .stat-pill{
+    background:#EAEDFA; color:var(--map-teal-deep); border-radius:8px;
+    padding:6px 10px; font-size:11.5px; font-weight:600; line-height:1.4;
+  }#mapSection .stat-pill span{display:block; font-size:15px; font-weight:700;}#mapSection table.eq{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.5px;
+    margin-bottom:16px;
+    border:1px solid var(--map-line);
+    border-radius:8px;
+    overflow:hidden;
+  }#mapSection table.eq caption{
+    text-align:left; font-weight:700; font-size:12px; color:#fff;
+    background:var(--map-teal); padding:6px 10px;
+  }#mapSection table.eq th{
+    background:#E7EAFB; color:var(--map-teal-deep); text-align:left;
+    padding:7px 9px; font-weight:700; border-bottom:1px solid var(--map-line);
+  }#mapSection table.eq td{
+    padding:7px 9px; border-bottom:1px solid #E4E7F8; vertical-align:top;
+  }#mapSection table.eq tr:last-child td{border-bottom:none;}#mapSection table.eq td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:52px;}#mapSection .no-data{color:var(--map-muted); font-size:12px; font-style:italic; padding:8px 0 16px;}#mapSection /* ===== PDF-style equipment summary table (image + age buckets + calibration) ===== */
+  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}#mapSection table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}#mapSection table.eq2 caption{
+    text-align:left; font-weight:700; font-size:12.5px; color:#fff;
+    background:var(--map-teal); padding:7px 10px;
+  }#mapSection table.eq2 th{
+    background:#E7EAFB; color:var(--map-teal-deep); text-align:center;
+    padding:6px 5px; font-weight:700; border:1px solid var(--map-line); line-height:1.3;
+    white-space:nowrap;
+  }#mapSection table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}#mapSection table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}#mapSection table.eq2 td.colTotal, #mapSection table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}#mapSection table.eq2 td.colTool{min-width:150px;}#mapSection table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}#mapSection .eq-tool-cell{display:flex; align-items:center; gap:8px;}#mapSection .eq-tool-cell span:last-child{font-weight:600; font-size:11.5px;}#mapSection .eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC; cursor:zoom-in;}#mapSection .eq-photo-fallback{
+    width:34px; height:34px; border-radius:6px; background:#EAEDFA; flex-shrink:0;
+    align-items:center; justify-content:center; font-size:16px;
+  }#mapSection /* ===== Image lightbox (click a tool photo in the sidebar table to zoom) ===== */
+  #imgLightbox{
+    display:none;
+    position:fixed; inset:0; z-index:100;
+    background:rgba(10,25,24,.82);
+    align-items:center; justify-content:center;
+    cursor:zoom-out;
+    padding:30px;
+  }#mapSection #imgLightbox.open{display:flex;}#mapSection #imgLightbox img{
+    max-width:min(90vw,900px);
+    max-height:90vh;
+    border-radius:10px;
+    box-shadow:0 12px 40px rgba(0,0,0,.5);
+    background:var(--map-panel);
+  }#mapSection details.raw-list{margin:-6px 0 16px; font-size:12px;}#mapSection details.raw-list summary{cursor:pointer; color:var(--map-teal); font-weight:600; padding:4px 0;}#mapSection .raw-table-wrap{max-height:260px; overflow:auto; border:1px solid var(--map-line); border-radius:8px; margin-top:6px;}#mapSection table.raw{width:100%; border-collapse:collapse; font-size:11.5px;}#mapSection table.raw th{position:sticky; top:0; background:#E7EAFB; color:var(--map-teal-deep); padding:6px 8px; text-align:left; white-space:nowrap;}#mapSection table.raw td{padding:5px 8px; border-bottom:1px solid #E4E7F8; white-space:nowrap;}#mapSection .tag{padding:1px 7px; border-radius:999px; font-size:10.5px; font-weight:600;}#mapSection .tag.ok{background:#e4f5ea; color:#1e8449;}#mapSection .tag.bad{background:#fdecea; color:#b03a2e;}#mapSection .pts-list{list-style:none; margin:0; padding:0; font-size:12px; max-height:220px; overflow-y:auto; border:1px solid var(--map-line); border-radius:8px;}#mapSection .pts-list li{padding:6px 9px; border-bottom:1px solid #E4E7F8; display:flex; justify-content:space-between; gap:8px;}#mapSection .pts-list li:last-child{border-bottom:none;}#mapSection .pts-list .pname{color:var(--map-muted);}#mapSection /* ===== Toggle button ===== */
+  #toggleBtn{
+    position:absolute;
+    top:16px;
+    left:8px;
+    z-index:26;
+    width:34px;height:34px;
+    border-radius:8px;
+    border:1px solid var(--map-line);
+    background:var(--map-panel);
+    color:var(--map-teal);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    font-size:16px;
+    transition:left .25s ease;
+  }#mapSection #toggleBtn.resizing{transition:none;}#mapSection /* ===== Main map area ===== */
+  #main{
+    flex:1;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }#mapSection #mapHead{
+    padding:16px 22px 10px 56px;
+    flex-shrink:0;
+  }#mapSection #mapHead h2{margin:0 0 2px; font-size:17px; color:var(--map-teal-deep);}#mapSection #mapHead p{margin:0; font-size:12.5px; color:var(--map-muted);}#mapSection #mapWrap{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+  }#mapSection #mapSvg{width:100%; height:100%; display:block; cursor:grab;}#mapSection #mapSvg.grabbing{cursor:grabbing;}#mapSection .province{
+    stroke:#fff;
+    stroke-width:.6;
+    vector-effect:non-scaling-stroke;
+    cursor:pointer;
+    transition:filter .1s;
+  }#mapSection .province:hover{filter:brightness(1.12);}#mapSection .province.selected{stroke:var(--map-teal-deep); stroke-width:2;}#mapSection .province.dim{opacity:.35;}#mapSection .orgpt{
+    stroke:#fff;
+    stroke-width:1;
+    vector-effect:non-scaling-stroke;
+    cursor:pointer;
+    opacity:.9;
+  }#mapSection .orgpt.dim{opacity:.18;}#mapSection .orgpt.selected{stroke:var(--map-teal-deep); stroke-width:2;}#mapSection .pt{
+    fill:#20201f;
+    stroke:#fff;
+    stroke-width:.8;
+    vector-effect:non-scaling-stroke;
+    opacity:.85;
+    cursor:pointer;
+  }#mapSection .pt.hi{fill:var(--map-amber); r:5;}#mapSection #mapStatus{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:var(--map-muted); font-size:13px; background:var(--map-paper);
+  }#mapSection /* ===== Zoom controls ===== */
+  #zoomControls{
+    position:absolute;
+    top:16px;
+    right:16px;
+    z-index:20;
+    display:flex;
+    flex-direction:column;
+    background:var(--map-panel);
+    border:1px solid var(--map-line);
+    border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    overflow:hidden;
+  }#mapSection #zoomControls button{
+    width:34px;height:34px;
+    border:none;
+    background:var(--map-panel);
+    color:var(--map-teal);
+    font-size:17px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    border-bottom:1px solid var(--map-line);
+    transition:.12s;
+  }#mapSection #zoomControls button:last-child{border-bottom:none;}#mapSection #zoomControls button:hover{background:#EAEDFA;}#mapSection #zoomControls button#zoomReset{font-size:12px;}#mapSection #legendBar{
+    padding:10px 22px 16px 56px;
+    flex-shrink:0;
+    border-top:1px solid var(--map-line);
+    background:var(--map-panel);
+  }#mapSection #legendBar h3{font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--map-muted); margin:0 0 8px;}#mapSection #legendChips{display:flex; flex-wrap:wrap; gap:6px;}#mapSection /* ===== Leader-line overlay (connects the clicked area to the callout) ===== */
+  #leaderSvg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:29;
+  }#mapSection #leaderSvg .leader-line{
+    stroke:var(--map-teal-deep);
+    stroke-width:2;
+    stroke-dasharray:5,4;
+    fill:none;
+    opacity:.85;
+  }#mapSection #leaderSvg .leader-origin{
+    fill:var(--map-amber);
+    stroke:#fff;
+    stroke-width:2;
+  }#mapSection #leaderSvg .leader-anchor{
+    fill:var(--map-teal-deep);
+  }#mapSection /* ===== On-map callout (docked to a side so it never covers the
+     clicked area — connected back to it via the leader line) ===== */
+  #mapPopup{
+    position:absolute;
+    z-index:30;
+    width:420px;
+    max-width:calc(100% - 24px);
+    max-height:calc(100% - 24px);
+    overflow-y:auto;
+    background:var(--map-panel);
+    border:1px solid var(--map-line);
+    border-radius:var(--map-radius);
+    box-shadow:0 10px 28px rgba(10,40,38,.22);
+    display:none;
+    padding:14px 16px 16px;
+  }#mapSection #mapPopup .popup-close{
+    position:sticky;
+    top:0;
+    float:right;
+    margin:-6px -6px 4px 8px;
+    width:26px;height:26px;
+    border:none;
+    border-radius:7px;
+    background:#EAEDFA;
+    color:var(--map-teal-deep);
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    z-index:2;
+  }#mapSection #mapPopup .popup-close:hover{background:#D9DEF7;}#mapSection /* ===== Deselect button next to detail header ===== */
+  #detailHeadRow{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}#mapSection #detailHeadRow h2{margin:0;}#mapSection #deselectBtn{
+    display:none;
+    flex-shrink:0;
+    border:1px solid var(--map-line);
+    background:var(--map-panel);
+    color:#b03a2e;
+    border-radius:8px;
+    padding:5px 10px;
+    font-size:11.5px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:.15s;
+  }#mapSection #deselectBtn:hover{background:#fdecea; border-color:#e6b3ac;}#mapSection ::-webkit-scrollbar{width:8px; height:8px;}#mapSection ::-webkit-scrollbar-thumb{background:#C6CBF0; border-radius:8px;}#mapSection /* ===== Sidebar footer — export selected detail as A4 PDF ===== */
+  #sidebarInner{flex:1; height:auto; min-height:0;}#mapSection #sidebarFooter{
+    flex-shrink:0;
+    padding:12px 20px;
+    border-top:1px solid var(--map-line);
+    background:var(--map-panel);
+  }#mapSection #exportPdfBtn{
+    width:100%;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    border:none;
+    background:var(--map-teal);
+    color:#fff;
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.15s;
+  }#mapSection #exportPdfBtn:hover{background:var(--map-teal-deep);}#mapSection #exportPdfBtn:disabled{background:#B9BFE0; cursor:not-allowed;}#mapSection #exportPdfHint{font-size:11px; color:var(--map-muted); margin:7px 2px 0; text-align:center;}#mapSection /* ===== Print output (A4 แนวนอน) ===== */
+  #printArea{display:none;}#mapSection .print-header{display:none;}
+
+
+/* ---- layout overrides: fit inside a dashboard panel instead of 100vh page ---- */
+#mapSection{
+  position:relative;
+  display:flex;
+  height:640px;
+  border:1px solid var(--map-line);
+  border-radius:12px;
+  overflow:hidden;
+  font-family:'Sarabun',-apple-system,'Noto Sans Thai',sans-serif;
+}
+#mapSection #sidebar{height:100%;}
+#mapSection #main{height:100%;}
+#mapSection #toggleBtn{position:absolute;}
+@media (max-width: 900px){
+  #mapSection{flex-direction:column;height:auto;}
+  #mapSection #sidebar{width:100% !important;min-width:0 !important;height:360px;border-right:none;border-bottom:1px solid var(--map-line);}
+  #mapSection #main{height:520px;}
+  #mapSection #toggleBtn{display:none;}
+}
+
+  @media print{
+    @page{ size:A4 landscape; margin:10mm 12mm; }
+    html,body{height:auto; overflow:visible; background:#fff;}
+    body *{visibility:hidden !important;}
+    #printArea, #printArea *{visibility:visible !important;}
+    #printArea{
+      display:block !important;
+      position:absolute; left:0; top:0; width:100%;
+      background:#fff; color:#132322;
+      font-size:10.5px;
+    }
+    #printArea .print-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:10px;
+      padding:9px 14px;
+      background:var(--map-teal);
+      border-radius:8px;
+    }
+    #printArea .print-header h1{font-size:15px; margin:0; color:#fff; font-weight:700;}
+    #printArea .print-header .print-date{font-size:10px; color:#C9D0FA; white-space:nowrap;}
+
+    /* Two-column landscape layout: map card fixed on the left (page 1 only),
+       data card on the right — free to flow onto a second page if the
+       equipment list is long. */
+    #printArea .print-body{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+    }
+    #printArea .print-col-map{
+      width:33%;
+      flex:0 0 33%;
+      position:sticky;
+      top:0;
+    }
+    #printArea .print-col-data{
+      width:67%;
+      flex:1;
+      min-width:0;
+    }
+    #printArea .print-map{
+      margin:0 0 10px;
+      padding:10px;
+      border:1px solid var(--map-line);
+      border-radius:10px;
+      background:#EAEDFA;
+      box-shadow:0 1px 3px rgba(15,76,76,.08);
+      page-break-inside:avoid;
+      break-inside:avoid;
+      text-align:center;
+    }
+    #printArea .print-map .print-map-title{
+      display:block; text-align:left; font-size:10.5px; font-weight:700;
+      color:var(--map-teal-deep); margin:0 0 8px; padding-bottom:6px;
+      border-bottom:1px solid var(--map-line);
+    }
+    #printArea .print-map svg{width:100%; height:auto; max-height:150mm; display:block; margin:0 auto;}
+    #printArea .print-col-data{
+      padding:2px 0 2px 4px;
+      border-left:1px solid var(--map-line);
+    }
+    #printArea .region-title{margin-bottom:6px;}
+    #printArea .region-title .swatch{width:12px; height:12px;}
+    #printArea .region-title h3{font-size:14px;}
+    #printArea .province-list{font-size:9.5px; margin:0 0 10px; line-height:1.5;}
+    #printArea .stat-row{margin-bottom:14px; gap:6px;}
+    #printArea .stat-pill{padding:5px 9px; font-size:9.5px; border-radius:7px;}
+    #printArea .stat-pill span{font-size:13px;}
+    #printArea table.eq2{font-size:9px;}
+    #printArea table.eq2 caption, #printArea table.eq caption{font-size:10px; padding:6px 9px;}
+    #printArea table.eq2 th, #printArea table.eq2 td{padding:4px 5px;}
+    #printArea .eq-photo, #printArea .eq-photo-fallback{width:26px; height:26px;}
+    #printArea table.eq{font-size:10px; margin-bottom:12px;}
+    #printArea table.eq th, #printArea table.eq td{padding:5px 7px;}
+    /* Allow tables to break across pages naturally, but keep each row whole
+       and repeat the header row at the top of the next page. */
+    #printArea table.eq2, #printArea table.eq{page-break-inside:auto; break-inside:auto;}
+    #printArea table.eq2 thead, #printArea table.eq thead,
+    #printArea table.eq2 tr:first-child, #printArea table.eq tr:first-child{
+      display:table-header-group;
+    }
+    #printArea tr{page-break-inside:avoid; break-inside:avoid;}
+    #printArea .eq2-wrap{overflow-x:visible; border:none; margin-bottom:12px;}
+    #printArea details.raw-list{display:none;} /* skip raw table dump on paper */
+    #printArea #deselectBtn{display:none !important;}
+  }
+
+</style>
+</head>
+<body>
+<div class="frame">
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-badge">🌿</div>
+      <div class="brand-text">
+        <div class="t1">เครื่องมือตรวจวัดมลพิษ</div>
+        <div class="t2">กรมควบคุมมลพิษ · Pollution Control Dept.</div>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-label">📥 นำเข้าข้อมูล</div>
+      <div class="upload-box" id="uploadBox">
+        <div class="ic">📄</div>
+        <div class="main-txt">คลิกหรือวางไฟล์ .xlsx / .csv</div>
+        <div class="sub-txt">ใช้แทนที่ข้อมูลตัวอย่างในแดชบอร์ด</div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+      <div class="file-chip" id="fileChip" style="display:none;">
+        <div class="dot"></div>
+        <div class="name" id="fileName"></div>
+        <button id="clearFile" title="ใช้ข้อมูลตัวอย่าง">✕</button>
+      </div>
+      <div class="file-error" id="fileError"></div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-label">🧰 ตัวกรองข้อมูล</div>
+
+      <div class="field">
+        <label>🔍 ค้นหาเครื่องมือ / หน่วยงาน</label>
+        <input type="text" id="searchInput" placeholder="พิมพ์คำค้นหา...">
+      </div>
+
+      <div class="field">
+        <label>🗂️ ประเภทเครื่องมือ</label>
+        <select id="f-cat"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <div class="field">
+        <label>🏢 หน่วยงาน</label>
+        <select id="f-unit"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <div class="field">
+        <label>📏 สถานะสอบเทียบ</label>
+        <select id="f-cal"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <div class="field">
+        <label>🛠️ สถานะเครื่องมือ</label>
+        <select id="f-cond"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <div class="field">
+        <label>⏳ อายุของเครื่อง</label>
+        <select id="f-age"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <div class="field">
+        <label>✅ สถานะการใช้งาน</label>
+        <select id="f-use"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <button class="reset-btn" id="resetBtn">🧹 ล้างตัวกรองทั้งหมด</button>
+
+      <div class="active-filters" id="activeFilters"></div>
+    </div>
+
+    <div class="side-footer">
+      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · แดชบอร์ดนี้ทำงานได้โดยไม่ต้องเชื่อมต่ออินเทอร์เน็ต
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>🌎 ภาพรวมเครื่องมือตรวจวัดคุณภาพสิ่งแวดล้อม</h1>
+        <div class="sub">ข้อมูลเครื่องมือของหน่วยงานในสังกัดกรมควบคุมมลพิษ — คลิกกราฟเพื่อกรองข้อมูลแบบเรียลไทม์</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="theme-toggle" id="themeToggleBtn" type="button">
+          <span class="icon">🌙</span><span class="label">โหมดมืด</span>
+        </button>
+        <div class="asof" id="asOf">ข้อมูล ณ วันที่ —</div>
+      </div>
+    </div>
+
+    <div class="empty-state-main" id="emptyStateMain" style="display:none;">
+      <div class="empty-ic">📄</div>
+      <div class="empty-title">ยังไม่มีข้อมูลเครื่องมือ</div>
+      <div class="empty-sub">อัปโหลดไฟล์ .xlsx หรือ .csv จากเมนูด้านซ้าย เพื่อเริ่มดูภาพรวมและกราฟ</div>
+    </div>
+
+    <div id="dashboardContent">
+    <div class="kpi-row">
+      <div class="kpi k-total">
+        <div class="k-icon">🧾</div>
+        <div class="label">จำนวนเครื่องมือทั้งหมด</div>
+        <div class="value num" id="kpiTotal">0</div>
+        <div class="foot" id="kpiTotalFoot">รายการที่ตรงกับตัวกรอง</div>
+      </div>
+      <div class="kpi k-items">
+        <div class="k-icon">📦</div>
+        <div class="label">รายการชนิดเครื่องมือ</div>
+        <div class="value num" id="kpiItems">0</div>
+        <div class="foot">ชนิดเครื่องมือที่แตกต่างกัน</div>
+      </div>
+      <div class="kpi k-ok">
+        <div class="k-icon">✅</div>
+        <div class="label">ใช้งานได้</div>
+        <div class="value num ok" id="kpiOk">0</div>
+        <div class="foot" id="kpiOkPct">0%</div>
+      </div>
+      <div class="kpi k-broken">
+        <div class="k-icon">⚠️</div>
+        <div class="label">ชำรุด</div>
+        <div class="value num broken" id="kpiBroken">0</div>
+        <div class="foot" id="kpiBrokenPct">0%</div>
+      </div>
+    </div>
+
+    <div class="chart-controls-row">
+      <div class="chart-switch" id="switchYearlyTrend" data-key="yearlyTrend"></div>
+      <label for="topn-yearlyTrend" style="font-size:13px;color:var(--muted,#667);">แสดงจำนวนปีล่าสุด:</label>
+      <select class="topn-select" id="topn-yearlyTrend" data-key="yearlyTrend">
+        <option value="5">5 ปี</option>
+        <option value="8">8 ปี</option>
+        <option value="10">10 ปี</option>
+        <option value="15">15 ปี</option>
+        <option value="9999">ทั้งหมด</option>
+      </select>
+    </div>
+    <div class="grid-overview-2">
+      <div class="panel">
+        <h2>📈 จำนวนเครื่องมือที่ได้รับ ตามปี พ.ศ.</h2>
+        <div class="hint">ผลรวมจำนวนเครื่องมือทั้งหมดในแต่ละปีที่ได้รับ ตามข้อมูลที่ตรงกับตัวกรอง</div>
+        <div class="chart-wrap" id="chartYearlyTotal"></div>
+      </div>
+      <div class="panel">
+        <h2>📏 จำนวนเครื่องมือที่สอบเทียบแล้ว ตามปี พ.ศ.</h2>
+        <div class="hint">จำนวนเครื่องมือที่มีสถานะ "สอบเทียบแล้ว" แยกตามปีที่ได้รับ</div>
+        <div class="chart-wrap" id="chartYearlyCal"></div>
+      </div>
+    </div>
+
+    <div class="grid-overview-3">
+      <div class="panel">
+        <h2>🧪 สัดส่วนเครื่องมือแยกตามประเภท</h2>
+        <div class="hint">แยกตาม ด้านน้ำ / อากาศ / ดิน / ฉุกเฉิน</div>
+        <div class="chart-controls-row">
+          <div class="chart-switch" id="switchCatDonut" data-key="catDonut"></div>
+          <select class="topn-select" id="topn-catDonut" data-key="catDonut">
+            <option value="3">Top 3</option>
+            <option value="4">Top 4 (ทั้งหมด)</option>
+          </select>
+        </div>
+        <div class="chart-wrap" id="chartOverviewDonut" style="display:flex;justify-content:center;"></div>
+        <div class="legend" id="legendOverviewDonut" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div class="panel">
+        <h2>🏛️ หน่วยงานที่มีเครื่องมือมากที่สุด</h2>
+        <div class="chart-controls-row">
+          <div class="chart-switch" id="switchTopUnits" data-key="topUnits"></div>
+          <select class="topn-select" id="topn-topUnits" data-key="topUnits">
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="15">Top 15</option>
+            <option value="20">Top 20</option>
+            <option value="9999">ทั้งหมด</option>
+          </select>
+        </div>
+        <div id="barTopUnits"></div>
+      </div>
+      <div class="panel">
+        <h2>🔧 ประเภทเครื่องมือที่มีมากที่สุด</h2>
+        <div class="chart-controls-row">
+          <div class="chart-switch" id="switchTopItems" data-key="topItems"></div>
+          <select class="topn-select" id="topn-topItems" data-key="topItems">
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="15">Top 15</option>
+            <option value="20">Top 20</option>
+            <option value="9999">ทั้งหมด</option>
+          </select>
+        </div>
+        <div id="barTopItems"></div>
+      </div>
+    </div>
+
+    <div class="section-divider">รายละเอียดเชิงลึก · ปรับมุมมองกราฟและกรองข้อมูลได้ด้านล่าง</div>
+
+    <div class="grid2b">
+      <div class="panel">
+        <h2>🔋 สถานะการใช้งานตามเครื่องมือ <span class="clickable-note">คลิกเพื่อกรอง</span></h2>
+        <div class="hint">สัดส่วนเครื่องมือที่ใช้งานได้ / ชำรุด</div>
+        <div class="chart-switch" id="switchUsePie" data-key="usePie"></div>
+        <div class="chart-flex">
+          <div class="svgchart" id="chartUsePie" style="width:240px;height:240px;flex-shrink:0;"></div>
+          <div class="legend-col" id="legendUsePie"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>🧪 ประเภทเครื่องมือ <span class="clickable-note">คลิกเพื่อกรอง</span></h2>
+        <div class="hint">แยกตาม ด้านน้ำ / อากาศ / ดิน / ฉุกเฉิน</div>
+        <div class="chart-switch" id="switchCatPie" data-key="catPie"></div>
+        <div class="chart-flex">
+          <div class="svgchart" id="chartCatPie" style="width:240px;height:240px;flex-shrink:0;"></div>
+          <div class="legend-col" id="legendCatPie"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panelCalBar" style="margin-bottom:18px;">
+      <h2>📏 สถานะการสอบเทียบของแต่ละหน่วยงาน <span class="clickable-note">คลิกแท่งเพื่อกรอง</span></h2>
+      <div class="hint">สอบเทียบแล้ว / ไม่ต้องส่งสอบเทียบ / รอสอบเทียบ / ไม่เคยสอบเทียบ · แสดงหน่วยงานที่มีเครื่องมือมากที่สุดตามจำนวนที่เลือก</div>
+      <div class="chart-controls-row">
+        <div class="chart-switch" id="switchCalBar" data-key="calBar"></div>
+        <select class="topn-select" id="topn-calBar" data-key="calBar">
+          <option value="5">Top 5 หน่วยงาน</option>
+          <option value="8">Top 8 หน่วยงาน</option>
+          <option value="10">Top 10 หน่วยงาน</option>
+          <option value="15">Top 15 หน่วยงาน</option>
+          <option value="20">Top 20 หน่วยงาน</option>
+          <option value="9999">ทั้งหมด</option>
+        </select>
+        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelCalBar','chartCalBar')">⛶</button>
+      </div>
+      <div class="svgchart" id="chartCalBar" style="height:600px;"></div>
+      <div class="legend-wrap" id="legendCalBar"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px;">
+      <h2>🗺️ แผนที่ตำแหน่งหน่วยงานและเครื่องมือ <span class="clickable-note">ข้อมูลปรับตามตัวกรองด้านซ้ายอัตโนมัติ</span></h2>
+      <div class="hint">ตำแหน่งจับคู่อัตโนมัติจากคอลัมน์ "หน่วยงาน" ในไฟล์ที่อัปโหลด — คลิกจุด/พื้นที่บนแผนที่ หรือชิปด้านล่าง เพื่อกรองข้อมูลทั้งแดชบอร์ดไปที่หน่วยงานนั้น (เชื่อมกับตัวกรองด้านซ้ายแบบสองทาง)</div>
+<div id="mapSection">
+<div id="sidebar">
+  <div id="sidebarInner">
+    <div id="sidebarHead">
+      <h1>🧭 เครื่องมือภาคสนาม กรมควบคุมมลพิษ</h1>
+      <p>ข้อมูลชุดเดียวกับแดชบอร์ด — กรองอัตโนมัติตามตัวกรองด้านซ้ายและอัปเดตเมื่อคุณคลิกกราฟ/แผนที่</p>
+    </div>
+    <div class="sb-section">
+      <h2>📚 แหล่งข้อมูล</h2>
+      <div id="uploadStatus">ใช้ไฟล์เดียวกับที่อัปโหลดไว้ในแดชบอร์างด้านบน — ตำแหน่งจับคู่อัตโนมัติจากคอลัมน์ "หน่วยงาน"</div>
+    </div>
+    <div class="sb-section" style="border-bottom:none; flex:1; padding-bottom:4px;">
+      <div id="detailHeadRow">
+        <h2>🏷️ รายละเอียดหน่วยงานที่เลือก</h2>
+        <button id="deselectBtn" title="ยกเลิกการเลือกหน่วยงาน">✕ ยกเลิกการเลือก</button>
+      </div>
+      <div id="detailPane"><div class="empty">ยังไม่ได้เลือกหน่วยงาน<br>คลิกจังหวัดบนแผนที่ หรือชิปด้านล่างของแผนที่ เพื่อเริ่มต้น</div></div>
+    </div>
+  </div>
+  <div id="sidebarFooter">
+    <button id="exportPdfBtn" disabled>📄 บันทึกข้อมูลนี้เป็น PDF (A4)</button>
+    <div id="exportPdfHint">เลือกหน่วยงานก่อน แล้วกดปุ่มนี้เพื่อบันทึก/พิมพ์เป็นไฟล์ PDF ขนาด A4</div>
+  </div>
+  <div id="sidebarResizer" title="ลากเพื่อปรับความกว้าง"></div>
+</div>
+
+<div id="imgLightbox">
+  <img id="imgLightboxImg" src="" alt="">
+</div>
+
+<div id="printArea"></div>
+
+<button id="toggleBtn" title="ย่อ/ขยายแถบด้านซ้าย">◀</button>
+
+<div id="main">
+  <div id="mapHead">
+    <h2>🗺️ แผนที่เครื่องมือ — หน่วยงานในสังกัดกรมควบคุมมลพิษ</h2>
+    <p>สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 1–16 และหน่วยงานส่วนกลาง — จำนวนเครื่องมือต่อหน่วยงาน ตามตัวกรองปัจจุบัน</p>
+  </div>
+  <div id="mapWrap">
+    <svg id="mapSvg" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="zoomControls">
+      <button id="zoomIn" title="ซูมเข้า">+</button>
+      <button id="zoomOut" title="ซูมออก">−</button>
+      <button id="zoomReset" title="รีเซ็ตมุมมอง">⟲</button>
+    </div>
+    <div id="mapStatus">กำลังโหลดแผนที่…</div>
+    <svg id="leaderSvg"></svg>
+    <div id="mapPopup"></div>
+  </div>
+  <div id="legendBar">
+    <h3>📍 เลือกหน่วยงาน (สคพ.1–16 และหน่วยงานส่วนกลาง)</h3>
+    <div id="legendChips"></div>
+  </div>
+</div>
+</div>
+    </div>
+
+    <div class="panel">
+      <h2>📋 รายการเครื่องมือ</h2>
+      <div class="hint">คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกหัวคอลัมน์เพื่อจัดเรียง</div>
+      <div class="table-search">
+        <span>🔎</span>
+        <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:64px;">ภาพ</th>
+              <th id="th-name">เครื่องมือ ▾</th>
+              <th id="th-count" style="width:180px;">จำนวนที่มี</th>
+            </tr>
+          </thead>
+          <tbody id="toolTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+/* ===================== Theme (light / dark) ===================== */
+// Reads a CSS custom property's live value so SVG charts pick up the
+// current theme's colors whenever they're (re)rendered.
+function cv(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+(function initTheme(){
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggleBtn');
+  function apply(theme){
+    if(theme === 'dark'){ root.setAttribute('data-theme','dark'); }
+    else { root.removeAttribute('data-theme'); }
+    if(btn){
+      btn.querySelector('.icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+      btn.querySelector('.label').textContent = theme === 'dark' ? 'โหมดสว่าง' : 'โหมดมืด';
+    }
+  }
+  apply('light');
+  if(btn){
+    btn.addEventListener('click', ()=>{
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      apply(next);
+      // Re-draw SVG charts so their inline colors (axis text, gridlines)
+      // follow the new theme — CSS alone can't reach into already-drawn SVG.
+      if(typeof refreshAll === 'function') refreshAll();
+    });
+  }
+})();
+
+/* ===================== embedded equipment map (linked to slicers) ===================== */
+const ORG_LOCATIONS = {"สคพ.1":[{"th":"ลำพูน","en":"Lamphun","lat":18.5744606,"lon":99.0087221},{"th":"เชียงใหม่","en":"Chiang Mai","lat":18.7877477,"lon":98.9931311},{"th":"เชียงราย","en":"Chiang Rai","lat":19.9071656,"lon":99.830955},{"th":"แม่ฮ่องสอน","en":"Mae Hong Son","lat":19.2990643,"lon":97.9656226}],"สคพ.2":[{"th":"ลำปาง","en":"Lampang","lat":18.2888404,"lon":99.490874},{"th":"แพร่","en":null,"lat":18.1445774,"lon":100.1402831},{"th":"พะเยา","en":"Phayao","lat":19.1664789,"lon":99.9019419},{"th":"น่าน","en":"Nan","lat":18.7756318,"lon":100.7730417}],"สคพ.3":[{"th":"สุโขทัย","en":"Sukhothai","lat":17.0055573,"lon":99.8263712},{"th":"ตาก","en":"Tak","lat":16.8839901,"lon":99.1258498},{"th":"เพชรบูรณ์","en":"Phetchabun","lat":16.4189807,"lon":101.1550926},{"th":"พิษณุโลก","en":"Phitsanulok","lat":16.8298048,"lon":100.2614915},{"th":"อุตรดิตถ์","en":"Uttaradit","lat":17.6200886,"lon":100.0992942}],"สคพ.4":[{"th":"นครสวรรค์","en":"Nakhon Sawan","lat":15.6930072,"lon":100.1225595},{"th":"พิจิตร","en":"Phichit","lat":16.4429516,"lon":100.3482329},{"th":"อุทัยธานี","en":"Uthai Thani","lat":15.3835001,"lon":100.0245527},{"th":"กำแพงเพชร","en":"Kamphaeng Phet","lat":16.4827798,"lon":99.5226618}],"สคพ.5":[{"th":"นครปฐม","en":"Nakhon Pathom","lat":13.8199206,"lon":100.0621676},{"th":"ชัยนาท","en":"Chai Nat","lat":15.1851971,"lon":100.125125},{"th":"สุพรรณบุรี","en":"Suphan Buri","lat":14.4744892,"lon":100.1177128},{"th":"สมุทรสาคร","en":"Samut Sakhon","lat":13.5475216,"lon":100.2743956}],"สคพ.6":[{"th":"นนทบุรี","en":"Nonthaburi","lat":13.8621125,"lon":100.5143528},{"th":"สิงห์บุรี","en":"Sing Buri","lat":14.8936253,"lon":100.3967314},{"th":"อ่างทอง","en":"Ang Thong","lat":14.5896054,"lon":100.455052},{"th":"ปทุมธานี","en":"Pathum Thani","lat":14.0208391,"lon":100.5250276},{"th":"พระนครศรีอยุธยา","en":"Phra Nakhon Si Ayutthaya","lat":14.3532128,"lon":100.5689599}],"สคพ.7":[{"th":"สระบุรี","en":"Saraburi","lat":14.5289154,"lon":100.9101421},{"th":"ปราจีนบุรี","en":"Prachinburi","lat":14.1256248,"lon":101.3725264},{"th":"ลพบุรี","en":"Lopburi","lat":14.7995081,"lon":100.6533706},{"th":"นครนายก","en":"Nakhon Nayok","lat":14.2069466,"lon":101.2130511},{"th":"สระแก้ว","en":"Sa Kaeo","lat":13.824038,"lon":102.0645839}],"สคพ.8":[{"th":"ราชบุรี","en":"Ratchaburi","lat":13.5282893,"lon":99.8134211},{"th":"กาญจนบุรี","en":"Kanchanaburi","lat":14.0227797,"lon":99.5328115},{"th":"สมุทรสงคราม","en":"Samut Songkhram","lat":13.4098217,"lon":100.0022645},{"th":"เพชรบุรี","en":"Phetchaburi","lat":13.1111601,"lon":99.9391307},{"th":"ประจวบคิรีขันธ์","en":"Prachuap Khiri Khan","lat":11.812367,"lon":99.7973271}],"สคพ.9":[{"th":"อุดรธานี","en":"Udon Thani","lat":17.4138413,"lon":102.7872325},{"th":"หนองคาย","en":"Nong Khai","lat":17.8782803,"lon":102.7412638},{"th":"เลย","en":"Loei","lat":17.4860232,"lon":101.7223002},{"th":"นครพนม","en":"Nakhon Phanom","lat":17.392039,"lon":104.7695508},{"th":"สกลนคร","en":"Sakon Nakhon","lat":17.1545995,"lon":104.1348365},{"th":"บึงกาฬ","en":"Bueng Kan","lat":18.3609104,"lon":103.6464463}],"สคพ.10":[{"th":"ขอนแก่น","en":"Khon Kaen","lat":16.4419355,"lon":102.8359921},{"th":"มหาสารคาม","en":"Maha Sarakham","lat":16.1850896,"lon":103.3026461},{"th":"กาฬสินธุ์","en":"Kalasin","lat":16.4314078,"lon":103.5058755},{"th":"หนองบัวลำภู","en":"Nong Bua Lam Phu","lat":17.2218247,"lon":102.4260368},{"th":"ร้อยเอ็ด","en":"Roi Et","lat":16.0538196,"lon":103.6520036}],"สคพ.11":[{"th":"นครราชสีมา","en":"Nakhon Ratchasima","lat":14.9798997,"lon":102.0977693},{"th":"สุรินทร์","en":"Surin","lat":14.882905,"lon":103.4937107},{"th":"ชัยภูมิ","en":"Chaiyaphum","lat":15.8068173,"lon":102.0315027},{"th":"บุรีรัมย์","en":"Buriram","lat":14.9930017,"lon":103.1029191}],"สคพ.12":[{"th":"อุบลราชธานี","en":"Ubon Ratchathani","lat":15.2286861,"lon":104.8564217},{"th":"อำนาจเจริญ","en":"Amnat Charoen","lat":15.8656783,"lon":104.6257774},{"th":"ยโสธร","en":"Yasothon","lat":15.792641,"lon":104.1452827},{"th":"มุกดาหาร","en":"Mukdahan","lat":16.542443,"lon":104.7209151},{"th":"ศรีสะเกษ","en":"Si Sa Ket","lat":15.1186009,"lon":104.3220095}],"สคพ.13":[{"th":"ชลบุรี","en":"Chonburi","lat":13.3611431,"lon":100.9846717},{"th":"ระยอง","en":"Rayong","lat":12.6822609096555,"lon":101.276714},{"th":"ตราด","en":"Trat","lat":12.2427563,"lon":102.5174734},{"th":"ฉะเชิงเทรา","en":"Chachoengsao","lat":13.6904194,"lon":101.0779596},{"th":"จันทบุรี","en":"Chanthaburi","lat":12.61134,"lon":102.1038546},{"th":"สมุทรปราการ","en":"Samut Prakan","lat":13.5990961,"lon":100.5998319}],"สคพ.14":[{"th":"สุราษร์ธานี","en":"Surat Thani","lat":9.1382389,"lon":99.3217483},{"th":"ชุมพร","en":"Chumphon","lat":10.4930496,"lon":99.1800199},{"th":"นครศรีธรรมราช","en":"Nakhon Si Thammarat","lat":8.4303975,"lon":99.9631219},{"th":"พัทลุง","en":"Phatthalung","lat":7.6166823,"lon":100.0740231}],"สคพ.15":[{"th":"ภูเก็ต","en":"Phuket","lat":7.9810496,"lon":98.3638824},{"th":"กระบี่","en":"Krabi","lat":8.0862997,"lon":98.9062835},{"th":"ตรัง","en":"Trang","lat":7.5593851,"lon":99.6110065},{"th":"ระนอง","en":"Ranong","lat":9.9528702,"lon":98.6084641},{"th":"พังงา","en":"Phang Nga","lat":8.4407456,"lon":98.5193032}],"สคพ.16":[{"th":"สงขลา","en":"Songkhla","lat":7.1756004,"lon":100.614347},{"th":"สตูล","en":"Satun","lat":6.6238158,"lon":100.0673744},{"th":"ยะลา","en":"Yala","lat":6.541147,"lon":101.2803947},{"th":"ปัตตานี","en":"Pattani","lat":6.8694844,"lon":101.2504826},{"th":"นราธิวาส","en":"Narathiwat","lat":6.4254607,"lon":101.8253143}],"กตพ.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจอ.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจน.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจส.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}]};
+
+
+// Office city label for each สคพ region (for display only)
+const OFFICE_CITY = {
+  1:"เชียงใหม่",2:"ลำปาง",3:"พิษณุโลก",4:"นครสวรรค์",5:"นครปฐม",6:"นนทบุรี",
+  7:"สระบุรี",8:"ราชบุรี",9:"อุดรธานี",10:"ขอนแก่น",11:"นครราชสีมา",12:"อุบลราชธานี",
+  13:"ชลบุรี",14:"สุราษฎร์ธานี",15:"ภูเก็ต",16:"สงขลา"
+};
+// Full names for central / special divisions (headquartered in Bangkok, not tied to a province)
+const SPECIAL_NAMES = {
+  "กจน.":"กองจัดการคุณภาพน้ำ",
+  "กจอ.":"กองจัดการคุณภาพอากาศและเสียง",
+  "กจส.":"กองจัดการกากของเสียและสารอันตราย",
+  "กตพ.":"กองตรวจมลพิษ"
+};
+
+const COLORS = {
+  1:"#2a6f6f",2:"#4a90a4",3:"#6c5ce7",4:"#9b59b6",5:"#e17055",6:"#c0392b",
+  7:"#e84393",8:"#fd79a8",9:"#00b894",10:"#00cec9",11:"#0984e3",12:"#6ab04c",
+  13:"#f0932b",14:"#eb6b56",15:"#f2b705",16:"#4d8f8f"
+};
+const SPECIAL_COLORS = {"กจน.":"#7f8c8d","กจอ.":"#576574","กจส.":"#8e6e53","กตพ.":"#4b6584"};
+
+/* =========================================================
+   2. Build ORGS: unified structure for regions (สคพ.1-16)
+      and central/special divisions
+   ========================================================= */
+const ORGS = {}; // code -> {code, kind, num, label, color, provinces:[{th,en,lat,lon}]}
+Object.keys(ORG_LOCATIONS).forEach(code=>{
+  const provinces = ORG_LOCATIONS[code];
+  const m = code.match(/^สคพ\.(\d+)/);
+  if(m){
+    const num = +m[1];
+    ORGS[code] = {
+      code, kind:"region", num,
+      label: `สคพ.${num}${OFFICE_CITY[num] ? " ("+OFFICE_CITY[num]+")" : ""}`,
+      color: COLORS[num] || "#888",
+      provinces
+    };
+  }else{
+    ORGS[code] = {
+      code, kind:"special", num:null,
+      label: `${code} — ${SPECIAL_NAMES[code] || "หน่วยงานส่วนกลาง"}`,
+      color: SPECIAL_COLORS[code] || "#7f8c8d",
+      provinces
+    };
+  }
+});
+const REGION_CODES = Object.keys(ORGS).filter(c=>ORGS[c].kind==="region").sort((a,b)=>ORGS[a].num-ORGS[b].num);
+const SPECIAL_CODES = Object.keys(ORGS).filter(c=>ORGS[c].kind==="special").sort();
+
+
+/* =========================================================
+   3. Equipment aggregation per org — sourced from the
+      DASHBOARD's currently-filtered rows (linked to the slicers)
+   ========================================================= */
+let RECORDS_BY_ORG = {};
+let mapRecordsCache = [];
+
+// Adapts one dashboard row (cat/item/unit/year/age/cond/cal/use/img) into
+// the equipment-record shape this map's rendering functions expect.
+function buildMapRecords(rows){
+  return rows.map(r=>{
+    const code = matchOrgCode(r.unit);
+    return {
+      type: r.cat || null,
+      name: r.item || null,
+      org: code || (r.unit || '').toString().trim(),
+      yearGot: r.year || null,
+      age: null,
+      statusEquip: r.cond || null,
+      statusCalib: r.cal || null,
+      statusUse: r.use || null,
+      brand: null, model: null, serial: null, assetCode: null, price: null,
+      image: r.img || '',
+      param: null
+    };
+  });
+}
+
+function rebuildRecordsByOrg(){
+  RECORDS_BY_ORG = {};
+  mapRecordsCache.forEach(r=>{
+    if(!r.org) return;
+    (RECORDS_BY_ORG[r.org] = RECORDS_BY_ORG[r.org] || []).push(r);
+  });
+}
+rebuildRecordsByOrg();
+function summarizeEquipment(code){
+  const recs = RECORDS_BY_ORG[code] || [];
+  const byName = {};
+  recs.forEach(r=>{
+    const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
+    if(!byName[key]) byName[key] = {count:0, ages:{}, type:r.type};
+    byName[key].count++;
+    const a = (r.age===null || r.age===undefined) ? "-" : r.age;
+    byName[key].ages[a] = (byName[key].ages[a]||0)+1;
+  });
+  return Object.entries(byName).map(([name,info])=>{
+    const ageStr = Object.entries(info.ages)
+      .sort((a,b)=>a[0]-b[0])
+      .map(([a,c])=> c>1 ? `${a} ปี(${c})` : `${a} ปี`).join(", ");
+    return {name, count:info.count, ageStr, type:info.type};
+  }).sort((a,b)=> b.count-a.count);
+}
+
+function orgStats(code){
+  const recs = RECORDS_BY_ORG[code] || [];
+  const stats = {total:recs.length, ok:0, broken:0, byType:{}};
+  recs.forEach(r=>{
+    if(r.statusUse==="ใช้งานได้") stats.ok++;
+    else if(r.statusUse==="ชำรุด") stats.broken++;
+    stats.byType[r.type] = (stats.byType[r.type]||0)+1;
+  });
+  return stats;
+}
+
+/* =========================================================
+   3b. PDF-style summary table — เครื่องมือ + ลักษณะการใช้งาน +
+       จำนวนเครื่องมือตามเกณฑ์อายุ + สถานะสอบเทียบ + รวม
+       Grouped by ประเภทเครื่องมือ (ด้านน้ำ / ด้านดิน / ด้านอากาศ / ด้านฉุกเฉิน)
+   ========================================================= */
+const CATEGORY_LABEL = {
+  "ด้านน้ำ":"เครื่องมือตรวจวัดมลพิษด้านน้ำ",
+  "ด้านดิน":"เครื่องมือตรวจวัดมลพิษด้านดิน",
+  "ด้านอากาศ":"เครื่องมือตรวจวัดมลพิษด้านอากาศ",
+  "ด้านฉุกเฉิน":"เครื่องมือสำหรับกรณีฉุกเฉิน"
+};
+const CATEGORY_ICON = {"ด้านน้ำ":"💧","ด้านดิน":"🪨","ด้านอากาศ":"🌬️","ด้านฉุกเฉิน":"🚨"};
+const CATEGORY_ORDER = ["ด้านน้ำ","ด้านดิน","ด้านอากาศ","ด้านฉุกเฉิน"];
+
+// Usage descriptions transcribed from the department's equipment reference sheet
+// (used when the imported file has no description column of its own).
+const USAGE_DESC = {
+  "เครื่องเก็บตัวอย่างน้ำขนาด2ลิตร":"ใช้เก็บตัวอย่างน้ำจากแหล่งน้ำเพื่อนำไปวิเคราะห์คุณภาพน้ำ",
+  "เครื่องควบคุมสาหร่ายด้วยultrasonic":"ใช้คลื่นเสียงความถี่สูงในการควบคุมหรือยับยั้งการเติบโตของสาหร่ายในแหล่งน้ำ",
+  "เครื่องมือตรวจวัดคุณภาพน้ำหลายตัวแปร":"ใช้วัดคุณภาพน้ำหลายพารามิเตอร์ เช่น pH, DO, ความนำไฟฟ้า, อุณหภูมิ, ความขุ่น",
+  "เครื่องมือตรวจวัดคุณภาพน้ำsingleprobe":"ใช้วัดคุณภาพน้ำแบบค่าตัวแปรเดียว เช่น pH หรือ DO",
+  "เครื่องมือตรวจวิเคราะห์การเลี้ยวเบนของรังสีเอ็กซ์":"ใช้วิเคราะห์โครงสร้างผลึกของวัสดุ/แร่ ด้วยการเลี้ยวเบนรังสีเอกซ์ (XRD)",
+  "เครื่องวัดความเร็วกระแสน้ำภาคสนาม":"ใช้วัดความเร็วและทิศทางการไหลของน้ำในภาคสนาม",
+  "เครื่องวัดความลึกของน้ำ":"ใช้วัดระดับความลึกของแหล่งน้ำ เช่น แม่น้ำ อ่างเก็บน้ำ",
+  "เครื่องวิเคราะห์สารเคมีระบบgaschromatography":"ใช้วิเคราะห์หาปริมาณสารอินทรีย์ระเหยง่าย (VOCs) และสารอินทรีย์อื่นๆ ด้วยระบบ Gas Chromatography",
+  "ชุดเก็บตัวอย่างสารอินทรีย์ระเหยง่ายในน้ำใต้ดินแบบติดตาม":"ใช้เก็บตัวอย่างน้ำใต้ดินเพื่อตรวจหาสารอินทรีย์ระเหยง่ายแบบติดตามต่อเนื่อง",
+  "ชุดอุปกรณ์เก็บตัวอย่างตะกอนดินใต้ท้องน้ำgrabsample":"ใช้เก็บตัวอย่างตะกอนดินใต้ท้องน้ำ เพื่อนำไปวิเคราะห์โลหะหนัก สารอินทรีย์ หรือคุณสมบัติของตะกอน",
+  "สถานีตรวจวัดคุณภาพน้ำแบบเคลื่อนที่โดยใช้กล้องถ่ายภาพไฮเปอร์สเปกตรัม":"ใช้ตรวจวัดคุณภาพน้ำแบบไม่สัมผัสน้ำโดยใช้กล้องถ่ายภาพไฮเปอร์สเปกตรัมเพื่อวิเคราะห์สี สาหร่าย หรือสารแขวนลอย"
+};
+function usageDescFor(name, records){
+  const key = norm(name);
+  if(USAGE_DESC[key]) return USAGE_DESC[key];
+  const params = [...new Set(records.map(r=>r.param).filter(Boolean))];
+  if(params.length) return "พารามิเตอร์ที่ตรวจวัดได้: " + params.join(", ");
+  return "-";
+}
+
+// Age (years) -> one of the 4 PDF buckets
+function ageBucket(age){
+  if(age===null || age===undefined || isNaN(age)) return null;
+  if(age>=1 && age<=5) return "b15";
+  if(age>=6 && age<=10) return "b610";
+  if(age>=11 && age<=15) return "b1115";
+  if(age>=16) return "b16p";
+  return null;
+}
+// สถานะสอบเทียบ -> one of the 3 PDF columns (anything that isn't a clear
+// "calibrated" / "awaiting calibration" value is grouped under "ไม่เคยสอบเทียบ",
+// which also absorbs "ไม่ต้องส่งสอบเทียบ" / blank values, same as the source sheet).
+function calibBucket(status){
+  const s = (status||"").toString().trim();
+  if(s.includes("สอบเทียบแล้ว")) return "cal_done";
+  if(s.includes("รอสอบเทียบ")) return "cal_wait";
+  return "cal_never";
+}
+
+function equipmentImage(name, records){
+  const withImg = records.find(r=> r.name===name && r.image);
+  return withImg ? withImg.image : null;
+}
+
+function buildAgeCalibTable(category, records, withImages){
+  const byName = {};
+  records.forEach(r=>{
+    const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[]};
+    const row = byName[key];
+    row.total++;
+    row.recs.push(r);
+    const ab = ageBucket(r.age); if(ab) row[ab]++;
+    row[calibBucket(r.statusCalib)]++;
+  });
+  const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
+  if(!names.length) return "";
+
+  let html = `<table class="eq2">
+    <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
+    <thead>
+      <tr>
+        <th rowspan="2" class="colTool">เครื่องมือ</th>
+        <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
+        <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
+        <th colspan="3">สถานะสอบเทียบ</th>
+        <th rowspan="2" class="colTotal">รวม</th>
+      </tr>
+      <tr>
+        <th>1-5 ปี</th><th>6-10 ปี</th><th>11-15 ปี</th><th>มากกว่า<br>16 ปี</th>
+        <th>สอบเทียบ<br>แล้ว</th><th>ไม่เคย<br>สอบเทียบ</th><th>รอสอบ<br>เทียบ</th>
+      </tr>
+    </thead><tbody>`;
+
+  names.forEach(name=>{
+    const row = byName[name];
+    let toolCell;
+    if(withImages){
+      const img = equipmentImage(name, row.recs);
+      const iconCell = img
+        ? `<img src="${img}" alt="" class="eq-photo" data-zoom="${img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+           <span class="eq-photo-fallback" style="display:none;">${CATEGORY_ICON[category]||"🔧"}</span>`
+        : `<span class="eq-photo-fallback" style="display:flex;">${CATEGORY_ICON[category]||"🔧"}</span>`;
+      toolCell = `<div class="eq-tool-cell">${iconCell}<span>${name}</span></div>`;
+    }else{
+      toolCell = `<div class="eq-tool-cell eq-tool-cell-noimg"><span>${name}</span></div>`;
+    }
+    html += `<tr>
+      <td class="colTool">${toolCell}</td>
+      <td class="colUse">${usageDescFor(name,row.recs)}</td>
+      <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
+      <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
+      <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
+      <td class="num colTotal">${row.total}</td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  return `<div class="eq2-wrap">${html}</div>`;
+}
+
+function categoryTables(code, withImages){
+  const recs = RECORDS_BY_ORG[code] || [];
+  if(!recs.length) return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
+  const byCat = {};
+  recs.forEach(r=>{ const c = r.type || "อื่นๆ"; (byCat[c]=byCat[c]||[]).push(r); });
+  const cats = Object.keys(byCat).sort((a,b)=>{
+    const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
+    return (ia<0?99:ia) - (ib<0?99:ib);
+  });
+  return cats.map(c=>buildAgeCalibTable(c, byCat[c], withImages)).join("");
+}
+
+/* =========================================================
+   4. Province name lookup (built from ORG_LOCATIONS, so it
+      is fully data-driven from the two uploaded files)
+   ========================================================= */
+function norm(s){ return (s||"").toString().toLowerCase().replace(/[^a-zก-๙]/g,""); }
+const LOOKUP = {}; // normalized province name -> org code (region orgs only)
+REGION_CODES.forEach(code=>{
+  ORGS[code].provinces.forEach(p=>{
+    if(p.th) LOOKUP[norm(p.th)] = code;
+    if(p.en) LOOKUP[norm(p.en)] = code;
+  });
+});
+
+function matchOrgFromProps(props){
+  const vals = Object.values(props||{}).filter(v=>typeof v==="string");
+  const joined = vals.map(norm);
+  let best=null,bestLen=0;
+  for(const key in LOOKUP){
+    for(const v of joined){
+      if(v && (v.includes(key)||key.includes(v)) && key.length>bestLen){
+        best=LOOKUP[key]; bestLen=key.length;
+      }
+    }
+  }
+  return best;
+}
+
+/* =========================================================
+   5. State
+   ========================================================= */
+let selected = null;           // org code string, e.g. "สคพ.1" or "กตพ."
+let uploadedPoints = [];       // {lat, lon, org, raw} from user-imported CSV/XLSX
+let provinceFeatures = [];     // [{feature, org}]
+let mapMode = "geo";           // "geo" | "schematic"
+let projection=null, pathGen=null;
+
+const svg = d3.select("#mapSvg");
+const zoomLayer = svg.append("g").attr("id","zoomLayer");
+const gProvinces = zoomLayer.append("g").attr("id","gProvinces");
+const gOrgPoints = zoomLayer.append("g").attr("id","gOrgPoints");
+const gPoints = zoomLayer.append("g").attr("id","gPoints");
+
+/* =========================================================
+   6. Load real geography, fallback to schematic grid
+   ========================================================= */
+const GEO_URLS = [
+  "https://raw.githubusercontent.com/apisit/thailand.json/master/thailandWithName.json",
+  "https://cdn.jsdelivr.net/gh/apisit/thailand.json@master/thailandWithName.json",
+  "https://github.com/apisit/thailand.json/raw/refs/heads/master/thailandWithName.json"
+];
+
+function withTimeout(promise, ms){
+  return Promise.race([promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),ms))]);
+}
+
+async function tryLoadGeo(){
+  for(const url of GEO_URLS){
+    try{
+      const res = await withTimeout(fetch(url), 6000);
+      if(!res.ok) continue;
+      const gj = await res.json();
+      if(gj && gj.features && gj.features.length>10) return gj;
+    }catch(e){ /* try next */ }
+  }
+  return null;
+}
+
+async function initMap(){
+  const status = document.getElementById("mapStatus");
+  const gj = await tryLoadGeo();
+  if(gj){
+    mapMode="geo";
+    buildGeoMap(gj);
+    status.style.display="none";
+  }else{
+    mapMode="schematic";
+    buildSchematicMap();
+    status.style.display="none";
+  }
+  buildLegend();
+  setupZoom();
+}
+
+function buildGeoMap(gj){
+  projection = d3.geoMercator().fitSize([780,860], gj);
+  pathGen = d3.geoPath().projection(projection);
+
+  provinceFeatures = gj.features.map(f=>{
+    const org = matchOrgFromProps(f.properties);
+    return {feature:f, org};
+  });
+
+  gProvinces.selectAll("path")
+    .data(provinceFeatures)
+    .join("path")
+    .attr("class","province")
+    .attr("d",d=>pathGen(d.feature))
+    .attr("fill",d=> d.org ? ORGS[d.org].color : "#dfe6e5")
+    .attr("data-org", d=>d.org||"")
+    .on("click",(ev,d)=>{ if(d.org) selectOrgOnMap(d.org, ev); })
+    .append("title")
+    .text(d=> d.org ? ORGS[d.org].label : (d.feature.properties && Object.values(d.feature.properties)[0]) || "");
+
+  renderOrgPoints();
+}
+
+// Fallback: schematic grid resembling Thailand's silhouette (north→south, west→east)
+const SCHEMATIC_LAYOUT = [
+  [1,2,0,1],[2,3,0,1],
+  [3,2,1,1],[9,4,1,2],
+  [4,2,2,1],[10,5,2,1],
+  [5,1,3,1],[6,2,3,1],[7,3,3,1],[11,5,3,1],
+  [8,1,4,1],[13,4,4,1],[12,5,4,1],
+  [14,2,5,1],
+  [15,1,6,1],[16,2,6,1],
+];
+function buildSchematicMap(){
+  const cell=90, pad=8, top=20, left=40;
+  gProvinces.selectAll("*").remove();
+  SCHEMATIC_LAYOUT.forEach(([num,col,row,span])=>{
+    const code = "สคพ."+num;
+    const x=left+col*(cell+pad), y=top+row*(cell+pad*1.3);
+    const w=cell*span+pad*(span-1);
+    const g=gProvinces.append("g").attr("class","schem-cell").style("cursor","pointer")
+      .on("click",(ev)=>selectOrgOnMap(code, ev));
+    g.append("rect").attr("class","province")
+      .attr("x",x).attr("y",y).attr("width",w).attr("height",cell)
+      .attr("rx",10).attr("fill",COLORS[num]).attr("data-org",code);
+    g.append("text").attr("x",x+w/2).attr("y",y+cell/2-4)
+      .attr("text-anchor","middle").attr("fill","#fff").attr("font-size","15")
+      .attr("font-weight","700").text("สคพ."+num);
+    const provTh = (ORGS[code] ? ORGS[code].provinces.map(p=>p.th) : []).slice(0,2).join(" / ");
+    g.append("text").attr("x",x+w/2).attr("y",y+cell/2+14)
+      .attr("text-anchor","middle").attr("fill","#ffffffcc").attr("font-size","9")
+      .text(provTh);
+    g.append("title").text((ORGS[code]?ORGS[code].label:code)+" — "+(ORGS[code]?ORGS[code].provinces.map(p=>p.th).join(", "):""));
+  });
+  svg.attr("viewBox","0 0 800 760");
+}
+
+/* =========================================================
+   7. Base org-location markers (from the joined file data —
+      always shown, independent of any user upload)
+   ========================================================= */
+function renderOrgPoints(){
+  gOrgPoints.selectAll("*").remove();
+  if(mapMode!=="geo" || !projection) return;
+  const pts = [];
+  Object.values(ORGS).forEach(org=>{
+    org.provinces.forEach(p=>{
+      pts.push({org: org.code, th:p.th, lat:p.lat, lon:p.lon});
+    });
+  });
+  gOrgPoints.selectAll("circle")
+    .data(pts)
+    .join("circle")
+    .attr("class","orgpt")
+    .attr("r", d=> ORGS[d.org].kind==="special" ? 6 : 4)
+    .attr("fill", d=>ORGS[d.org].color)
+    .attr("data-org", d=>d.org)
+    .attr("cx", d=>projection([d.lon,d.lat])[0])
+    .attr("cy", d=>projection([d.lon,d.lat])[1])
+    .on("click", (ev,d)=>selectOrgOnMap(d.org, ev))
+    .append("title")
+    .text(d=> `${ORGS[d.org].label} — ${d.th} — เครื่องมือ ${(RECORDS_BY_ORG[d.org]||[]).length} รายการ`);
+}
+
+/* =========================================================
+   8. Legend chips (below map) + sidebar chips
+   ========================================================= */
+function buildLegend(){
+  const legend = document.getElementById("legendChips");
+  legend.innerHTML="";
+  REGION_CODES.forEach(code=>{
+    const n=(RECORDS_BY_ORG[code]||[]).length;
+    legend.appendChild(makeChip(ORGS[code].label, ORGS[code].color, ()=>selectOrg(code), "o_"+code, n));
+  });
+  SPECIAL_CODES.forEach(code=>{
+    const n=(RECORDS_BY_ORG[code]||[]).length;
+    legend.appendChild(makeChip(code, ORGS[code].color, ()=>selectOrg(code), "o_"+code, n));
+  });
+}
+function makeChip(label,color,onClick,id,count){
+  const el=document.createElement("div");
+  el.className="chip"; el.dataset.id=id;
+  el.innerHTML=`<span class="dot" style="background:${color}"></span>${label}`;
+  if(count!==undefined) el.innerHTML += `<span class="count">${count}</span>`;
+  el.addEventListener("click",onClick);
+  return el;
+}
+function refreshChipStates(){
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  if(selected){
+    document.querySelectorAll(`.chip[data-id="o_${selected}"]`).forEach(c=>c.classList.add("active"));
+  }
+}
+
+/* =========================================================
+   9. Selection + detail rendering
+   ========================================================= */
+function selectOrg(code){
+  if(!ORGS[code]) return;
+  hideMapPopup();
+  applyUserOrgSelection(code);
+}
+
+function deselectOrg(){
+  hideMapPopup();
+  applyUserOrgSelection(null);
+}
+
+function highlightMap(){
+  gProvinces.selectAll(".province")
+    .classed("selected", function(){ return d3.select(this).attr("data-org")===selected; })
+    .classed("dim", function(){
+      const r = d3.select(this).attr("data-org");
+      return selected && r && r!==selected;
+    });
+  gOrgPoints.selectAll(".orgpt")
+    .classed("selected", function(d){ return d && d.org===selected; })
+    .classed("dim", function(d){ return selected && d && d.org!==selected; });
+  gPoints.selectAll(".pt")
+    .classed("hi", function(d){ return selected && d.org===selected; });
+}
+
+function eqTable(title,rows,color){
+  if(!rows || rows.length===0){
+    return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
+  }
+  let html = `<table class="eq"><caption style="background:${color||'var(--teal)'}">${title}</caption>
+    <tr><th>เครื่องมือ</th><th style="width:52px;">จำนวน</th><th>เกณฑ์อายุ</th></tr>`;
+  rows.forEach(r=>{
+    html+=`<tr><td>${r.name}</td><td class="num">${r.count}</td><td>${r.ageStr}</td></tr>`;
+  });
+  html+="</table>";
+  return html;
+}
+
+function rawTable(code){
+  const recs = RECORDS_BY_ORG[code] || [];
+  if(!recs.length) return "";
+  let html = `<details class="raw-list"><summary>ดูรายการเครื่องมือรายชิ้นทั้งหมด (${recs.length} รายการ)</summary>
+    <div class="raw-table-wrap"><table class="raw">
+    <thead><tr><th>เครื่องมือ</th><th>ประเภท</th><th>ยี่ห้อ/รุ่น</th><th>Serial</th><th>รหัสครุภัณฑ์</th><th>ปีที่ได้มา</th><th>สถานะเครื่องมือ</th><th>การใช้งาน</th></tr></thead><tbody>`;
+  recs.forEach(r=>{
+    const useTag = r.statusUse==="ใช้งานได้" ? `<span class="tag ok">ใช้งานได้</span>` : (r.statusUse==="ชำรุด" ? `<span class="tag bad">ชำรุด</span>` : (r.statusUse||"-"));
+    const brandModel = [r.brand,r.model].filter(Boolean).join(" / ") || "-";
+    html += `<tr><td>${r.name||"-"}</td><td>${r.type||"-"}</td><td>${brandModel}</td><td>${r.serial||"-"}</td><td>${r.assetCode||"-"}</td><td>${r.yearGot||"-"}</td><td>${r.statusEquip||"-"}</td><td>${useTag}</td></tr>`;
+  });
+  html += `</tbody></table></div></details>`;
+  return html;
+}
+
+function buildDetailHTML(code, withImages, includeCategoryTable){
+  if(includeCategoryTable === undefined) includeCategoryTable = true;
+  const org = ORGS[code];
+  const stats = orgStats(code);
+  let html="";
+  html += `<div class="region-title"><span class="swatch" style="background:${org.color}"></span><h3>${org.label}</h3></div>`;
+
+  if(org.kind==="region"){
+    html += `<div class="province-list">พื้นที่รับผิดชอบ: ${org.provinces.map(p=>p.th).join(", ")}</div>`;
+  }else{
+    html += `<div class="province-list">หน่วยงานส่วนกลาง (ที่ตั้ง: ${org.provinces.map(p=>p.th).join(", ")}) — ไม่ผูกกับจังหวัดบนแผนที่</div>`;
+  }
+
+  html += `<div class="stat-row">
+    <div class="stat-pill">เครื่องมือทั้งหมด<span>${stats.total}</span></div>
+    <div class="stat-pill">ใช้งานได้<span>${stats.ok}</span></div>
+    <div class="stat-pill">ชำรุด<span>${stats.broken}</span></div>
+  </div>`;
+
+  if(includeCategoryTable) html += categoryTables(code, withImages);
+  html += rawTable(code);
+
+  return html;
+}
+
+function renderDetail(){
+  const pane = document.getElementById("detailPane");
+  const exportBtn = document.getElementById("exportPdfBtn");
+  if(!selected){
+    pane.innerHTML=`<div class="empty">ยังไม่ได้เลือกหน่วยงาน<br>คลิกจังหวัดบนแผนที่ หรือชิปด้านล่างของแผนที่ เพื่อเริ่มต้น</div>`;
+    if(exportBtn) exportBtn.disabled = true;
+    return;
+  }
+  pane.innerHTML = buildDetailHTML(selected, true); // sidebar keeps photos, zoomable
+  if(exportBtn) exportBtn.disabled = false;
+}
+
+/* =========================================================
+   9a. Export the currently selected org's detail as an A4 PDF
+       (builds a print-only copy, then opens the browser's
+       print dialog — user picks "Save as PDF" as destination)
+   ========================================================= */
+/* Clones the live map SVG (including current zoom/pan and the
+   selected-org highlight) so it can be embedded in the printed PDF. */
+function captureMapSVG(){
+  const original = document.getElementById("mapSvg");
+  if(!original) return "";
+  const clone = original.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.removeAttribute("class");
+  clone.setAttribute("width","100%");
+  clone.setAttribute("height","auto");
+  clone.style.background = "#EAEDFA";
+  return clone.outerHTML;
+}
+
+function exportDetailToPDF(){
+  if(!selected) return;
+  const printArea = document.getElementById("printArea");
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+  const mapSVG = captureMapSVG();
+  const org = ORGS[selected];
+  printArea.innerHTML = `
+    <div class="print-header">
+      <h1>เครื่องมือภาคสนาม กรมควบคุมมลพิษ</h1>
+      <div class="print-date">พิมพ์เมื่อวันที่ ${dateStr}</div>
+    </div>
+    <div class="print-body">
+      <div class="print-col-map">
+        ${mapSVG ? `<div class="print-map"><span class="print-map-title">ตำแหน่งบนแผนที่ — ${org ? org.label : ""}</span>${mapSVG}</div>` : ""}
+      </div>
+      <div class="print-col-data">
+        ${buildDetailHTML(selected, true)}
+      </div>
+    </div>
+  `;
+  window.print();
+}
+document.getElementById("exportPdfBtn").addEventListener("click", exportDetailToPDF);
+
+/* =========================================================
+   9b. On-map popup — shows the same detail table right at the
+       point on the map that was clicked
+   ========================================================= */
+function hideMapPopup(){
+  const popup = document.getElementById("mapPopup");
+  popup.style.display = "none";
+  popup.innerHTML = "";
+  clearLeader();
+}
+
+function clearLeader(){
+  const svg = document.getElementById("leaderSvg");
+  if(svg) svg.innerHTML = "";
+}
+
+function drawLeader(x1,y1,x2,y2){
+  const svg = document.getElementById("leaderSvg");
+  svg.innerHTML = "";
+  const ns = "http://www.w3.org/2000/svg";
+  const line = document.createElementNS(ns,"line");
+  line.setAttribute("class","leader-line");
+  line.setAttribute("x1",x1); line.setAttribute("y1",y1);
+  line.setAttribute("x2",x2); line.setAttribute("y2",y2);
+  svg.appendChild(line);
+  const origin = document.createElementNS(ns,"circle");
+  origin.setAttribute("class","leader-origin");
+  origin.setAttribute("cx",x1); origin.setAttribute("cy",y1); origin.setAttribute("r",5);
+  svg.appendChild(origin);
+  const anchor = document.createElementNS(ns,"circle");
+  anchor.setAttribute("class","leader-anchor");
+  anchor.setAttribute("cx",x2); anchor.setAttribute("cy",y2); anchor.setAttribute("r",3);
+  svg.appendChild(anchor);
+}
+
+// Docks the callout to whichever side of the map has more room (so it
+// never covers the clicked area), then draws a leader line from the
+// clicked point back to the callout's edge.
+function showMapPopup(code, evt){
+  const wrap = document.getElementById("mapWrap");
+  const popup = document.getElementById("mapPopup");
+  if(!evt || evt.clientX===undefined){ hideMapPopup(); return; }
+
+  popup.innerHTML = `<button class="popup-close" title="ปิด">✕</button>` + buildDetailHTML(code, true, false);
+  popup.style.display = "block";
+
+  const wrapRect = wrap.getBoundingClientRect();
+  const svg = document.getElementById("leaderSvg");
+  svg.setAttribute("viewBox", `0 0 ${wrapRect.width} ${wrapRect.height}`);
+
+  const x = evt.clientX - wrapRect.left;
+  const y = evt.clientY - wrapRect.top;
+  const margin = 18;
+
+  // Measure after making visible so offsetWidth/Height are accurate
+  const pw = popup.offsetWidth;
+  const ph = popup.offsetHeight;
+
+  // Dock to the side of the wrap that is farther from the click point,
+  // so the callout sits clear of the area the person just clicked.
+  const dockRight = x < wrapRect.width / 2;
+  let left = dockRight ? (wrapRect.width - pw - margin) : margin;
+  let top = y - ph / 2;
+  top = Math.max(margin, Math.min(top, wrapRect.height - ph - margin));
+
+  popup.style.left = left + "px";
+  popup.style.top = top + "px";
+
+  // Leader line: from the clicked point to the nearest edge of the callout,
+  // attached at the same vertical level as the click (clamped inside the box).
+  const anchorX = dockRight ? left : left + pw;
+  const anchorY = Math.max(top + 14, Math.min(y, top + ph - 14));
+  drawLeader(x, y, anchorX, anchorY);
+
+  popup.querySelector(".popup-close").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    hideMapPopup();
+  });
+}
+
+// Wrapper used by map click handlers: selects the org AND pops up the detail table at the click point
+function selectOrgOnMap(code, evt){
+  if(!ORGS[code]) return;
+  applyUserOrgSelection(code);
+  showMapPopup(code, evt);
+}
+
+// Match a free-text "หน่วยงาน" value to a known org code (สคพ.1-16 / หน่วยงานส่วนกลาง)
+function matchOrgCode(raw){
+  if(!raw) return null;
+  const trimmed = raw.toString().trim();
+  if(ORGS[trimmed]) return trimmed;
+  const compact = trimmed.replace(/\s+/g,"");
+  if(ORGS[compact]) return compact;
+  const m = compact.match(/สคพ\.?(\d+)/);
+  if(m){ const code = "สคพ."+m[1]; if(ORGS[code]) return code; }
+  const n = norm(trimmed);
+  if(LOOKUP[n]) return LOOKUP[n];
+  for(const code in SPECIAL_NAMES){
+    if(norm(SPECIAL_NAMES[code])===n) return code;
+  }
+  return null;
+}
+
+/* =========================================================
+   10. Linked to the dashboard's filter sidebar / charts (slicers)
+       — called once at the end of the dashboard's refreshAll()
+   ========================================================= */
+function uniqueUnitValues(){
+  return [...new Set(currentData.map(r=>r.unit).filter(Boolean))];
+}
+
+// Pure visual update — does NOT touch dashboard filters. Used when the
+// dashboard side is the one that changed (avoids a feedback loop).
+function applyMapSelectionVisual(code){
+  selected = (code && ORGS[code]) ? code : null;
+  highlightMap();
+  renderDetail();
+  refreshChipStates();
+  const btn = document.getElementById('deselectBtn');
+  if(btn) btn.style.display = selected ? 'inline-flex' : 'none';
+}
+
+// User picked an org ON THE MAP (province / point / chip) — push it into the
+// dashboard's own "หน่วยงาน" filter so every chart + the table follow along.
+function applyUserOrgSelection(code){
+  if(code){
+    const match = uniqueUnitValues().find(u => matchOrgCode(u) === code);
+    filters.unit = match || code;
+  }else{
+    filters.unit = null;
+  }
+  refreshAll();
+}
+
+// Re-derives the map's data + selection from the dashboard's current
+// (filtered) data. Call this at the end of refreshAll().
+function syncMapFromDashboard(){
+  const filtered = currentData.length ? applyFilters(currentData) : [];
+  mapRecordsCache = buildMapRecords(filtered);
+  rebuildRecordsByOrg();
+  buildLegend();
+  renderOrgPoints();
+  const targetCode = filters.unit ? matchOrgCode(filters.unit) : null;
+  applyMapSelectionVisual(targetCode);
+}
+/* ===== Deselect button — clears the currently selected org/area ===== */
+document.getElementById("deselectBtn").addEventListener("click", deselectOrg);
+
+/* Clicking empty map background (not a province/point) closes the popup */
+document.getElementById("mapSvg").addEventListener("click",(ev)=>{
+  if(ev.target && ev.target.id==="mapSvg"){ hideMapPopup(); }
+});
+
+/* =========================================================
+   11. Zoom in / zoom out / reset
+   ========================================================= */
+const zoomBehavior = d3.zoom()
+  .scaleExtent([1, 12])
+  .on("zoom", (ev)=>{ zoomLayer.attr("transform", ev.transform); })
+  .on("start", ()=>{ svg.classed("grabbing", true); hideMapPopup(); })
+  .on("end", ()=>{ svg.classed("grabbing", false); });
+
+function setupZoom(){
+  svg.call(zoomBehavior);
+  document.getElementById("zoomIn").addEventListener("click", ()=>{
+    svg.transition().duration(200).call(zoomBehavior.scaleBy, 1.5);
+  });
+  document.getElementById("zoomOut").addEventListener("click", ()=>{
+    svg.transition().duration(200).call(zoomBehavior.scaleBy, 1/1.5);
+  });
+  document.getElementById("zoomReset").addEventListener("click", ()=>{
+    svg.transition().duration(250).call(zoomBehavior.transform, d3.zoomIdentity);
+  });
+}
+
+/* =========================================================
+   12. Sidebar collapse toggle + free resize + image lightbox
+   ========================================================= */
+const sidebar=document.getElementById("sidebar");
+const toggleBtn=document.getElementById("toggleBtn");
+const sidebarResizer=document.getElementById("sidebarResizer");
+
+const SIDEBAR_MIN = 280;
+const SIDEBAR_MAX = 820;
+let sidebarWidth = 380;   // last expanded width, restored after collapsing
+let sidebarCollapsed = false;
+
+function applySidebarWidth(w){
+  sidebar.style.width = w + "px";
+  sidebar.style.minWidth = w + "px";
+  toggleBtn.style.left = (w + 8) + "px";
+}
+applySidebarWidth(sidebarWidth);
+
+toggleBtn.addEventListener("click",()=>{
+  sidebarCollapsed = !sidebarCollapsed;
+  sidebar.classList.toggle("collapsed", sidebarCollapsed);
+  toggleBtn.classList.toggle("collapsed", sidebarCollapsed);
+  toggleBtn.textContent = sidebarCollapsed ? "▶" : "◀";
+  applySidebarWidth(sidebarCollapsed ? 0 : sidebarWidth);
+  hideMapPopup();
+});
+
+// Free-drag resize — user can set any width between SIDEBAR_MIN and SIDEBAR_MAX
+sidebarResizer.addEventListener("pointerdown",(ev)=>{
+  if(sidebarCollapsed) return;
+  ev.preventDefault();
+  sidebarResizer.setPointerCapture(ev.pointerId);
+  sidebarResizer.classList.add("active");
+  sidebar.classList.add("resizing");
+  toggleBtn.classList.add("resizing");
+
+  const onMove = (mv)=>{
+    const w = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, mv.clientX));
+    sidebarWidth = w;
+    applySidebarWidth(w);
+  };
+  const onUp = (up)=>{
+    sidebarResizer.releasePointerCapture(up.pointerId);
+    sidebarResizer.classList.remove("active");
+    sidebar.classList.remove("resizing");
+    toggleBtn.classList.remove("resizing");
+    sidebarResizer.removeEventListener("pointermove", onMove);
+    sidebarResizer.removeEventListener("pointerup", onUp);
+  };
+  sidebarResizer.addEventListener("pointermove", onMove);
+  sidebarResizer.addEventListener("pointerup", onUp);
+});
+
+// Click a tool photo in the sidebar table to view it enlarged
+const imgLightbox = document.getElementById("imgLightbox");
+const imgLightboxImg = document.getElementById("imgLightboxImg");
+document.getElementById("detailPane").addEventListener("click",(ev)=>{
+  const img = ev.target.closest(".eq-photo");
+  if(!img) return;
+  imgLightboxImg.src = img.dataset.zoom || img.src;
+  imgLightbox.classList.add("open");
+});
+// Same thing for the floating map popup card (click a province/org area on the map)
+document.getElementById("mapPopup").addEventListener("click",(ev)=>{
+  const img = ev.target.closest(".eq-photo");
+  if(!img) return;
+  imgLightboxImg.src = img.dataset.zoom || img.src;
+  imgLightbox.classList.add("open");
+});
+// Click a tool photo in the main equipment table (below) to view it enlarged too
+document.getElementById("toolTableBody").addEventListener("click",(ev)=>{
+  const img = ev.target.closest(".tool-thumb");
+  if(!img) return;
+  imgLightboxImg.src = img.dataset.zoom || img.src;
+  imgLightbox.classList.add("open");
+});
+imgLightbox.addEventListener("click", ()=>{
+  imgLightbox.classList.remove("open");
+  imgLightboxImg.src = "";
+});
+
+/* =========================================================
+   13. Go
+   ========================================================= */
+initMap();
+
+
+/* ======================= DATA ======================= */
+const SAMPLE_DATA = [];
+
+const FIELD_LABELS = {
+  cat:'ประเภทเครื่องมือ', item:'เครื่องมือ', unit:'หน่วยงาน', year:'ปีที่ได้มา',
+  age:'อายุของเครื่อง', cond:'สถานะเครื่องมือ', cal:'สถานะสอบเทียบ', use:'สถานะการใช้งาน'
+};
+
+const CAT_COLORS = {
+  'ด้านน้ำ':'#1E4E8C', 'ด้านอากาศ':'#3B82C4', 'ด้านดิน':'#B0793E', 'ด้านฉุกเฉิน':'#C0503F'
+};
+const USE_COLORS = { 'ใช้งานได้':'#2F9E68', 'ชำรุด':'#C0392B' };
+const CAL_COLORS = {
+  'สอบเทียบแล้ว':'#5AC2E8', 'ไม่ต้องส่งสอบเทียบ':'#F2A6C1', 'รอสอบเทียบ':'#D64545', 'ไม่เคยสอบเทียบ':'#F0A94E'
+};
+const PALETTE = ['#3D4FE0','#3B82C4','#F0A94E','#C0503F','#7A5FC2','#5AC2E8','#B0793E','#2F9E68','#C25FA0','#8A9A46','#D64545','#5F7AC2','#C29A5F','#4EA3A0','#A65FC2','#6FA85F','#3E8A9E','#9E5F3E','#5F9E7A','#9E3E6F'];
+
+let currentData = [];
+let filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+let tableSort = { key:'count', dir:'desc' };
+let tableFilterItem = null;
+let tableSearchText = '';
+let sortState = {name:'asc', count:'desc'};
+
+/* ======================= CHART TYPE PREFERENCES ======================= */
+// ผู้ใช้สามารถเลือกรูปแบบกราฟที่ต้องการดูเองได้ในแต่ละส่วน
+let chartTypes = {
+  yearlyTrend: 'line',   // line | bar
+  catDonut: 'donut',     // donut | pie | bar
+  topUnits: 'list',      // list | pie | donut
+  topItems: 'list',      // list | pie | donut
+  usePie: 'bar',         // pie | donut | bar  (เริ่มต้นที่ง่ายสุด)
+  catPie: 'bar',         // pie | donut | bar  (เริ่มต้นที่ง่ายสุด)
+  calBar: 'grouped'      // grouped | total
+};
+
+// จำนวนหน่วยงาน / รายการ / ปี (Top N) ที่จะแสดงในแต่ละกราฟ ผู้ใช้ปรับได้เอง
+let topN = { calBar: 8, yearlyTrend: 8, catDonut: 4, topUnits: 10, topItems: 10 };
+
+function initTopNControls(){
+  document.querySelectorAll('.topn-select').forEach(sel=>{
+    const key = sel.dataset.key;
+    sel.value = String(topN[key]);
+    sel.addEventListener('change', ()=>{
+      topN[key] = parseInt(sel.value, 10);
+      refreshAll();
+    });
+  });
+}
+
+const CHART_TYPE_OPTIONS = {
+  yearlyTrend: [ {v:'line', l:'เส้น'}, {v:'bar', l:'แท่ง'} ],
+  catDonut: [ {v:'donut', l:'โดนัท'}, {v:'pie', l:'วงกลม'}, {v:'bar', l:'แท่งแนวนอน'} ],
+  topUnits: [ {v:'list', l:'แท่งรายการ'}, {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'} ],
+  topItems: [ {v:'list', l:'แท่งรายการ'}, {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'} ],
+  usePie: [ {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'}, {v:'bar', l:'แท่งแนวนอน'} ],
+  catPie: [ {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'}, {v:'bar', l:'แท่งแนวนอน'} ],
+  calBar: [ {v:'grouped', l:'แท่งเทียบ'}, {v:'total', l:'แท่งรวม (ง่ายสุด)'} ]
+};
+
+function initChartSwitchers(){
+  document.querySelectorAll('.chart-switch').forEach(wrap=>{
+    const key = wrap.dataset.key;
+    const opts = CHART_TYPE_OPTIONS[key];
+    if(!opts) return;
+    wrap.innerHTML = opts.map(o=>`<button type="button" data-v="${o.v}">${o.l}</button>`).join('');
+    Array.from(wrap.children).forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.v === chartTypes[key]);
+      btn.onclick = ()=>{
+        chartTypes[key] = btn.dataset.v;
+        Array.from(wrap.children).forEach(b=>b.classList.toggle('active', b===btn));
+        refreshAll();
+      };
+    });
+  });
+}
+
+/* ======================= HELPERS ======================= */
+function uniqSorted(arr, key){
+  const s = new Set();
+  arr.forEach(r => { if(r[key] !== null && r[key] !== undefined && r[key] !== '') s.add(r[key]); });
+  return Array.from(s).sort((a,b)=> (typeof a === 'number' && typeof b === 'number') ? a-b : String(a).localeCompare(String(b),'th'));
+}
+
+function applyFilters(data, excludeKey){
+  return data.filter(r=>{
+    for(const k of ['cat','unit','cal','cond','age','use','year']){
+      if(k===excludeKey) continue;
+      if(filters[k] !== null && r[k] !== filters[k]) return false;
+    }
+    if(filters.search){
+      const q = filters.search.toLowerCase();
+      const hay = ((r.item||'')+' '+(r.unit||'')+' '+(r.cat||'')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function countBy(data, key){
+  const m = new Map();
+  data.forEach(r=>{
+    const v = r[key] ?? '(ไม่ระบุ)';
+    m.set(v, (m.get(v)||0)+1);
+  });
+  return m;
+}
+
+function fmt(n){ return n.toLocaleString('en-US'); }
+
+function toggleFilter(key, value){
+  filters[key] = (filters[key] === value) ? null : value;
+  refreshAll();
+}
+
+/* ======================= FILTER UI ======================= */
+function populateSelect(id, key, data){
+  const sel = document.getElementById(id);
+  const vals = uniqSorted(data, key);
+  const cur = filters[key];
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}" ${cur===v?'selected':''}>${v}</option>`).join('');
+}
+
+function renderActiveFilters(){
+  const wrap = document.getElementById('activeFilters');
+  wrap.innerHTML='';
+  ['cat','unit','cal','cond','age','use','year'].forEach(k=>{
+    if(filters[k] !== null){
+      const chip = document.createElement('div');
+      chip.className='chip';
+      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${filters[k]}</span><button data-k="${k}">✕</button>`;
+      chip.querySelector('button').onclick = ()=>{ filters[k]=null; refreshAll(); };
+      wrap.appendChild(chip);
+    }
+  });
+}
+
+function refreshFilterOptions(){
+  populateSelect('f-cat','cat', applyFilters(currentData,'cat'));
+  populateSelect('f-unit','unit', applyFilters(currentData,'unit'));
+  populateSelect('f-cal','cal', applyFilters(currentData,'cal'));
+  populateSelect('f-cond','cond', applyFilters(currentData,'cond'));
+  populateSelect('f-age','age', applyFilters(currentData,'age'));
+  populateSelect('f-use','use', applyFilters(currentData,'use'));
+}
+
+/* ======================= KPIs ======================= */
+function renderKPIs(filtered, total){
+  document.getElementById('kpiTotal').textContent = fmt(filtered.length);
+  document.getElementById('kpiTotalFoot').textContent = `จากทั้งหมด ${fmt(total)} รายการ`;
+  document.getElementById('kpiItems').textContent = fmt(new Set(filtered.map(r=>r.item)).size);
+  const ok = filtered.filter(r=>r.use==='ใช้งานได้').length;
+  const broken = filtered.filter(r=>r.use==='ชำรุด').length;
+  document.getElementById('kpiOk').textContent = fmt(ok);
+  document.getElementById('kpiBroken').textContent = fmt(broken);
+  document.getElementById('kpiOkPct').textContent = filtered.length ? (ok/filtered.length*100).toFixed(1)+'%' : '0%';
+  document.getElementById('kpiBrokenPct').textContent = filtered.length ? (broken/filtered.length*100).toFixed(1)+'%' : '0%';
+}
+
+/* ======================= SVG CHART PRIMITIVES ======================= */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){
+  const el = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function clearNode(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+function stackedBarSVG(container, {labels, series, width=760, height=280, onBarClick}){
+  clearNode(container);
+  if(!labels.length){
+    container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>';
+    return;
+  }
+  const padding = {top:14, right:14, bottom:78, left:50};
+  const plotW = width - padding.left - padding.right;
+  const plotH = height - padding.top - padding.bottom;
+  const totals = labels.map((_,i)=> series.reduce((s,ser)=> s+(ser.values[i]||0), 0));
+  const maxTotal = Math.max(1, ...totals);
+  const niceMax = Math.ceil(maxTotal/5)*5 || 5;
+  const gap = plotW/labels.length;
+  const barW = Math.min(gap*0.55, 52);
+
+  const svg = svgEl('svg', {viewBox:`0 0 ${width} ${height}`, preserveAspectRatio:'xMidYMid meet'});
+
+  const ticks = 4;
+  for(let t=0; t<=ticks; t++){
+    const val = niceMax/ticks*t;
+    const y = padding.top + plotH - (val/niceMax)*plotH;
+    svg.appendChild(svgEl('line',{x1:padding.left, x2:width-padding.right, y1:y, y2:y, stroke:'#E3E8E6', 'stroke-width':1}));
+    const txt = svgEl('text', {x:padding.left-8, y:y+3.5, 'text-anchor':'end', 'font-size':10, fill:cv('--ink-faint'), 'font-family':'JetBrains Mono, monospace'});
+    txt.textContent = Math.round(val).toLocaleString('en-US');
+    svg.appendChild(txt);
+  }
+
+  labels.forEach((lab, i)=>{
+    let yOffset = 0;
+    const x = padding.left + gap*i + (gap-barW)/2;
+    series.forEach((ser)=>{
+      const v = ser.values[i] || 0;
+      if(v>0){
+        const h = Math.max((v/niceMax)*plotH, 1);
+        const y = padding.top + plotH - yOffset - h;
+        const rect = svgEl('rect', {x:x.toFixed(2), y:y.toFixed(2), width:barW.toFixed(2), height:h.toFixed(2), fill:ser.color, rx:1});
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', ()=> onBarClick && onBarClick(lab, ser.name));
+        const title = svgEl('title'); title.textContent = `${lab} · ${ser.name}: ${fmt(v)}`;
+        rect.appendChild(title);
+        svg.appendChild(rect);
+        if(h >= 15){
+          const labelTxt = svgEl('text', {x:(x+barW/2).toFixed(2), y:(y+h/2+3.5).toFixed(2), 'text-anchor':'middle', 'font-size':9.5, fill:'#fff', 'font-family':'JetBrains Mono, monospace', 'pointer-events':'none'});
+          labelTxt.textContent = fmt(v);
+          svg.appendChild(labelTxt);
+        }
+        yOffset += h;
+      }
+    });
+    if(yOffset > 0){
+      const totalTxt = svgEl('text', {x:(x+barW/2).toFixed(2), y:(padding.top+plotH-yOffset-4).toFixed(2), 'text-anchor':'middle', 'font-size':10.5, fill:'#33413C', 'font-weight':'600'});
+      totalTxt.textContent = fmt(totals[i]);
+      svg.appendChild(totalTxt);
+    }
+    const lx = x+barW/2;
+    const ly = padding.top+plotH+14;
+    const shortLab = lab.length > 14 ? lab.slice(0,13)+'…' : lab;
+    const txt = svgEl('text', {x:lx.toFixed(2), y:ly, 'text-anchor':'end', 'font-size':10, fill:cv('--ink-soft'), transform:`rotate(-35 ${lx.toFixed(2)} ${ly})`});
+    txt.textContent = shortLab;
+    const title = svgEl('title'); title.textContent = lab;
+    txt.appendChild(title);
+    svg.appendChild(txt);
+  });
+
+  svg.appendChild(svgEl('line',{x1:padding.left,x2:padding.left,y1:padding.top,y2:padding.top+plotH, stroke:cv('--line')}));
+  svg.appendChild(svgEl('line',{x1:padding.left,x2:width-padding.right,y1:padding.top+plotH,y2:padding.top+plotH, stroke:cv('--line')}));
+
+  container.appendChild(svg);
+}
+
+function pieSVG(container, {labels, data, colors, donut=false, size=200, onSliceClick}){
+  clearNode(container);
+  const total = data.reduce((a,b)=>a+b,0);
+  if(!total){
+    container.innerHTML = '<div class="empty-state" style="padding:10px;">ไม่มีข้อมูล</div>';
+    return;
+  }
+  const cx=size/2, cy=size/2, r=size/2-4, rInner = donut? r*0.55:0;
+  const svg = svgEl('svg', {viewBox:`0 0 ${size} ${size}`});
+  let angle = -Math.PI/2;
+  labels.forEach((lab,i)=>{
+    const val = data[i];
+    if(val<=0) return;
+    const frac = val/total;
+    const a0 = angle;
+    const a1 = angle + frac*Math.PI*2;
+    angle = a1;
+    const largeArc = (a1-a0) > Math.PI ? 1:0;
+    const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    let d;
+    if(donut){
+      const xi0 = cx + rInner*Math.cos(a0), yi0 = cy + rInner*Math.sin(a0);
+      const xi1 = cx + rInner*Math.cos(a1), yi1 = cy + rInner*Math.sin(a1);
+      d = `M ${xi0} ${yi0} L ${x0} ${y0} A ${r} ${r} 0 ${largeArc} 1 ${x1} ${y1} L ${xi1} ${yi1} A ${rInner} ${rInner} 0 ${largeArc} 0 ${xi0} ${yi0} Z`;
+    } else {
+      d = `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${largeArc} 1 ${x1} ${y1} Z`;
+    }
+    const path = svgEl('path', {d, fill:colors[i % colors.length], stroke:'#fff', 'stroke-width':2});
+    path.style.cursor='pointer';
+    path.addEventListener('click', ()=> onSliceClick && onSliceClick(lab));
+    const title = svgEl('title'); title.textContent = `${lab}: ${fmt(val)} (${(frac*100).toFixed(1)}%)`;
+    path.appendChild(title);
+    svg.appendChild(path);
+
+    if(frac >= 0.045){
+      const midA = (a0+a1)/2;
+      const labelR = donut ? (r+rInner)/2 : r*0.66;
+      const lx = cx + labelR*Math.cos(midA);
+      const ly = cy + labelR*Math.sin(midA);
+      const labelTxt = svgEl('text', {x:lx.toFixed(2), y:(ly+4).toFixed(2), 'text-anchor':'middle', 'font-size':11, fill:'#fff', 'font-weight':'600', 'pointer-events':'none'});
+      labelTxt.textContent = frac >= 0.09 ? `${fmt(val)} (${(frac*100).toFixed(0)}%)` : fmt(val);
+      svg.appendChild(labelTxt);
+    }
+  });
+  container.appendChild(svg);
+}
+
+function groupedBarSVG(container, {labels, series, width=760, height=280, onBarClick}){
+  clearNode(container);
+  if(!labels.length){
+    container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>';
+    return;
+  }
+  const padding = {top:30, right:14, bottom:96, left:58};
+  const plotW = width - padding.left - padding.right;
+  const plotH = height - padding.top - padding.bottom;
+  const maxVal = Math.max(1, ...labels.map((_,i)=> Math.max(...series.map(ser=>ser.values[i]||0))));
+  const niceMax = Math.ceil(maxVal/5)*5 || 5;
+  const gap = plotW/labels.length;
+  const groupW = gap*0.9;
+  const barW = Math.min(groupW/series.length, 46);
+
+  const svg = svgEl('svg', {viewBox:`0 0 ${width} ${height}`, preserveAspectRatio:'xMidYMid meet'});
+
+  const ticks = 4;
+  for(let t=0; t<=ticks; t++){
+    const val = niceMax/ticks*t;
+    const y = padding.top + plotH - (val/niceMax)*plotH;
+    svg.appendChild(svgEl('line',{x1:padding.left, x2:width-padding.right, y1:y, y2:y, stroke:'#E3E8E6', 'stroke-width':1}));
+    const txt = svgEl('text', {x:padding.left-8, y:y+3.5, 'text-anchor':'end', 'font-size':13, fill:cv('--ink-faint'), 'font-family':'JetBrains Mono, monospace'});
+    txt.textContent = Math.round(val).toLocaleString('en-US');
+    svg.appendChild(txt);
+  }
+
+  labels.forEach((lab, i)=>{
+    const groupX = padding.left + gap*i + (gap-groupW)/2 + (groupW - barW*series.length)/2;
+    series.forEach((ser, si)=>{
+      const v = ser.values[i] || 0;
+      const h = v>0 ? Math.max((v/niceMax)*plotH, 1) : 0;
+      const x = groupX + si*barW;
+      const y = padding.top + plotH - h;
+      if(v>0){
+        const rect = svgEl('rect', {x:x.toFixed(2), y:y.toFixed(2), width:(barW-1.5).toFixed(2), height:h.toFixed(2), fill:ser.color, rx:2});
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', ()=> onBarClick && onBarClick(lab, ser.name));
+        const title = svgEl('title'); title.textContent = `${lab} · ${ser.name}: ${fmt(v)}`;
+        rect.appendChild(title);
+        svg.appendChild(rect);
+        // Value label above every bar (font shrinks a bit for narrow bars so it never
+        // gets clipped), rotated on narrow bars so digits don't overlap each other.
+        const labelSize = barW >= 16 ? 13 : (barW >= 10 ? 11 : 9.5);
+        const rotateLabel = barW < 14;
+        const lxc = (x+(barW-1.5)/2).toFixed(2);
+        const lyc = Math.max(y-4, padding.top-12).toFixed(2);
+        const labelAttrs = {x:lxc, y:lyc, 'text-anchor':'middle', 'font-size':labelSize, 'font-weight':700, fill:cv('--ink'), 'pointer-events':'none'};
+        if(rotateLabel) labelAttrs.transform = `rotate(-60 ${lxc} ${lyc})`;
+        const labelTxt = svgEl('text', labelAttrs);
+        labelTxt.textContent = fmt(v);
+        svg.appendChild(labelTxt);
+      }
+    });
+    const lx = padding.left + gap*i + gap/2;
+    const ly = padding.top+plotH+16;
+    const shortLab = lab.length > 16 ? lab.slice(0,15)+'…' : lab;
+    const txt = svgEl('text', {x:lx.toFixed(2), y:ly, 'text-anchor':'end', 'font-size':13, 'font-weight':600, fill:cv('--ink-soft'), transform:`rotate(-35 ${lx.toFixed(2)} ${ly})`});
+    txt.textContent = shortLab;
+    const title = svgEl('title'); title.textContent = lab;
+    txt.appendChild(title);
+    svg.appendChild(txt);
+  });
+
+  svg.appendChild(svgEl('line',{x1:padding.left,x2:padding.left,y1:padding.top,y2:padding.top+plotH, stroke:cv('--line')}));
+  svg.appendChild(svgEl('line',{x1:padding.left,x2:width-padding.right,y1:padding.top+plotH,y2:padding.top+plotH, stroke:cv('--line')}));
+
+  container.appendChild(svg);
+}
+
+function hBarSVG(container, {labels, data, colors, width=760, height, onBarClick}){
+  clearNode(container);
+  if(!labels.length || !data.reduce((a,b)=>a+b,0)){
+    container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>';
+    return;
+  }
+  // เรียงจากมากไปน้อย เพื่อให้อ่านง่ายที่สุด
+  const idx = labels.map((_,i)=>i).sort((a,b)=> data[b]-data[a]);
+  const sLabels = idx.map(i=>labels[i]);
+  const sData = idx.map(i=>data[i]);
+  const sColors = idx.map(i=>colors[i]);
+
+  const rowH = 34;
+  const padding = {top:6, right:60, bottom:6, left:170};
+  const plotH = sLabels.length*rowH;
+  const h = height || (padding.top+padding.bottom+plotH);
+  const plotW = width - padding.left - padding.right;
+  const maxVal = Math.max(1, ...sData);
+
+  const svg = svgEl('svg', {viewBox:`0 0 ${width} ${h}`, preserveAspectRatio:'xMidYMid meet'});
+
+  sLabels.forEach((lab, i)=>{
+    const y = padding.top + i*rowH;
+    const v = sData[i];
+    const barW = Math.max((v/maxVal)*plotW, 2);
+
+    const shortLab = lab.length > 22 ? lab.slice(0,21)+'…' : lab;
+    const labTxt = svgEl('text', {x:padding.left-8, y:y+rowH/2+4, 'text-anchor':'end', 'font-size':13, fill:cv('--ink-soft')});
+    labTxt.textContent = shortLab;
+    const labTitle = svgEl('title'); labTitle.textContent = lab;
+    labTxt.appendChild(labTitle);
+    svg.appendChild(labTxt);
+
+    const track = svgEl('rect', {x:padding.left, y:y+5, width:plotW, height:rowH-11, rx:4, fill:cv('--surface-soft')});
+    svg.appendChild(track);
+
+    const rect = svgEl('rect', {x:padding.left, y:y+5, width:barW.toFixed(2), height:rowH-11, rx:4, fill:sColors[i]});
+    rect.style.cursor = 'pointer';
+    rect.addEventListener('click', ()=> onBarClick && onBarClick(lab));
+    const title = svgEl('title'); title.textContent = `${lab}: ${fmt(v)}`;
+    rect.appendChild(title);
+    svg.appendChild(rect);
+
+    const valTxt = svgEl('text', {x:padding.left+plotW+8, y:y+rowH/2+4, 'font-size':12.5, fill:cv('--ink-soft'), 'font-family':'JetBrains Mono, monospace'});
+    valTxt.textContent = fmt(v);
+    svg.appendChild(valTxt);
+  });
+
+  container.appendChild(svg);
+  container.style.height = h+'px';
+}
+
+function renderLegendList(container, items, activeValue, onClick){
+  clearNode(container);
+  items.forEach(it=>{
+    const row = document.createElement('div');
+    row.className = 'legend-item' + (activeValue && activeValue !== it.label ? ' dim' : '');
+    row.innerHTML = `<span class="sw" style="background:${it.color}"></span><span>${it.label}</span><span class="n">${fmt(it.value)}</span>`;
+    row.onclick = ()=> onClick(it.label);
+    container.appendChild(row);
+  });
+}
+
+/* ======================= CHART RENDERERS ======================= */
+function renderUsePie(filtered){
+  const m = countBy(filtered,'use');
+  const labels = Array.from(m.keys());
+  const data = Array.from(m.values());
+  const colors = labels.map(l=>USE_COLORS[l] || '#999');
+
+  const container = document.getElementById('chartUsePie');
+  const mode = chartTypes.usePie;
+  const onClick = (lab)=> toggleFilter('use', lab);
+
+  if(mode === 'bar'){
+    container.style.width = '100%'; container.style.height = 'auto';
+    container.parentElement.classList.remove('compact');
+    hBarSVG(container, { labels, data, colors, onBarClick: onClick });
+  } else {
+    container.style.width = '240px'; container.style.height = '240px';
+    container.parentElement.classList.add('compact');
+    pieSVG(container, { labels, data, colors, donut: mode==='donut', size:240, onSliceClick: onClick });
+  }
+  const legendItems = labels.map((l,i)=>({label:l, color:colors[i], value:data[i]}));
+  renderLegendList(document.getElementById('legendUsePie'), legendItems, filters.use, onClick);
+  document.getElementById('legendUsePie').style.display = mode === 'bar' ? 'none' : '';
+}
+
+function renderCatPie(filtered){
+  const m = countBy(filtered,'cat');
+  const labels = Array.from(m.keys());
+  const data = Array.from(m.values());
+  const colors = labels.map(l=>CAT_COLORS[l] || '#999');
+
+  const container = document.getElementById('chartCatPie');
+  const mode = chartTypes.catPie;
+  const onClick = (lab)=> toggleFilter('cat', lab);
+
+  if(mode === 'bar'){
+    container.style.width = '100%'; container.style.height = 'auto';
+    container.parentElement.classList.remove('compact');
+    hBarSVG(container, { labels, data, colors, onBarClick: onClick });
+  } else {
+    container.style.width = '240px'; container.style.height = '240px';
+    container.parentElement.classList.add('compact');
+    pieSVG(container, { labels, data, colors, donut: mode==='donut', size:240, onSliceClick: onClick });
+  }
+  const legendItems = labels.map((l,i)=>({label:l, color:colors[i], value:data[i]}));
+  renderLegendList(document.getElementById('legendCatPie'), legendItems, filters.cat, onClick);
+  document.getElementById('legendCatPie').style.display = mode === 'bar' ? 'none' : '';
+}
+
+function renderCalBar(filtered){
+  const unitTotals = countBy(filtered,'unit');
+  const units = Array.from(unitTotals.entries()).sort((a,b)=>b[1]-a[1]).slice(0,topN.calBar).map(e=>e[0]);
+  const calTypes = ['สอบเทียบแล้ว','ไม่ต้องส่งสอบเทียบ','รอสอบเทียบ','ไม่เคยสอบเทียบ'];
+
+  const series = calTypes.map(ct=>({
+    name: ct,
+    color: CAL_COLORS[ct],
+    values: units.map(u => filtered.filter(r=>r.unit===u && r.cal===ct).length)
+  }));
+
+  const container = document.getElementById('chartCalBar');
+  const mode = chartTypes.calBar;
+
+  if(mode === 'total'){
+    container.style.width = '100%';
+    const data = units.map(u => unitTotals.get(u) || 0);
+    hBarSVG(container, {
+      labels: units, data, colors: units.map((_,i)=>PALETTE[i % PALETTE.length]),
+      onBarClick: (unitLab)=> toggleFilter('unit', unitLab)
+    });
+  } else {
+    container.style.height = container.dataset.expandedHeight || '600px';
+    const wCal = container.clientWidth || 900;
+    groupedBarSVG(container, {
+      labels: units, series, width: wCal, height:600,
+      onBarClick: (unitLab, calLab)=>{ toggleFilter('unit', unitLab); toggleFilter('cal', calLab); }
+    });
+  }
+  const legendItems = series.map(s=>({label:s.name, color:s.color, value:s.values.reduce((a,b)=>a+b,0)}));
+  renderLegendList(document.getElementById('legendCalBar'), legendItems, filters.cal, (lab)=>toggleFilter('cal', lab));
+  document.getElementById('legendCalBar').style.display = mode === 'total' ? 'none' : '';
+}
+
+/* ======================= TABLE ======================= */
+function renderTable(filtered){
+  const grouped = new Map();
+  filtered.forEach(r=>{
+    const name = r.item ?? '(ไม่ระบุ)';
+    if(!grouped.has(name)) grouped.set(name, {name, count:0, img:null});
+    const g = grouped.get(name);
+    g.count++;
+    if(!g.img && r.img) g.img = r.img;
+  });
+  let rows = Array.from(grouped.values());
+  if(tableSearchText){
+    const q = tableSearchText.toLowerCase();
+    rows = rows.filter(r=>r.name.toLowerCase().includes(q));
+  }
+  rows.sort((a,b)=>{
+    let av = tableSort.key==='name'? a.name : a.count;
+    let bv = tableSort.key==='name'? b.name : b.count;
+    let cmp = (typeof av==='string') ? av.localeCompare(bv,'th') : av-bv;
+    return tableSort.dir==='asc' ? cmp : -cmp;
+  });
+  const max = rows.length ? Math.max(...rows.map(r=>r.count)) : 1;
+  const tbody = document.getElementById('toolTableBody');
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>`
+    <tr class="${tableFilterItem===r.name?'sel':''}" data-name="${encodeURIComponent(r.name)}">
+      <td>${r.img
+        ? `<img class="tool-thumb" src="${r.img}" alt="${r.name}" loading="lazy" onerror="this.outerHTML='<div class=&quot;tool-thumb-placeholder&quot;>🔧</div>';">`
+        : `<div class="tool-thumb-placeholder">🔧</div>`}</td>
+      <td>${r.name}</td>
+      <td>
+        <div class="bar-cell">
+          <span class="num" style="width:34px;">${fmt(r.count)}</span>
+          <div class="track"><div class="fill" style="width:${(r.count/max*100).toFixed(1)}%;"></div></div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  Array.from(tbody.querySelectorAll('tr')).forEach(tr=>{
+    tr.onclick = ()=>{
+      const name = decodeURIComponent(tr.dataset.name);
+      if(tableFilterItem === name){ tableFilterItem = null; filters.search=''; }
+      else{ tableFilterItem = name; filters.search = name; }
+      document.getElementById('searchInput').value = filters.search;
+      refreshAll();
+    };
+  });
+}
+
+/* ======================= MASTER REFRESH ======================= */
+/* ======================= OVERVIEW SECTION (screenshot-style) ======================= */
+// ---- Color helpers: build a light -> dark gradient scale from a single base color ----
+function hexToRgbParts(hex){
+  hex = hex.trim();
+  if(hex.startsWith('#')){
+    let h = hex.slice(1);
+    if(h.length===3) h = h.split('').map(c=>c+c).join('');
+    const num = parseInt(h,16);
+    return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+  }
+  const m = hex.match(/[\d.]+/g) || [0,0,0];
+  return { r:+m[0], g:+m[1], b:+m[2] };
+}
+function rgbToHslParts(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h=0, s=0, l=(max+min)/2;
+  if(max!==min){
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d+(g<b?6:0); break;
+      case g: h=(b-r)/d+2; break;
+      default: h=(r-g)/d+4;
+    }
+    h/=6;
+  }
+  return { h:h*360, s:s*100, l:l*100 };
+}
+function hslToHex(h,s,l){
+  h/=360; s/=100; l/=100;
+  let r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    const hue2rgb=(p,q,t)=>{
+      if(t<0) t+=1;
+      if(t>1) t-=1;
+      if(t<1/6) return p+(q-p)*6*t;
+      if(t<1/2) return q;
+      if(t<2/3) return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    const q = l<0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+  }
+  const toHex = v => Math.round(v*255).toString(16).padStart(2,'0');
+  return '#'+toHex(r)+toHex(g)+toHex(b);
+}
+// ratio 0..1 (relative to the series max) -> lighter for small values, full/deep color for large ones
+function barGradientColor(baseColor, ratio){
+  const rgb = hexToRgbParts(baseColor);
+  const hsl = rgbToHslParts(rgb.r, rgb.g, rgb.b);
+  const r = Math.max(0, Math.min(1, ratio));
+  const maxL = Math.min(hsl.l + 34, 90);   // lightest tint, small values
+  const minL = Math.max(hsl.l - 8, 16);    // deepest shade, largest value
+  const l = maxL - r*(maxL - minL);
+  const s = Math.min(hsl.s + 6, 100);
+  return hslToHex(hsl.h, s, l);
+}
+// rank = 0 for the biggest value, total = how many items in the series.
+// Splits the series into a handful of clearly distinct shades (dark = high, light = low)
+// instead of one smooth blend, so the difference reads clearly even when the data is skewed.
+function tieredBarColor(baseColor, rank, total){
+  const rgb = hexToRgbParts(baseColor);
+  const hsl = rgbToHslParts(rgb.r, rgb.g, rgb.b);
+  const tierCount = Math.max(1, Math.min(5, total));
+  const tier = tierCount > 1 ? Math.min(tierCount-1, Math.floor((rank/total)*tierCount)) : 0;
+  const maxL = Math.min(hsl.l + 42, 92);   // lightest tier (rank = lowest value)
+  const minL = Math.max(hsl.l - 16, 10);   // darkest tier (rank 0 = highest value)
+  const step = tierCount > 1 ? (maxL-minL)/(tierCount-1) : 0;
+  const l = minL + tier*step;
+  const s = Math.min(hsl.s + 10, 100);
+  return hslToHex(hsl.h, s, l);
+}
+// stable rank (0 = highest value) for every index in a values array, ties keep original order
+function valueRanks(values){
+  const order = values.map((v,i)=>i).sort((a,b)=> values[b]-values[a] || a-b);
+  const ranks = new Array(values.length);
+  order.forEach((idx,rank)=>{ ranks[idx] = rank; });
+  return ranks;
+}
+
+function lineAreaChart(containerId, values, labels, color, mode='line'){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!values.length){ el.innerHTML = '<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>'; return; }
+  const manyLabels = labels.length > 8;
+  const W = 520, H = 230, padL = 44, padR = 14, padB = manyLabels ? 40 : 28;
+  const padT = mode === 'bar' ? 26 : 20;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const actualMax = Math.max(1, ...values);
+  const max = actualMax * (mode === 'bar' ? 1.22 : 1.15);
+
+  // when there are many years, angle the labels and shrink them so digits never run into each other
+  function xLabel(x, label){
+    if(manyLabels){
+      const y = H - padB + 16;
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="end" transform="rotate(-40 ${x.toFixed(1)} ${y.toFixed(1)})" class="axis-label" style="font-size:9.5px;">${label}</text>`;
+    }
+    return `<text x="${x.toFixed(1)}" y="${(H-8).toFixed(1)}" text-anchor="middle" class="axis-label" style="font-size:10.5px;">${label}</text>`;
+  }
+
+  let grid = '';
+  const gridCount = 4;
+  for(let g=0; g<=gridCount; g++){
+    const y = padT + innerH - (g/gridCount)*innerH;
+    const val = Math.round((g/gridCount)*max);
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;
+    grid += `<text x="${padL-8}" y="${(y+3).toFixed(1)}" text-anchor="end" class="axis-label">${val}</text>`;
+  }
+
+  let mainMarkup = '', valueLabels = '', xLabels = '';
+
+  if(mode === 'bar'){
+    const segW = innerW / values.length;
+    const barW = Math.min(segW*0.6, 46);
+    const ranks = valueRanks(values);
+    // font size shrinks as bars get denser so labels never grow wider than their own column
+    const labelFontSize = Math.max(8.5, Math.min(12, segW*0.34)).toFixed(1);
+    mainMarkup = values.map((v,i)=>{
+      const x = padL + i*segW + (segW-barW)/2;
+      const h = (v/max)*innerH;
+      const y = padT + innerH - h;
+      const fill = tieredBarColor(color, ranks[i], values.length);
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(h,0).toFixed(1)}" fill="${fill}" rx="3"/>`;
+    }).join('');
+    valueLabels = values.map((v,i)=>{
+      const x = padL + i*segW + segW/2;
+      const h = (v/max)*innerH;
+      // clamp so the label always stays clear of both the bar top and the grid area above it
+      const rawY = padT + innerH - h - 8;
+      const y = Math.max(rawY, padT - 4);
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" class="axis-label" style="font-size:${labelFontSize}px;font-weight:700;fill:${color};paint-order:stroke;stroke:var(--surface);stroke-width:3px;">${fmt(v)}</text>`;
+    }).join('');
+    xLabels = labels.map((l,i)=>{
+      const x = padL + i*segW + segW/2;
+      return xLabel(x, l);
+    }).join('');
+  } else {
+    const stepX = values.length > 1 ? innerW / (values.length - 1) : 0;
+    const pts = values.map((v,i)=>{
+      const x = padL + i*stepX;
+      const y = padT + innerH - (v/max)*innerH;
+      return [x,y];
+    });
+    const linePath = pts.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(1)},${(padT+innerH).toFixed(1)} L${pts[0][0].toFixed(1)},${(padT+innerH).toFixed(1)} Z`;
+    const dots = pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="var(--surface)" stroke="${color}" stroke-width="2.2"/>`).join('');
+    mainMarkup = `
+      <defs>
+        <linearGradient id="grad-${containerId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#grad-${containerId})" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}`;
+    valueLabels = pts.map((p,i)=>{
+      const prev = i>0 ? values[i-1] : null;
+      const next = i<values.length-1 ? values[i+1] : null;
+      // local valley (dips lower than both neighbours) -> put the number underneath,
+      // away from the two rising line segments that meet right above the point
+      const isValley = prev!==null && next!==null && values[i] < prev && values[i] < next;
+      const bottomLimit = H - padB - 12; // stay clear of the x-axis year labels
+      const topLimit = padT + 8;         // stay clear of the top grid line/number
+      let ly;
+      if(isValley && p[1] + 16 <= bottomLimit){
+        ly = p[1] + 16;
+      } else {
+        ly = p[1] - 10 < topLimit ? p[1] + 16 : p[1] - 10;
+      }
+      return `<text x="${p[0].toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" class="axis-label" style="font-size:11px;font-weight:700;fill:${color};paint-order:stroke;stroke:var(--surface);stroke-width:3px;">${fmt(values[i])}</text>`;
+    }).join('');
+    xLabels = labels.map((l,i)=>{
+      const x = padL + i*stepX;
+      return xLabel(x, l);
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:230px;">
+      ${grid}
+      ${mainMarkup}
+      ${valueLabels}
+      ${xLabels}
+    </svg>`;
+}
+
+function recentYears(filtered, count){
+  const m = countBy(filtered, 'year');
+  const years = [...m.keys()].filter(y=>y && y!=='(ไม่ระบุ)').sort((a,b)=> String(a).localeCompare(String(b), undefined, {numeric:true}));
+  return years.slice(-count);
+}
+
+function renderOverviewLines(filtered){
+  const years = recentYears(filtered, topN.yearlyTrend);
+  const totalMap = countBy(filtered, 'year');
+  const calRows = filtered.filter(r=>r.cal === 'สอบเทียบแล้ว');
+  const calMap = countBy(calRows, 'year');
+  const totalValues = years.map(y=> totalMap.get(y) || 0);
+  const calValues = years.map(y=> calMap.get(y) || 0);
+  const mode = chartTypes.yearlyTrend;
+  lineAreaChart('chartYearlyTotal', totalValues, years, resolveCssColor('--ok'), mode);
+  lineAreaChart('chartYearlyCal', calValues, years, resolveCssColor('--teal'), mode);
+}
+
+function resolveCssColor(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#3D4FE0';
+}
+
+function renderOverviewDonut(filtered){
+  const el = document.getElementById('chartOverviewDonut');
+  const legendEl = document.getElementById('legendOverviewDonut');
+  if(!el || !legendEl) return;
+  const m = countBy(filtered, 'cat');
+  const total = filtered.length || 1;
+  const allEntries = [...m.entries()].sort((a,b)=> b[1]-a[1]);
+  const TOP_N = topN.catDonut;
+  const top = allEntries.slice(0, TOP_N);
+  const rest = allEntries.slice(TOP_N);
+  const restTotal = rest.reduce((s,e)=>s+e[1],0);
+  const entries = restTotal > 0 ? [...top, ['อื่นๆ', restTotal]] : top;
+  if(!entries.length){ el.innerHTML = '<div class="empty-state">ไม่พบข้อมูล</div>'; legendEl.innerHTML=''; return; }
+
+  const labels = entries.map(e=>e[0]);
+  const data = entries.map(e=>e[1]);
+  const colors = labels.map(l=> CAT_COLORS[l] || '#8891C2');
+  const mode = chartTypes.catDonut;
+  const onClick = (lab)=>{ if(lab !== 'อื่นๆ') toggleFilter('cat', lab); };
+
+  if(mode === 'bar'){
+    el.style.display = 'block'; el.style.width = '100%'; el.style.height = 'auto';
+    hBarSVG(el, { labels, data, colors, onBarClick: onClick });
+  } else {
+    el.style.display = 'flex'; el.style.width = '190px'; el.style.height = '190px';
+    pieSVG(el, { labels, data, colors, donut: mode==='donut', size:190, onSliceClick: onClick });
+  }
+
+  legendEl.innerHTML = entries.map(([cat,count])=>{
+    const col = CAT_COLORS[cat] || '#8891C2';
+    const pct = ((count/total)*100).toFixed(0);
+    return `<div class="legend-item" style="cursor:default;">
+      <span class="sw" style="background:${col};border-radius:50%;"></span>
+      <span>${CATEGORY_LABEL[cat] || cat}</span>
+      <span class="n" style="margin-left:auto;">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+function topBarList(containerId, entries, color, mode='list'){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!entries.length){ el.innerHTML = '<div class="empty-state">ไม่พบข้อมูล</div>'; return; }
+
+  if(mode === 'pie' || mode === 'donut'){
+    const labels = entries.map(e=>e[0]);
+    const data = entries.map(e=>e[1]);
+    const colors = labels.map((_,i)=>PALETTE[i % PALETTE.length]);
+    el.innerHTML = '';
+    const outer = document.createElement('div');
+    outer.style.cssText = 'display:flex;flex-direction:column;align-items:center;width:100%;';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'width:220px;height:220px;';
+    const legend = document.createElement('div');
+    legend.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:6px;width:100%;';
+    legend.innerHTML = entries.map(([label,count],i)=>`
+      <div class="legend-item" style="cursor:default;">
+        <span class="sw" style="background:${colors[i]};border-radius:50%;"></span>
+        <span title="${label}">${label}</span>
+        <span class="n" style="margin-left:auto;">${fmt(count)}</span>
+      </div>`).join('');
+    outer.appendChild(wrap);
+    outer.appendChild(legend);
+    el.appendChild(outer);
+    pieSVG(wrap, { labels, data, colors, donut: mode==='donut', size:220 });
+    return;
+  }
+
+  el.style.display = ''; el.style.justifyContent = '';
+  const max = Math.max(...entries.map(e=>e[1]));
+  const ranks = valueRanks(entries.map(e=>e[1]));
+  el.innerHTML = entries.map(([label,count],i)=>{
+    const pct = Math.max(4, (count/max)*100);
+    const fill = tieredBarColor(color, ranks[i], entries.length);
+    return `<div class="top10-row">
+      <div class="t-label" title="${label}">${label}</div>
+      <div class="t-track"><div class="t-fill" style="width:${pct.toFixed(1)}%;background:${fill};"></div></div>
+      <div class="t-val">${fmt(count)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderOverviewTopBars(filtered){
+  const unitEntries = [...countBy(filtered,'unit').entries()].sort((a,b)=>b[1]-a[1]).slice(0,topN.topUnits);
+  const itemEntries = [...countBy(filtered,'item').entries()].sort((a,b)=>b[1]-a[1]).slice(0,topN.topItems);
+  topBarList('barTopUnits', unitEntries, resolveCssColor('--ok'), chartTypes.topUnits);
+  topBarList('barTopItems', itemEntries, resolveCssColor('--teal'), chartTypes.topItems);
+}
+
+function refreshAll(){
+  const hasData = currentData.length > 0;
+  document.getElementById('emptyStateMain').style.display = hasData ? 'none' : 'block';
+  document.getElementById('dashboardContent').style.display = hasData ? '' : 'none';
+  syncMapFromDashboard();
+  if(!hasData) return;
+  const filtered = applyFilters(currentData);
+  renderKPIs(filtered, currentData.length);
+  renderOverviewLines(filtered);
+  renderOverviewDonut(filtered);
+  renderOverviewTopBars(filtered);
+  renderUsePie(filtered);
+  renderCatPie(filtered);
+  renderCalBar(filtered);
+  renderTable(filtered);
+  renderActiveFilters();
+  syncSelectValues();
+}
+
+function syncSelectValues(){
+  document.getElementById('f-cat').value = filters.cat || '';
+  document.getElementById('f-unit').value = filters.unit || '';
+  document.getElementById('f-cal').value = filters.cal || '';
+  document.getElementById('f-cond').value = filters.cond || '';
+  document.getElementById('f-age').value = filters.age || '';
+  document.getElementById('f-use').value = filters.use || '';
+}
+
+/* ======================= EVENTS ======================= */
+['cat','unit','cal','cond','age','use'].forEach(k=>{
+  document.getElementById('f-'+k).addEventListener('change', e=>{
+    filters[k] = e.target.value || null;
+    refreshAll();
+  });
+});
+
+document.getElementById('searchInput').addEventListener('input', e=>{
+  filters.search = e.target.value.trim();
+  tableFilterItem = null;
+  refreshAll();
+});
+
+document.getElementById('tableSearch').addEventListener('input', e=>{
+  tableSearchText = e.target.value.trim();
+  renderTable(applyFilters(currentData));
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  tableFilterItem = null;
+  document.getElementById('searchInput').value='';
+  document.getElementById('tableSearch').value='';
+  tableSearchText='';
+  refreshAll();
+});
+
+document.getElementById('th-name').addEventListener('click', ()=>{
+  tableSort = {key:'name', dir: sortState.name};
+  sortState.name = sortState.name==='asc' ? 'desc':'asc';
+  renderTable(applyFilters(currentData));
+});
+document.getElementById('th-count').addEventListener('click', ()=>{
+  tableSort = {key:'count', dir: sortState.count};
+  sortState.count = sortState.count==='asc' ? 'desc':'asc';
+  renderTable(applyFilters(currentData));
+});
+
+/* ======================= OFFLINE FILE PARSERS (no external libs) ======================= */
+const REV_MAP = {
+  'ประเภทเครื่องมือ':'cat','เครื่องมือ':'item','หน่วยงาน':'unit','ปี พ.ศ. ที่ได้มา':'year',
+  'อายุของเครื่อง':'age','สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
+  'ละติจูด':'lat','Latitude':'lat','latitude':'lat','lat':'lat',
+  'ลองจิจูด':'lng','Longitude':'lng','longitude':'lng','lng':'lng','long':'lng',
+  'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
+};
+
+function normalizeRows(json){
+  return json.map(row=>{
+    const out = {};
+    Object.keys(row).forEach(k=>{
+      const mapped = REV_MAP[k.trim()] || null;
+      if(mapped){
+        let v = row[k];
+        if(mapped==='year'){ v = parseInt(v); if(isNaN(v)) v=null; }
+        else if(mapped==='lat' || mapped==='lng'){ v = parseFloat(v); if(isNaN(v)) v=null; }
+        else if(typeof v === 'string'){ v = v.trim(); }
+        out[mapped] = (v===undefined || v==='') ? null : v;
+      }
+    });
+    return out;
+  }).filter(r => r.item || r.unit);
+}
+
+function parseCsv(text){
+  const lines = text.split(/\r\n|\n|\r/).filter(l=>l.length);
+  if(!lines.length) return [];
+  function parseLine(line){
+    const result = [];
+    let cur = '', inQuotes=false;
+    for(let i=0;i<line.length;i++){
+      const ch = line[i];
+      if(inQuotes){
+        if(ch === '"'){
+          if(line[i+1] === '"'){ cur+='"'; i++; } else inQuotes=false;
+        } else cur+=ch;
+      } else {
+        if(ch === '"') inQuotes=true;
+        else if(ch === ','){ result.push(cur); cur=''; }
+        else cur+=ch;
+      }
+    }
+    result.push(cur);
+    return result;
+  }
+  const header = parseLine(lines[0]).map(h=>h.trim());
+  return lines.slice(1).map(line=>{
+    const vals = parseLine(line);
+    const obj={};
+    header.forEach((h,i)=> obj[h] = vals[i] !== undefined ? vals[i] : null);
+    return obj;
+  });
+}
+
+function colLettersToIndex(letters){
+  let n=0;
+  for(const ch of letters) n = n*26 + (ch.charCodeAt(0)-64);
+  return n-1;
+}
+
+// Minimal ZIP + XLSX reader using native DecompressionStream (no external library)
+async function readXlsx(arrayBuffer){
+  const buf = new Uint8Array(arrayBuffer);
+  const dv = new DataView(arrayBuffer);
+
+  let eocdOffset = -1;
+  const searchStart = Math.max(0, buf.length - 22 - 65557);
+  for(let i = buf.length - 22; i >= searchStart; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocdOffset = i; break; }
+  }
+  if(eocdOffset < 0) throw new Error('ไฟล์นี้ไม่ใช่ไฟล์ Excel (.xlsx) ที่ถูกต้อง');
+
+  const cdEntriesCount = dv.getUint16(eocdOffset+10, true);
+  const cdOffset = dv.getUint32(eocdOffset+16, true);
+
+  const entries = {};
+  let ptr = cdOffset;
+  for(let i=0;i<cdEntriesCount;i++){
+    const sig = dv.getUint32(ptr, true);
+    if(sig !== 0x02014b50) break;
+    const method = dv.getUint16(ptr+10, true);
+    const compSize = dv.getUint32(ptr+20, true);
+    const nameLen = dv.getUint16(ptr+28, true);
+    const extraLen = dv.getUint16(ptr+30, true);
+    const commentLen = dv.getUint16(ptr+32, true);
+    const localOffset = dv.getUint32(ptr+42, true);
+    const nameBytes = buf.slice(ptr+46, ptr+46+nameLen);
+    const name = new TextDecoder().decode(nameBytes);
+    entries[name] = {method, compSize, localOffset};
+    ptr += 46 + nameLen + extraLen + commentLen;
+  }
+
+  async function extract(name){
+    const e = entries[name];
+    if(!e) return null;
+    const lp = e.localOffset;
+    const lNameLen = dv.getUint16(lp+26, true);
+    const lExtraLen = dv.getUint16(lp+28, true);
+    const dataStart = lp + 30 + lNameLen + lExtraLen;
+    const compData = buf.slice(dataStart, dataStart + e.compSize);
+    if(e.method === 0) return compData;
+    if(e.method === 8){
+      if(typeof DecompressionStream === 'undefined'){
+        throw new Error('เบราว์เซอร์นี้ไม่รองรับการอ่านไฟล์ .xlsx แบบออฟไลน์ กรุณาอัปเดตเบราว์เซอร์ หรือบันทึกไฟล์เป็น .csv แล้วอัปโหลดใหม่');
+      }
+      const ds = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      writer.write(compData);
+      writer.close();
+      const ab = await new Response(ds.readable).arrayBuffer();
+      return new Uint8Array(ab);
+    }
+    throw new Error('รูปแบบการบีบอัดในไฟล์ zip ไม่รองรับ');
+  }
+
+  const sheetNames = Object.keys(entries).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
+  if(!sheetNames.length) throw new Error('ไม่พบชีทข้อมูลในไฟล์ Excel นี้');
+
+  let sharedStrings = [];
+  const sharedBytes = await extract('xl/sharedStrings.xml');
+  if(sharedBytes){
+    const xml = new TextDecoder('utf-8').decode(sharedBytes);
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    sharedStrings = Array.from(doc.getElementsByTagName('si')).map(si=>
+      Array.from(si.getElementsByTagName('t')).map(t=>t.textContent).join('')
+    );
+  }
+
+  const sheetBytes = await extract(sheetNames[0]);
+  const sheetXml = new TextDecoder('utf-8').decode(sheetBytes);
+  const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
+  const rowEls = Array.from(doc.getElementsByTagName('row'));
+
+  const rowNumsAll = [];
+  const rows = rowEls.map(rowEl=>{
+    rowNumsAll.push(parseInt(rowEl.getAttribute('r')) || null);
+    const cells = Array.from(rowEl.getElementsByTagName('c'));
+    const rowObj = {};
+    cells.forEach(c=>{
+      const ref = c.getAttribute('r') || '';
+      const letters = ref.replace(/[0-9]/g,'');
+      if(!letters) return;
+      const idx = colLettersToIndex(letters);
+      const type = c.getAttribute('t');
+      const vEl = c.getElementsByTagName('v')[0];
+      let val = null;
+      if(type === 's'){
+        val = vEl ? (sharedStrings[parseInt(vEl.textContent)] ?? '') : '';
+      } else if(type === 'inlineStr'){
+        const isEl = c.getElementsByTagName('is')[0];
+        val = isEl ? Array.from(isEl.getElementsByTagName('t')).map(t=>t.textContent).join('') : '';
+      } else if(type === 'b'){
+        val = vEl ? (vEl.textContent === '1') : null;
+      } else {
+        val = vEl ? vEl.textContent : null;
+      }
+      rowObj[idx] = val;
+    });
+    return rowObj;
+  });
+  const keepIdx = [];
+  rows.forEach((r,i)=>{ if(Object.keys(r).length > 0) keepIdx.push(i); });
+  const rowsFiltered = keepIdx.map(i=>rows[i]);
+  const rowNums = keepIdx.map(i=>rowNumsAll[i]);
+
+  if(!rowsFiltered.length) return [];
+  const headerRow = rowsFiltered[0];
+  const maxIdx = Math.max(...Object.keys(headerRow).map(Number));
+  const headers = [];
+  for(let i=0;i<=maxIdx;i++) headers[i] = headerRow[i] != null ? String(headerRow[i]).trim() : ('col'+i);
+
+  // Photos pasted directly into cells (not a URL/text column) — extracted
+  // from the sheet's drawing XML and matched back to each row by its real
+  // spreadsheet row number, so they can populate the "รูปภาพ" column even
+  // when the file itself has no such column.
+  let imagesByRow = {};
+  try{
+    imagesByRow = await extractEmbeddedImages(entries, extract, sheetNames[0]);
+  }catch(e){ /* best-effort — never block the main import */ }
+
+  const result = [];
+  for(let r=1;r<rowsFiltered.length;r++){
+    const rowObj = rowsFiltered[r];
+    const obj = {};
+    for(let i=0;i<=maxIdx;i++) obj[headers[i]] = rowObj[i] !== undefined ? rowObj[i] : null;
+    const img = imagesByRow[rowNums[r]];
+    if(img && (obj['รูปภาพ']===undefined || obj['รูปภาพ']===null || obj['รูปภาพ']==='')){
+      obj['รูปภาพ'] = img;
+    }
+    result.push(obj);
+  }
+  return result;
+}
+
+/* Resolve a relative OOXML part path (e.g. "../media/image1.png") against
+   the directory of the file that references it. */
+function resolveOoxmlPath(baseDir, target){
+  if(!target) return null;
+  if(target.startsWith('/')) return target.slice(1);
+  const baseParts = baseDir.split('/').filter(Boolean);
+  const relParts = target.split('/');
+  relParts.forEach(part=>{
+    if(part === '..') baseParts.pop();
+    else if(part !== '.') baseParts.push(part);
+  });
+  return baseParts.join('/');
+}
+
+function uint8ToBase64(bytes){
+  let binary = '';
+  const chunkSize = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunkSize){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunkSize));
+  }
+  return btoa(binary);
+}
+
+const IMAGE_MIME_BY_EXT = {png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',bmp:'image/bmp',webp:'image/webp',tif:'image/tiff',tiff:'image/tiff'};
+
+// Returns {spreadsheetRowNumber: dataURL} for every picture anchored in the
+// given worksheet's drawing layer.
+async function extractEmbeddedImages(entries, extract, sheetPath){
+  const sheetFile = sheetPath.split('/').pop();
+  const sheetDir = sheetPath.slice(0, sheetPath.length - sheetFile.length); // e.g. "xl/worksheets/"
+  const relsPath = sheetDir + '_rels/' + sheetFile + '.rels';
+  const relsBytes = await extract(relsPath);
+  if(!relsBytes) return {};
+
+  const relsDoc = new DOMParser().parseFromString(new TextDecoder('utf-8').decode(relsBytes), 'application/xml');
+  const drawingRel = Array.from(relsDoc.getElementsByTagName('Relationship'))
+    .find(r => (r.getAttribute('Type')||'').indexOf('drawing') !== -1);
+  if(!drawingRel) return {};
+
+  const drawingPath = resolveOoxmlPath(sheetDir, drawingRel.getAttribute('Target'));
+  const drawingBytes = await extract(drawingPath);
+  if(!drawingBytes) return {};
+
+  const drawingFile = drawingPath.split('/').pop();
+  const drawingDir = drawingPath.slice(0, drawingPath.length - drawingFile.length);
+  const drawingRelsPath = drawingDir + '_rels/' + drawingFile + '.rels';
+  const drawingRelsBytes = await extract(drawingRelsPath);
+  const ridToMedia = {};
+  if(drawingRelsBytes){
+    const drDoc = new DOMParser().parseFromString(new TextDecoder('utf-8').decode(drawingRelsBytes), 'application/xml');
+    Array.from(drDoc.getElementsByTagName('Relationship')).forEach(r=>{
+      ridToMedia[r.getAttribute('Id')] = resolveOoxmlPath(drawingDir, r.getAttribute('Target'));
+    });
+  }
+
+  const drawingDoc = new DOMParser().parseFromString(new TextDecoder('utf-8').decode(drawingBytes), 'application/xml');
+  const anchors = [
+    ...Array.from(drawingDoc.getElementsByTagName('xdr:twoCellAnchor')),
+    ...Array.from(drawingDoc.getElementsByTagName('xdr:oneCellAnchor'))
+  ];
+
+  const mediaCache = {};
+  const imagesByRow = {};
+  for(const anchor of anchors){
+    const fromEl = anchor.getElementsByTagName('xdr:from')[0];
+    const rowEl = fromEl ? fromEl.getElementsByTagName('xdr:row')[0] : null;
+    if(!rowEl) continue;
+    const fromRow0 = parseInt(rowEl.textContent);
+    if(isNaN(fromRow0)) continue;
+
+    const blip = anchor.getElementsByTagName('a:blip')[0];
+    if(!blip) continue;
+    const rId = blip.getAttribute('r:embed') || blip.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','embed');
+    const mediaPath = ridToMedia[rId];
+    if(!mediaPath) continue;
+
+    let dataUrl = mediaCache[mediaPath];
+    if(!dataUrl){
+      const mediaBytes = await extract(mediaPath);
+      if(!mediaBytes) continue;
+      const ext = (mediaPath.split('.').pop() || '').toLowerCase();
+      const mime = IMAGE_MIME_BY_EXT[ext] || 'application/octet-stream';
+      dataUrl = `data:${mime};base64,${uint8ToBase64(mediaBytes)}`;
+      mediaCache[mediaPath] = dataUrl;
+    }
+    // Spreadsheet rows are 1-indexed; the anchor's row is 0-indexed.
+    imagesByRow[fromRow0 + 1] = dataUrl;
+  }
+  return imagesByRow;
+}
+
+/* ======================= FILE UPLOAD ======================= */
+function showFileError(msg){
+  const el = document.getElementById('fileError');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+async function handleFile(file){
+  showFileError('');
+  const isCsv = /\.csv$/i.test(file.name);
+  try{
+    let json;
+    if(isCsv){
+      const text = await file.text();
+      json = parseCsv(text);
+    } else {
+      const buf = await file.arrayBuffer();
+      json = await readXlsx(buf);
+    }
+    const rows = normalizeRows(json);
+    if(!rows.length){
+      showFileError('อ่านไฟล์สำเร็จ แต่ไม่พบคอลัมน์ที่ตรงกับรูปแบบข้อมูล (ต้องมีคอลัมน์ เช่น "เครื่องมือ", "หน่วยงาน" เป็นต้น)');
+      return;
+    }
+    currentData = rows;
+    filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+    tableFilterItem = null;
+    document.getElementById('searchInput').value='';
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileChip').style.display='flex';
+    document.getElementById('uploadBox').style.display='none';
+    refreshFilterOptions();
+    refreshAll();
+  }catch(err){
+    showFileError('ไม่สามารถอ่านไฟล์ได้: ' + err.message);
+  }
+}
+
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+uploadBox.addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+['dragover','dragenter'].forEach(ev=>uploadBox.addEventListener(ev, e=>{ e.preventDefault(); uploadBox.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>uploadBox.addEventListener(ev, e=>{ e.preventDefault(); uploadBox.classList.remove('drag'); }));
+uploadBox.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+document.getElementById('clearFile').addEventListener('click', ()=>{
+  currentData = [];
+  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  tableFilterItem = null;
+  document.getElementById('searchInput').value='';
+  document.getElementById('fileChip').style.display='none';
+  document.getElementById('uploadBox').style.display='block';
+  showFileError('');
+  fileInput.value='';
+  refreshFilterOptions();
+  refreshAll();
+});
+
+/* ======================= EXPAND CHART TO FULLSCREEN ======================= */
+function togglePanelExpand(panelId, chartId){
+  const panel = document.getElementById(panelId);
+  if(!panel) return;
+  if(panel.classList.contains('expanded')){
+    collapseExpandedPanel();
+    return;
+  }
+  collapseExpandedPanel(); // close any other expanded panel first
+  panel.classList.add('expanded');
+  document.getElementById('expandOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  const chartEl = document.getElementById(chartId);
+  if(chartEl){
+    chartEl.dataset.prevHeight = chartEl.style.height;
+    const bigHeight = (window.innerHeight - 260) + 'px';
+    chartEl.dataset.expandedHeight = bigHeight;
+    chartEl.style.height = bigHeight;
+  }
+  refreshAll();
+}
+function collapseExpandedPanel(){
+  const panel = document.querySelector('.panel.expanded');
+  if(!panel) return;
+  panel.classList.remove('expanded');
+  document.getElementById('expandOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  panel.querySelectorAll('.svgchart[data-prev-height], .svgchart').forEach(el=>{
+    if(el.dataset.prevHeight !== undefined){ el.style.height = el.dataset.prevHeight; }
+    delete el.dataset.expandedHeight;
+  });
+  refreshAll();
+}
+
+/* ======================= INIT ======================= */
+function init(){
+  const today = new Date();
+  document.getElementById('asOf').textContent = 'ข้อมูล ณ วันที่ ' + today.toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'});
+  initChartSwitchers();
+  initTopNControls();
+  refreshFilterOptions();
+  refreshAll();
+}
+init();
+</script>
+<div class="expand-overlay" id="expandOverlay" onclick="collapseExpandedPanel()"></div>
+</body>
+</html>
