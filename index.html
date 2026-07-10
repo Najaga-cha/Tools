@@ -983,89 +983,105 @@
 }
 
   @media print{
-    @page{ size:A4 landscape; margin:8mm 9mm; }
+    @page{ size:A4 landscape; margin:10mm 12mm; }
     html,body{height:auto; overflow:visible; background:#fff;}
     body *{visibility:hidden !important;}
     #printArea, #printArea *{visibility:visible !important;}
     #printArea{
       display:block !important;
-      position:absolute; left:0; top:0; width:100%;
+      position:static !important; width:auto; max-width:none;
       background:#fff; color:#132322;
       font-size:11px;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
     }
+    /* Force background colors/images to actually print (many browsers strip
+       them by default, which is what made headers/rows look blank/broken). */
+    #printArea *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
 
-    /* Running header — position:fixed repeats on every printed page (Chrome/Edge) */
+    /* Header — normal flow, printed once at the very top of page 1 only.
+       (No position:fixed: that trick silently overlapped the header/map on
+       top of the table rows on every page after the first, which is what
+       made the exported PDF look "messy".) */
     #printArea .print-header{
-      position:fixed; top:0; left:0; right:0;
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:14px;
-      padding:7px 12px;
+      padding:8px 14px;
+      margin-bottom:10px;
       background:var(--map-teal);
       border-radius:6px;
-      z-index:5;
     }
-    #printArea .print-header h1{font-size:13px; margin:0; color:#fff; font-weight:700;}
-    #printArea .print-header .print-date{font-size:9.5px; color:#C9D0FA; white-space:nowrap;}
+    #printArea .print-header h1{font-size:14px; margin:0; color:#fff; font-weight:700;}
+    #printArea .print-header .print-date{font-size:10px; color:#C9D0FA; white-space:nowrap;}
 
-    /* Running map card — also position:fixed so it repeats on every printed page,
-       pinned in the top-left under the header. */
+    /* Map + region summary sit side-by-side in ONE short row at the top of
+       page 1 (normal flow, not fixed), then every table below runs the
+       full page width — this is both simpler and avoids overlap entirely. */
+    #printArea .print-body{ display:block; margin:0; }
+    #printArea .print-top{
+      display:flex; align-items:flex-start; gap:12px;
+      margin-bottom:10px;
+      page-break-inside:avoid; break-inside:avoid;
+    }
     #printArea .print-col-map{
-      position:fixed;
-      top:15mm; left:0;
-      width:72mm;
-      z-index:4;
+      flex:0 0 62mm; width:62mm;
     }
     #printArea .print-map{
-      margin:0;
-      padding:8px;
-      border:1px solid var(--map-line);
-      border-radius:8px;
-      background:#EAEDFA;
-      box-shadow:0 1px 3px rgba(15,76,76,.08);
-      text-align:center;
+      margin:0; padding:8px;
+      border:1px solid var(--map-line); border-radius:8px;
+      background:#EAEDFA; text-align:center;
     }
     #printArea .print-map .print-map-title{
       display:block; text-align:left; font-size:9.5px; font-weight:700;
       color:var(--map-teal-deep); margin:0 0 6px; padding-bottom:5px;
       border-bottom:1px solid var(--map-line);
     }
-    #printArea .print-map svg{width:100%; height:auto; max-height:80mm; display:block; margin:0 auto;}
+    #printArea .print-map svg{width:100%; height:auto; max-height:56mm; display:block; margin:0 auto;}
 
-    /* Data column is pushed clear of the fixed header + fixed map card,
-       and repeats its top margin on every page since it's normal flow content
-       that simply starts far enough down/right not to collide with the fixed pieces. */
-    #printArea .print-body{ margin:0; }
-    #printArea .print-col-data{
-      margin-left:78mm;
-      padding-top:15mm;
-    }
+    #printArea .print-col-data{ flex:1; min-width:0; }
+    #printArea .print-col-data > .region-title,
+    #printArea .print-col-data > .province-list,
+    #printArea .print-col-data > .stat-row{ margin-left:0; }
     #printArea .region-title{margin-bottom:6px;}
     #printArea .region-title .swatch{width:12px; height:12px;}
-    #printArea .region-title h3{font-size:15px;}
-    #printArea .province-list{font-size:10px; margin:0 0 9px; line-height:1.5;}
-    #printArea .stat-row{margin-bottom:12px; gap:6px;}
-    #printArea .stat-pill{padding:5px 9px; font-size:10px; border-radius:7px;}
-    #printArea .stat-pill span{font-size:14px;}
+    #printArea .region-title h3{font-size:16px;}
+    #printArea .province-list{font-size:10.5px; margin:0 0 9px; line-height:1.5;}
+    #printArea .stat-row{margin-bottom:0; gap:8px;}
+    #printArea .stat-pill{padding:6px 11px; font-size:10.5px; border-radius:7px;}
+    #printArea .stat-pill span{font-size:15px;}
 
-    /* Clear, legible table styling */
-    #printArea table.eq2{font-size:10px; border-collapse:collapse;}
-    #printArea table.eq2 caption, #printArea table.eq caption{font-size:11px; padding:6px 9px; text-align:left; font-weight:700;}
+    /* Tables below the top row now get the FULL page width (≈273mm), not
+       the ~130mm they were squeezed into before — that squeeze plus the
+       table's normal min-width:640px is what forced tables to overflow
+       past the page edge and get clipped/garbled. table-layout:fixed +
+       word-wrap keeps long "usage" text from blowing the columns out. */
+    #printArea table.eq2{
+      font-size:10px; border-collapse:collapse;
+      width:100% !important; min-width:0 !important; table-layout:fixed;
+    }
+    #printArea table.eq2 caption, #printArea table.eq caption{font-size:12px; padding:7px 9px; text-align:left; font-weight:700;}
     #printArea table.eq2 th{
-      padding:5px 6px; background:var(--map-teal-deep); color:#fff;
+      padding:6px 7px; background:var(--map-teal-deep); color:#fff;
       font-weight:700; text-align:left; border:1px solid var(--map-teal-deep);
     }
-    #printArea table.eq2 td{padding:5px 6px; border:1px solid var(--map-line);}
+    #printArea table.eq2 td{
+      padding:6px 7px; border:1px solid var(--map-line);
+      overflow-wrap:break-word; word-break:break-word; vertical-align:middle;
+    }
+    #printArea table.eq2 td.colTool{width:19%;}
+    #printArea table.eq2 td.colUse{width:29%;}
+    #printArea table.eq2 td.num{width:8%; text-align:center;}
+    #printArea table.eq2 td.colTotal, #printArea table.eq2 th.colTotal{width:6%; background:#EFF2FC; font-weight:800;}
     #printArea table.eq2 tbody tr:nth-child(even) td{background:#F3F5FE;}
-    #printArea .eq-photo, #printArea .eq-photo-fallback{width:24px; height:24px;}
-    #printArea table.eq{font-size:10.5px; margin-bottom:12px;}
-    #printArea table.eq th, #printArea table.eq td{padding:5px 7px;}
+    #printArea .eq-photo, #printArea .eq-photo-fallback{width:26px; height:26px;}
+    #printArea table.eq{font-size:10.5px; margin-bottom:12px; width:100%;}
+    #printArea table.eq th, #printArea table.eq td{padding:6px 8px;}
 
     /* Keep each table together as one block where possible (avoids an
        awkward mid-table split); if a list is too long for one page it will
        still flow onto the next, but the header row repeats there. */
-    #printArea .eq2-wrap{page-break-inside:avoid; break-inside:avoid; overflow-x:visible; border:none; margin-bottom:12px;}
+    #printArea .eq2-wrap{page-break-inside:avoid; break-inside:avoid; overflow-x:visible; border:none; margin-bottom:12px; width:100%;}
     #printArea table.eq2, #printArea table.eq{page-break-inside:auto; break-inside:auto;}
     #printArea table.eq2 thead, #printArea table.eq thead,
     #printArea table.eq2 tr:first-child, #printArea table.eq tr:first-child{
@@ -1078,18 +1094,16 @@
     /* Density tiers — applied by JS based on how many equipment rows there
        are, so a short list prints large/clear and a long list still has a
        real shot at fitting on a single page. */
-    #printArea.print-density-2 table.eq2{font-size:8.5px;}
-    #printArea.print-density-2 table.eq2 th, #printArea.print-density-2 table.eq2 td{padding:3px 5px;}
-    #printArea.print-density-2 .eq-photo, #printArea.print-density-2 .eq-photo-fallback{width:18px; height:18px;}
-    #printArea.print-density-2 .province-list{font-size:9px; margin-bottom:6px;}
-    #printArea.print-density-2 .stat-row{margin-bottom:8px;}
+    #printArea.print-density-2 table.eq2{font-size:9px;}
+    #printArea.print-density-2 table.eq2 th, #printArea.print-density-2 table.eq2 td{padding:4px 6px;}
+    #printArea.print-density-2 .eq-photo, #printArea.print-density-2 .eq-photo-fallback{width:20px; height:20px;}
+    #printArea.print-density-2 .province-list{font-size:9.5px; margin-bottom:6px;}
 
-    #printArea.print-density-3 table.eq2{font-size:7.5px;}
-    #printArea.print-density-3 table.eq2 th, #printArea.print-density-3 table.eq2 td{padding:2px 4px;}
-    #printArea.print-density-3 .eq-photo, #printArea.print-density-3 .eq-photo-fallback{width:14px; height:14px;}
-    #printArea.print-density-3 .province-list{font-size:8.5px; margin-bottom:5px;}
-    #printArea.print-density-3 .stat-row{margin-bottom:6px;}
-    #printArea.print-density-3 .region-title h3{font-size:13px;}
+    #printArea.print-density-3 table.eq2{font-size:8px;}
+    #printArea.print-density-3 table.eq2 th, #printArea.print-density-3 table.eq2 td{padding:3px 5px;}
+    #printArea.print-density-3 .eq-photo, #printArea.print-density-3 .eq-photo-fallback{width:16px; height:16px;}
+    #printArea.print-density-3 .province-list{font-size:9px; margin-bottom:5px;}
+    #printArea.print-density-3 .region-title h3{font-size:14px;}
   }
 
 </style>
@@ -2053,8 +2067,7 @@ function rawTable(code){
   return html;
 }
 
-function buildDetailHTML(code, withImages, includeCategoryTable){
-  if(includeCategoryTable === undefined) includeCategoryTable = true;
+function buildDetailHeaderHTML(code){
   const org = ORGS[code];
   const stats = orgStats(code);
   let html="";
@@ -2071,11 +2084,19 @@ function buildDetailHTML(code, withImages, includeCategoryTable){
     <div class="stat-pill">ใช้งานได้<span>${stats.ok}</span></div>
     <div class="stat-pill">ชำรุด<span>${stats.broken}</span></div>
   </div>`;
+  return html;
+}
 
+function buildDetailTablesHTML(code, withImages, includeCategoryTable){
+  if(includeCategoryTable === undefined) includeCategoryTable = true;
+  let html="";
   if(includeCategoryTable) html += categoryTables(code, withImages);
   html += rawTable(code);
-
   return html;
+}
+
+function buildDetailHTML(code, withImages, includeCategoryTable){
+  return buildDetailHeaderHTML(code) + buildDetailTablesHTML(code, withImages, includeCategoryTable);
 }
 
 function renderDetail(){
@@ -2123,11 +2144,16 @@ function exportDetailToPDF(){
       <div class="print-date">พิมพ์เมื่อวันที่ ${dateStr}</div>
     </div>
     <div class="print-body">
-      <div class="print-col-map">
-        ${mapSVG ? `<div class="print-map"><span class="print-map-title">ตำแหน่งบนแผนที่ — ${org ? org.label : ""}</span>${mapSVG}</div>` : ""}
+      <div class="print-top">
+        <div class="print-col-map">
+          ${mapSVG ? `<div class="print-map"><span class="print-map-title">ตำแหน่งบนแผนที่ — ${org ? org.label : ""}</span>${mapSVG}</div>` : ""}
+        </div>
+        <div class="print-col-data">
+          ${buildDetailHeaderHTML(selected)}
+        </div>
       </div>
-      <div class="print-col-data">
-        ${buildDetailHTML(selected, true)}
+      <div class="print-tables">
+        ${buildDetailTablesHTML(selected, true)}
       </div>
     </div>
   `;
