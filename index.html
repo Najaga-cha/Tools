@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>เครื่องมือตรวจวัดมลพิษ | กรมควบคุมมลพิษ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -189,6 +189,11 @@
   [data-mobile="on"] .legend-col{max-height:180px;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  html{
+    -webkit-text-size-adjust:100%; text-size-adjust:100%; /* stop iOS
+      auto-boosting font sizes on rotate, which was shifting the whole
+      mobile layout around after an orientation change */
+  }
   body{
     font-family:'Sarabun',-apple-system,'Noto Sans Thai',sans-serif;
     background:var(--body-grad);
@@ -196,15 +201,26 @@
     font-size:15px;
     line-height:1.5;
     transition:background .2s;
+    overflow-x:hidden; /* a single element running 1-2px wider than the
+      viewport (a stray table, a long unbroken word, etc.) used to make
+      the whole mobile page horizontally scrollable/jumpy; clip it instead */
+    width:100%;
+    max-width:100vw;
   }
   .num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+  button, .mobile-toggle, .theme-toggle, .chart-switch button, .reset-btn, a{
+    touch-action:manipulation; /* removes the ~300ms tap delay and stops a
+      fast double-tap on a control from being read as a zoom gesture */
+  }
 
   .frame{
     max-width:1500px;
+    width:100%;
     margin:0 auto;
     background:var(--frame);
     border-radius:26px;
     padding:14px;
+    overflow-x:hidden;
   }
 
   .app{
@@ -1656,11 +1672,12 @@ function cv(name){
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebarOverlay');
 
+  // Width is the one signal that's actually reliable across devices — UA
+  // sniffing and pointer:coarse both silently fail on plenty of real
+  // hardware (e.g. iPadOS reports a desktop UA by default), which was the
+  // main reason auto-detection felt inconsistent.
   function isPhoneLike(){
-    const narrow = window.matchMedia('(max-width:800px)').matches;
-    const coarse = window.matchMedia('(pointer:coarse)').matches;
-    const ua = /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent);
-    return narrow && (coarse || ua);
+    return window.matchMedia('(max-width:800px)').matches;
   }
   function apply(on){
     if(on){ root.setAttribute('data-mobile','on'); }
@@ -1680,14 +1697,17 @@ function cv(name){
     if(overlay) overlay.classList.remove('show');
   }
 
+  let userOverride = false; // true once the person taps the toggle themselves
   let saved = null;
   try{ saved = localStorage.getItem('pcd_mobile_mode'); }catch(e){}
+  if(saved !== null) userOverride = true;
   const initialOn = saved !== null ? (saved === '1') : isPhoneLike();
   apply(initialOn);
 
   if(btn){
     btn.addEventListener('click', ()=>{
       const nowOn = root.getAttribute('data-mobile') !== 'on';
+      userOverride = true;
       apply(nowOn);
       try{ localStorage.setItem('pcd_mobile_mode', nowOn ? '1':'0'); }catch(e){}
     });
@@ -1702,6 +1722,20 @@ function cv(name){
     if(t.closest && (t.id==='uploadBox' || t.tagName==='SELECT' || t.closest('.reset-btn'))){
       setTimeout(closeDrawer, 150);
     }
+  });
+
+  // Re-check on rotation / real resizes (not on every pixel of a drag —
+  // debounced) so the layout keeps matching the actual screen without a
+  // manual toggle, as long as the person hasn't picked a mode themselves.
+  let resizeTimer = null;
+  window.addEventListener('resize', ()=>{
+    if(userOverride) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(()=>{ apply(isPhoneLike()); }, 150);
+  });
+  window.addEventListener('orientationchange', ()=>{
+    if(userOverride) return;
+    setTimeout(()=>{ apply(isPhoneLike()); }, 200);
   });
 })();
 
