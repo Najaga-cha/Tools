@@ -1123,6 +1123,17 @@
          pushed the entire table to page 2 by itself. */
       page-break-inside:auto; break-inside:auto;
     }
+    /* A short category section (few rows) still uses the same page-break
+       rule above, EXCEPT when it's small enough that splitting it would
+       just strand a row or two with the header on one page and the rest
+       on the next (e.g. "เครื่องมือสำหรับกรณีฉุกเฉิน" with only a handful of
+       rows). For those, keep the whole block together so it moves wholly
+       onto the next page instead — safe to force whole here because a
+       compact block is short enough that it won't itself leave a big
+       blank gap the way a long table would. */
+    #printArea .eq2-wrap.eq2-compact{
+      page-break-inside:avoid; break-inside:avoid;
+    }
     /* The real <caption> only ever prints once (browsers don't repeat table
        captions across page breaks the way they repeat <thead>), so on a
        table long enough to split across pages, every page after the first
@@ -1934,7 +1945,12 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol){
     </tr>`;
   });
   html += "</tbody></table>";
-  return `<div class="eq2-wrap">${html}</div>`;
+  // A "compact" section is short enough (few equipment rows) that keeping
+  // it whole across a page break is safe — it won't itself create a big
+  // blank gap. Longer sections keep the free page-break behaviour so they
+  // still split cleanly instead of leaving a huge empty area above them.
+  const isCompact = names.length <= 8;
+  return `<div class="eq2-wrap${isCompact?' eq2-compact':''}">${html}</div>`;
 }
 
 function categoryTables(code, withImages, splitPhotoCol){
