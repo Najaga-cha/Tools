@@ -1107,8 +1107,17 @@
     #printArea table.eq2 td.colTotal, #printArea table.eq2 th.colTotal{width:6.5%; background:#EFF2FC; font-weight:800; text-align:center;}
     #printArea table.eq2 tbody tr:nth-child(even) td{background:#F5F7FD;}
     #printArea table.eq2 tbody tr:last-child td{border-bottom:none;}
-    #printArea .eq-tool-cell{display:flex; align-items:center; gap:6px;}
-    #printArea .eq-photo, #printArea .eq-photo-fallback{display:none;} /* icons/photos often fail to render in print — text-only reads cleaner */
+    #printArea .eq-tool-cell{display:flex; align-items:center; gap:7px;}
+    #printArea .eq-photo{
+      width:30px; height:30px; object-fit:cover; border-radius:6px;
+      border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC;
+    }
+    #printArea .eq-photo-fallback{
+      display:flex; width:30px; height:30px; border-radius:6px; background:#EAEDFA;
+      flex-shrink:0; align-items:center; justify-content:center; font-size:14px;
+    }
+    #printArea.print-density-2 .eq-photo, #printArea.print-density-2 .eq-photo-fallback{width:24px; height:24px; font-size:12px;}
+    #printArea.print-density-3 .eq-photo, #printArea.print-density-3 .eq-photo-fallback{width:20px; height:20px; font-size:11px; border-radius:5px;}
     #printArea table.eq{font-size:10.5px; margin-bottom:12px; width:100%;}
     #printArea table.eq th, #printArea table.eq td{padding:6px 8px;}
 
@@ -2228,7 +2237,7 @@ function exportDetailToPDF(){
         </div>
       </div>
       <div class="print-tables">
-        ${buildDetailTablesHTML(selected, false)}
+        ${buildDetailTablesHTML(selected, true)}
       </div>
     </div>
   `;
