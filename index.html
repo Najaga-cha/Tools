@@ -985,7 +985,15 @@
   @media print{
     @page{ size:A4 landscape; margin:10mm 12mm; }
     html,body{height:auto; overflow:visible; background:#fff;}
-    body *{visibility:hidden !important;}
+    /* Hide every other top-level block in the document instead of just making
+       it invisible. visibility:hidden keeps the hidden content's height in
+       the page flow, which is what pushed the real report down onto page 9+
+       and produced a stack of blank pages in front of it. display:none
+       removes it from the flow entirely, so the printed output starts
+       cleanly on page 1. (exportDetailToPDF() moves #printArea to be a
+       direct child of <body> right before printing so this selector can
+       target it reliably regardless of where it normally lives in the DOM.) */
+    body > *:not(#printArea){ display:none !important; }
     #printArea, #printArea *{visibility:visible !important;}
     #printArea{
       display:block !important;
@@ -2173,6 +2181,28 @@ function exportDetailToPDF(){
   const total = stats ? stats.total : 0;
   if(total > 40) printArea.classList.add('print-density-3');
   else if(total > 18) printArea.classList.add('print-density-2');
+
+  // Move #printArea out to be a direct child of <body> just for the print.
+  // Normally it lives deep inside #mapSection (after several tall chart
+  // panels), and the print stylesheet only knows how to hide "every other
+  // direct child of <body>" — if #printArea stayed buried inside .frame/.app,
+  // that whole ancestor chain (and everything before it) would still show up
+  // as blank pages ahead of the report. We put it back afterwards so the
+  // live dashboard is unaffected.
+  const originalParent = printArea.parentNode;
+  const originalNextSibling = printArea.nextSibling;
+  document.body.appendChild(printArea);
+
+  function restorePrintArea(){
+    if(originalNextSibling && originalNextSibling.parentNode === originalParent){
+      originalParent.insertBefore(printArea, originalNextSibling);
+    } else {
+      originalParent.appendChild(printArea);
+    }
+    window.removeEventListener('afterprint', restorePrintArea);
+  }
+  window.addEventListener('afterprint', restorePrintArea);
+
   window.print();
 }
 document.getElementById("exportPdfBtn").addEventListener("click", exportDetailToPDF);
