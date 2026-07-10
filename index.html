@@ -19,6 +19,16 @@
     --teal: #3D4FE0;
     --teal-dark: #232F91;
     --teal-tint: #E7EAFB;
+    /* Duplicated (not just aliased) here at :root, matching the light-theme
+       values #mapSection normally defines for itself: #printArea is moved
+       to be a direct child of <body> at export time (see exportDetailToPDF),
+       so it can no longer rely on inheriting these from a #mapSection
+       ancestor — without this, table captions/headers and the print map's
+       colours silently fall back to invalid/transparent. */
+    --map-line: #DBDFF5;
+    --map-teal: #3D4FE0;
+    --map-teal-deep: #232F91;
+    --map-muted: #5F6693;
     --air: #3B82C4;
     --water: #1E4E8C;
     --soil: #B0793E;
@@ -985,16 +995,15 @@
   @media print{
     @page{ size:A4 landscape; margin:10mm 12mm; }
     html,body{height:auto; overflow:visible; background:#fff;}
-    /* Hide every other top-level block in the document instead of just making
-       it invisible. visibility:hidden keeps the hidden content's height in
-       the page flow, which is what pushed the real report down onto page 9+
-       and produced a stack of blank pages in front of it. display:none
-       removes it from the flow entirely, so the printed output starts
-       cleanly on page 1. (exportDetailToPDF() moves #printArea to be a
-       direct child of <body> right before printing so this selector can
-       target it reliably regardless of where it normally lives in the DOM.) */
-    body > *:not(#printArea){ display:none !important; }
-    #printArea, #printArea *{visibility:visible !important;}
+    /* IMPORTANT: printArea is moved to be a direct child of <body> right
+       before window.print() is called (see exportDetailToPDF). Hiding the
+       rest of the page with display:none (rather than visibility:hidden)
+       removes it from the layout entirely, so its height no longer pushes
+       the printed content down onto later pages — visibility:hidden alone
+       kept every hidden element's box height, which is what produced
+       several blank pages before the real content used to show up. */
+    body > *{ display:none !important; }
+    body > #printArea{ display:block !important; }
     #printArea{
       display:block !important;
       position:static !important; width:auto; max-width:none;
@@ -2143,14 +2152,62 @@ function captureMapSVG(){
   clone.removeAttribute("id");
   clone.removeAttribute("class");
   clone.setAttribute("width","100%");
-  clone.setAttribute("height","auto");
+  clone.removeAttribute("height"); // "auto" is not a valid SVG length attribute — size via CSS instead
+  clone.style.width = "100%";
+  clone.style.height = "auto";
   clone.style.background = "#EAEDFA";
+
+  // Always print a clean, fully-fit view of the map, regardless of whatever
+  // pan/zoom state the user happened to leave the on-screen map in.
+  const zoomLayerClone = clone.querySelector("#zoomLayer");
+  if(zoomLayerClone) zoomLayerClone.removeAttribute("transform");
+
+  // The on-screen .selected/.dim look relies on CSS (stroke outline + opacity
+  // dimming), which is subtle and easy to lose once this markup is cloned
+  // out of its usual context. For print we make the contrast explicit and
+  // robust: the selected org's area is painted a solid dark colour, every
+  // other area a pale, muted tint — matching what was asked for.
+  const PRINT_SELECTED_FILL = "#232F91";
+  const PRINT_SELECTED_STROKE = "#141b57";
+  const PRINT_UNSELECTED_FILL = "#DCE1F7";
+  const PRINT_UNSELECTED_STROKE = "#B9C2EC";
+
+  clone.querySelectorAll(".province").forEach(el=>{
+    const isSelected = selected && el.getAttribute("data-org") === selected;
+    el.style.fill = isSelected ? PRINT_SELECTED_FILL : PRINT_UNSELECTED_FILL;
+    el.style.opacity = "1";
+    el.style.stroke = isSelected ? PRINT_SELECTED_STROKE : PRINT_UNSELECTED_STROKE;
+    el.style.strokeWidth = isSelected ? "2" : "0.75";
+  });
+  clone.querySelectorAll(".orgpt").forEach(el=>{
+    const isSelected = selected && el.getAttribute("data-org") === selected;
+    el.style.fill = isSelected ? PRINT_SELECTED_FILL : PRINT_UNSELECTED_FILL;
+    el.style.stroke = isSelected ? PRINT_SELECTED_STROKE : PRINT_UNSELECTED_STROKE;
+    el.style.opacity = isSelected ? "1" : "0.8";
+  });
+  // Schematic-mode cells also carry two text labels per province — recolour
+  // them so they stay legible against both the dark and the pale fill.
+  clone.querySelectorAll(".schem-cell").forEach(cell=>{
+    const rect = cell.querySelector(".province");
+    const isSelected = rect && selected && rect.getAttribute("data-org") === selected;
+    cell.querySelectorAll("text").forEach(t=>{ t.style.fill = isSelected ? "#ffffff" : "#3A4270"; });
+  });
+
   return clone.outerHTML;
 }
 
 function exportDetailToPDF(){
   if(!selected) return;
   const printArea = document.getElementById("printArea");
+  // Relocate printArea to be a direct child of <body>. The print stylesheet
+  // hides every other direct child of <body> with display:none (which fully
+  // removes them from the layout). Left in its original, deeply-nested spot
+  // inside the dashboard, the (now invisible) content above it still took up
+  // its normal height, which pushed the actual printed page several blank
+  // pages down. Moving it here guarantees the print output starts on page 1.
+  if(printArea.parentElement !== document.body){
+    document.body.appendChild(printArea);
+  }
   const now = new Date();
   const dateStr = now.toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
   const mapSVG = captureMapSVG();
@@ -2181,28 +2238,6 @@ function exportDetailToPDF(){
   const total = stats ? stats.total : 0;
   if(total > 40) printArea.classList.add('print-density-3');
   else if(total > 18) printArea.classList.add('print-density-2');
-
-  // Move #printArea out to be a direct child of <body> just for the print.
-  // Normally it lives deep inside #mapSection (after several tall chart
-  // panels), and the print stylesheet only knows how to hide "every other
-  // direct child of <body>" — if #printArea stayed buried inside .frame/.app,
-  // that whole ancestor chain (and everything before it) would still show up
-  // as blank pages ahead of the report. We put it back afterwards so the
-  // live dashboard is unaffected.
-  const originalParent = printArea.parentNode;
-  const originalNextSibling = printArea.nextSibling;
-  document.body.appendChild(printArea);
-
-  function restorePrintArea(){
-    if(originalNextSibling && originalNextSibling.parentNode === originalParent){
-      originalParent.insertBefore(printArea, originalNextSibling);
-    } else {
-      originalParent.appendChild(printArea);
-    }
-    window.removeEventListener('afterprint', restorePrintArea);
-  }
-  window.addEventListener('afterprint', restorePrintArea);
-
   window.print();
 }
 document.getElementById("exportPdfBtn").addEventListener("click", exportDetailToPDF);
