@@ -2226,10 +2226,6 @@ function captureMapSVG(){
 
 function exportDetailToPDF(){
   if(!selected) return;
-  // Close any on-map popup first — it's positioned/sized for on-screen use
-  // and otherwise stays visible (with display:block set inline) while we
-  // build the print content.
-  hideMapPopup();
   const printArea = document.getElementById("printArea");
   // Relocate printArea to be a direct child of <body>. The print stylesheet
   // hides every other direct child of <body> with display:none (which fully
@@ -2270,34 +2266,6 @@ function exportDetailToPDF(){
   const total = stats ? stats.total : 0;
   if(total > 40) printArea.classList.add('print-density-3');
   else if(total > 18) printArea.classList.add('print-density-2');
-
-  // Belt-and-suspenders: some mobile browsers / in-app webviews (LINE,
-  // Facebook, some Android "share > print" flows) don't reliably apply the
-  // @media print stylesheet, so "body > *{display:none}" silently does
-  // nothing and the PDF/screenshot ends up showing the live dashboard
-  // (full interactive map, any open panel) instead of the compact print
-  // layout. To make this work even when @media print is ignored, force the
-  // same hide/show directly with inline styles, then restore them once
-  // printing is done.
-  const frame = document.querySelector(".frame");
-  const prevFrameDisplay = frame ? frame.style.display : "";
-  const prevBodyOverflow = document.body.style.overflow;
-  if(frame) frame.style.display = "none";
-  printArea.style.display = "block";
-  document.body.style.overflow = "visible";
-
-  function restoreScreenView(){
-    if(frame) frame.style.display = prevFrameDisplay;
-    printArea.style.display = "";
-    document.body.style.overflow = prevBodyOverflow;
-    window.removeEventListener("afterprint", restoreScreenView);
-  }
-  // 'afterprint' covers normal desktop print dialogs; the timeout is a
-  // fallback for webviews that never fire it (e.g. after a direct
-  // "save as PDF" share-sheet action with no visible dialog).
-  window.addEventListener("afterprint", restoreScreenView);
-  setTimeout(restoreScreenView, 2000);
-
   window.print();
 }
 document.getElementById("exportPdfBtn").addEventListener("click", exportDetailToPDF);
