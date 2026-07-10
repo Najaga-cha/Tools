@@ -1038,35 +1038,19 @@
       margin-bottom:8px;
       page-break-inside:avoid; break-inside:avoid;
     }
-    /* Hard clamp on every axis (width/height/max-*/overflow), not just flex-basis.
-       This box must never grow beyond 46mm wide / ~44mm tall no matter what the
-       flex "stretch" chain resolves to on a given browser/print engine — some
-       mobile WebViews used for "Save as PDF" don't reliably carry percentage
-       heights through a flex ancestor when printing, which previously let the
-       cloned map SVG fall back to its raw intrinsic size and balloon to fill
-       the page. */
-    #printArea .print-col-map{ flex:0 0 46mm; width:46mm; max-width:46mm; overflow:hidden; }
+    #printArea .print-col-map{ flex:0 0 46mm; width:46mm; }
     #printArea .print-map{
       margin:0; padding:6px;
       border:1px solid var(--map-line); border-radius:8px;
       background:#EAEDFA; text-align:center; height:100%;
-      max-height:44mm; box-sizing:border-box;
-      display:flex; flex-direction:column; overflow:hidden;
+      box-sizing:border-box;
     }
     #printArea .print-map .print-map-title{
       display:block; text-align:left; font-size:8.5px; font-weight:700;
       color:var(--map-teal-deep); margin:0 0 4px; padding-bottom:4px;
-      border-bottom:1px solid var(--map-line); flex:0 0 auto;
+      border-bottom:1px solid var(--map-line);
     }
-    /* Fixed-height viewport for the svg: absolute-positioned inside so the
-       intrinsic viewBox aspect ratio can never push the box's own size around. */
-    #printArea .print-map-canvas{ position:relative; flex:1 1 auto; min-height:0; max-height:34mm; overflow:hidden; }
-    #printArea .print-map svg{
-      position:absolute !important; inset:0 !important;
-      width:100% !important; height:100% !important;
-      max-width:100% !important; max-height:100% !important;
-      display:block; margin:0 auto;
-    }
+    #printArea .print-map svg{width:100%; height:auto; max-height:30mm; display:block; margin:0 auto;}
 
     #printArea .print-col-data{
       flex:1; min-width:0;
@@ -2242,6 +2226,10 @@ function captureMapSVG(){
 
 function exportDetailToPDF(){
   if(!selected) return;
+  // Close any on-map popup first — it's positioned/sized for on-screen use
+  // and otherwise stays visible (with display:block set inline) while we
+  // build the print content.
+  hideMapPopup();
   const printArea = document.getElementById("printArea");
   // Relocate printArea to be a direct child of <body>. The print stylesheet
   // hides every other direct child of <body> with display:none (which fully
@@ -2265,7 +2253,7 @@ function exportDetailToPDF(){
     <div class="print-body">
       <div class="print-top">
         <div class="print-col-map">
-          ${mapSVG ? `<div class="print-map"><span class="print-map-title">ตำแหน่งบนแผนที่ — ${org ? org.label : ""}</span><div class="print-map-canvas">${mapSVG}</div></div>` : ""}
+          ${mapSVG ? `<div class="print-map"><span class="print-map-title">ตำแหน่งบนแผนที่ — ${org ? org.label : ""}</span>${mapSVG}</div>` : ""}
         </div>
         <div class="print-col-data">
           ${buildDetailHeaderHTML(selected)}
@@ -2282,17 +2270,35 @@ function exportDetailToPDF(){
   const total = stats ? stats.total : 0;
   if(total > 40) printArea.classList.add('print-density-3');
   else if(total > 18) printArea.classList.add('print-density-2');
-  // Give the browser two animation-frame ticks to finish laying out and
-  // painting the freshly-injected content (map SVG + tables) before invoking
-  // print. Calling window.print() in the very same tick that innerHTML was
-  // set is a well-known source of broken/incomplete "Save as PDF" output on
-  // mobile browsers and in-app WebViews, since the print engine can snapshot
-  // the page before the new layout has actually been computed.
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      window.print();
-    });
-  });
+
+  // Belt-and-suspenders: some mobile browsers / in-app webviews (LINE,
+  // Facebook, some Android "share > print" flows) don't reliably apply the
+  // @media print stylesheet, so "body > *{display:none}" silently does
+  // nothing and the PDF/screenshot ends up showing the live dashboard
+  // (full interactive map, any open panel) instead of the compact print
+  // layout. To make this work even when @media print is ignored, force the
+  // same hide/show directly with inline styles, then restore them once
+  // printing is done.
+  const frame = document.querySelector(".frame");
+  const prevFrameDisplay = frame ? frame.style.display : "";
+  const prevBodyOverflow = document.body.style.overflow;
+  if(frame) frame.style.display = "none";
+  printArea.style.display = "block";
+  document.body.style.overflow = "visible";
+
+  function restoreScreenView(){
+    if(frame) frame.style.display = prevFrameDisplay;
+    printArea.style.display = "";
+    document.body.style.overflow = prevBodyOverflow;
+    window.removeEventListener("afterprint", restoreScreenView);
+  }
+  // 'afterprint' covers normal desktop print dialogs; the timeout is a
+  // fallback for webviews that never fire it (e.g. after a direct
+  // "save as PDF" share-sheet action with no visible dialog).
+  window.addEventListener("afterprint", restoreScreenView);
+  setTimeout(restoreScreenView, 2000);
+
+  window.print();
 }
 document.getElementById("exportPdfBtn").addEventListener("click", exportDetailToPDF);
 
