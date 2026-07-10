@@ -1134,6 +1134,13 @@
     #printArea .eq2-wrap.eq2-compact{
       page-break-inside:avoid; break-inside:avoid;
     }
+    /* Every category after the first (ด้านน้ำ / ด้านดิน / ด้านอากาศ /
+       ด้านฉุกเฉิน) starts on a fresh page — guarantees its header and rows
+       always print together, even if there was still room left below the
+       previous category's table. */
+    #printArea .eq2-wrap.eq2-page-start{
+      page-break-before:always; break-before:page;
+    }
     /* The real <caption> only ever prints once (browsers don't repeat table
        captions across page breaks the way they repeat <thead>), so on a
        table long enough to split across pages, every page after the first
@@ -1876,7 +1883,7 @@ function equipmentImage(name, records){
   return withImg ? withImg.image : null;
 }
 
-function buildAgeCalibTable(category, records, withImages, splitPhotoCol){
+function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceNewPage){
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
@@ -1950,7 +1957,10 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol){
   // blank gap. Longer sections keep the free page-break behaviour so they
   // still split cleanly instead of leaving a huge empty area above them.
   const isCompact = names.length <= 8;
-  return `<div class="eq2-wrap${isCompact?' eq2-compact':''}">${html}</div>`;
+  const cls = ['eq2-wrap'];
+  if(isCompact) cls.push('eq2-compact');
+  if(forceNewPage) cls.push('eq2-page-start');
+  return `<div class="${cls.join(' ')}">${html}</div>`;
 }
 
 function categoryTables(code, withImages, splitPhotoCol){
@@ -1962,7 +1972,11 @@ function categoryTables(code, withImages, splitPhotoCol){
     const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
     return (ia<0?99:ia) - (ib<0?99:ib);
   });
-  return cats.map(c=>buildAgeCalibTable(c, byCat[c], withImages, splitPhotoCol)).join("");
+  // Every category after the first starts on a fresh page — this keeps its
+  // header and all of its rows together on one page even when there was
+  // still room left on the previous page, instead of relying on the
+  // browser to decide whether/where to split.
+  return cats.map((c,i)=>buildAgeCalibTable(c, byCat[c], withImages, splitPhotoCol, i>0)).join("");
 }
 
 /* =========================================================
