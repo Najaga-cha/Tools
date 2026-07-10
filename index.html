@@ -782,7 +782,7 @@
   }#mapSection table.eq td{
     padding:7px 9px; border-bottom:1px solid #E4E7F8; vertical-align:top;
   }#mapSection table.eq tr:last-child td{border-bottom:none;}#mapSection table.eq td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:52px;}#mapSection .no-data{color:var(--map-muted); font-size:12px; font-style:italic; padding:8px 0 16px;}#mapSection /* ===== PDF-style equipment summary table (image + age buckets + calibration) ===== */
-  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}#mapSection table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}#mapSection table.eq2 caption{
+  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}#mapSection table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}#mapSection table.eq2 .print-cat-row{display:none;}#mapSection table.eq2 caption{
     text-align:left; font-weight:700; font-size:12.5px; color:#fff;
     background:var(--map-teal); padding:7px 10px;
   }#mapSection table.eq2 th{
@@ -1080,13 +1080,29 @@
          pushed the entire table to page 2 by itself. */
       page-break-inside:auto; break-inside:auto;
     }
-    #printArea table.eq2 caption, #printArea table.eq caption{
+    /* The real <caption> only ever prints once (browsers don't repeat table
+       captions across page breaks the way they repeat <thead>), so on a
+       table long enough to split across pages, every page after the first
+       loses the section title — leaving orphaned rows with no heading.
+       Hide it in print and use .print-cat-row instead: it's a <tr> living
+       inside <thead>, and #printArea table.eq2 thead below is set to
+       display:table-header-group, so it reprints at the top of the table
+       on every page the table spans. */
+    #printArea table.eq2 caption{ display:none; }
+    #printArea table.eq caption{
       font-size:12px; padding:7px 10px; text-align:left; font-weight:700;
       background:var(--map-teal-deep); color:#fff;
     }
+    #printArea table.eq2 thead tr.print-cat-row th{
+      font-size:12px; padding:7px 10px; text-align:left; font-weight:700;
+      background:var(--map-teal-deep); color:#fff; border:none;
+    }
     /* Two-tone header: group row a touch darker than the sub-header row,
-       so the column grouping reads clearly at a glance. */
-    #printArea table.eq2 thead tr:first-child th{
+       so the column grouping reads clearly at a glance.
+       NOTE: .print-cat-row is now the first <tr> in thead, so the group
+       row is the 2nd child and the column-label row is still the last
+       child — target by position rather than :first-child. */
+    #printArea table.eq2 thead tr:nth-child(2) th{
       padding:6px 7px; background:var(--map-teal-deep); color:#fff;
       font-weight:700; text-align:left; border:1px solid #fff2; border-bottom:none;
     }
@@ -1094,9 +1110,9 @@
       padding:5px 6px; background:var(--map-teal); color:#fff;
       font-weight:600; text-align:center; font-size:9px; border:1px solid #fff2; border-top:none;
     }
-    #printArea table.eq2 thead tr:first-child th.colTool,
-    #printArea table.eq2 thead tr:first-child th.colUse,
-    #printArea table.eq2 thead tr:first-child th.colTotal{ text-align:left; }
+    #printArea table.eq2 thead tr:nth-child(2) th.colTool,
+    #printArea table.eq2 thead tr:nth-child(2) th.colUse,
+    #printArea table.eq2 thead tr:nth-child(2) th.colTotal{ text-align:left; }
     #printArea table.eq2 td{
       padding:6px 7px; border-bottom:1px solid var(--map-line); border-right:1px solid var(--map-line);
       overflow-wrap:break-word; word-break:break-word; vertical-align:middle;
@@ -1799,6 +1815,9 @@ function buildAgeCalibTable(category, records, withImages){
   let html = `<table class="eq2">
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
+      <tr class="print-cat-row">
+        <th colspan="10">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
+      </tr>
       <tr>
         <th rowspan="2" class="colTool">เครื่องมือ</th>
         <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
