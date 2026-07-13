@@ -1431,6 +1431,11 @@
       </div>
 
       <div class="field">
+        <label>🔧 ชื่อเครื่องมือ</label>
+        <select id="f-item"><option value="">ทั้งหมด</option></select>
+      </div>
+
+      <div class="field">
         <label>🗂️ ประเภทเครื่องมือ</label>
         <select id="f-cat"><option value="">ทั้งหมด</option></select>
       </div>
@@ -2853,7 +2858,7 @@ const PALETTE = ['#3D4FE0','#3B82C4','#F0A94E','#C0503F','#7A5FC2','#5AC2E8','#B
 let currentData = [];
 // cat/unit/cal/cond/age/use are now arrays (multi-select) — an empty array means
 // "no restriction" (equivalent to the old null). year and search stay single-valued.
-let filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+let filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
 let tableSort = { key:'count', dir:'desc' };
 let tableFilterItem = null;
 let tableSearchText = '';
@@ -2964,7 +2969,7 @@ function uniqSorted(arr, key){
 
 function applyFilters(data, excludeKey){
   return data.filter(r=>{
-    for(const k of ['cat','unit','cal','cond','age','use','year']){
+    for(const k of ['item','cat','unit','cal','cond','age','use','year']){
       if(k===excludeKey) continue;
       const sel = filters[k];
       if(Array.isArray(sel)){
@@ -3225,8 +3230,8 @@ function makeMultiSelect(selectId, filterKey){
   sel._msRefresh();
 }
 
-const MULTI_FILTER_FIELDS = ['f-cat','f-unit','f-cal','f-cond','f-age','f-use'];
-const MULTI_FILTER_KEYS = { 'f-cat':'cat', 'f-unit':'unit', 'f-cal':'cal', 'f-cond':'cond', 'f-age':'age', 'f-use':'use' };
+const MULTI_FILTER_FIELDS = ['f-item','f-cat','f-unit','f-cal','f-cond','f-age','f-use'];
+const MULTI_FILTER_KEYS = { 'f-item':'item', 'f-cat':'cat', 'f-unit':'unit', 'f-cal':'cal', 'f-cond':'cond', 'f-age':'age', 'f-use':'use' };
 
 function initSearchableSelects(){
   MULTI_FILTER_FIELDS.forEach(id=> makeMultiSelect(id, MULTI_FILTER_KEYS[id]));
@@ -3250,7 +3255,7 @@ function populateSelect(id, key, data){
 function renderActiveFilters(){
   const wrap = document.getElementById('activeFilters');
   wrap.innerHTML='';
-  ['cat','unit','cal','cond','age','use'].forEach(k=>{
+  ['item','cat','unit','cal','cond','age','use'].forEach(k=>{
     (filters[k]||[]).forEach(v=>{
       const chip = document.createElement('div');
       chip.className='chip';
@@ -3269,6 +3274,7 @@ function renderActiveFilters(){
 }
 
 function refreshFilterOptions(){
+  populateSelect('f-item','item', applyFilters(currentData,'item'));
   populateSelect('f-cat','cat', applyFilters(currentData,'cat'));
   populateSelect('f-unit','unit', applyFilters(currentData,'unit'));
   populateSelect('f-cal','cal', applyFilters(currentData,'cal'));
@@ -4412,7 +4418,7 @@ document.getElementById('tableSearch').addEventListener('input', e=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+  filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('tableSearch').value='';
@@ -4716,7 +4722,7 @@ function showFileError(msg){
 
 function applyLoadedRows(rows, labelText){
   currentData = rows;
-  filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+  filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('fileName').textContent = labelText;
