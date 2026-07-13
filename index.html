@@ -396,15 +396,6 @@
   .ss-wrap .ss-option:hover{background:var(--soft-tint);}
   .ss-wrap .ss-option.selected{background:var(--soft-tint-strong);color:var(--soft-accent);font-weight:600;}
   .ss-wrap .ss-empty{padding:8px 9px;font-size:12px;color:var(--sidebar-muted,#667);}
-  .ss-wrap.ss-multi .ss-option{display:flex;align-items:center;gap:8px;}
-  .ss-wrap.ss-multi .ss-check{
-    flex-shrink:0;width:16px;height:16px;border-radius:4px;
-    border:1.5px solid var(--sidebar-line,#B9C2E0);
-    display:flex;align-items:center;justify-content:center;
-    font-size:11px;line-height:1;color:#fff;
-  }
-  .ss-wrap.ss-multi .ss-option.selected .ss-check{background:var(--soft-accent);border-color:var(--soft-accent);}
-  .ss-wrap.ss-multi .ss-opt-label{overflow:hidden;text-overflow:ellipsis;}
 
   .reset-btn{
     margin-top:2px;
@@ -854,15 +845,15 @@
     padding:7px 9px; font-weight:700; border-bottom:1px solid var(--map-line);
   }#mapSection table.eq td{
     padding:7px 9px; border-bottom:1px solid #E4E7F8; vertical-align:top;
-  }#mapSection table.eq tr:last-child td{border-bottom:none;}#mapSection table.eq td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:52px;}.no-data{color:var(--map-muted); font-size:12px; font-style:italic; padding:8px 0 16px;}/* ===== PDF-style equipment summary table (image + age buckets + calibration) ===== */
-  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}table.eq2 .print-cat-row{display:none;}table.eq2 caption{
+  }#mapSection table.eq tr:last-child td{border-bottom:none;}#mapSection table.eq td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:52px;}#mapSection .no-data{color:var(--map-muted); font-size:12px; font-style:italic; padding:8px 0 16px;}#mapSection /* ===== PDF-style equipment summary table (image + age buckets + calibration) ===== */
+  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}#mapSection table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}#mapSection table.eq2 .print-cat-row{display:none;}#mapSection table.eq2 caption{
     text-align:left; font-weight:700; font-size:12.5px; color:#fff;
     background:var(--map-teal); padding:7px 10px;
-  }table.eq2 th{
+  }#mapSection table.eq2 th{
     background:#E7EAFB; color:var(--map-teal-deep); text-align:center;
     padding:6px 5px; font-weight:700; border:1px solid var(--map-line); line-height:1.3;
     white-space:nowrap;
-  }table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}table.eq2 td.colTotal, table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}table.eq2 td.colTool{min-width:150px;}table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}.eq-tool-cell{display:flex; align-items:center; gap:8px;}.eq-tool-cell span:last-child{font-weight:600; font-size:11.5px;}.eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC; cursor:zoom-in;}.eq-photo-fallback{
+  }#mapSection table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}#mapSection table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}#mapSection table.eq2 td.colTotal, #mapSection table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}#mapSection table.eq2 td.colTool{min-width:150px;}#mapSection table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}#mapSection .eq-tool-cell{display:flex; align-items:center; gap:8px;}#mapSection .eq-tool-cell span:last-child{font-weight:600; font-size:11.5px;}#mapSection .eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC; cursor:zoom-in;}#mapSection .eq-photo-fallback{
     width:34px; height:34px; border-radius:6px; background:#EAEDFA; flex-shrink:0;
     align-items:center; justify-content:center; font-size:16px;
   }#mapSection /* ===== Image lightbox (click a tool photo in the sidebar table to zoom) ===== */
@@ -1363,7 +1354,7 @@
     </div>
 
     <div class="side-footer">
-      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ตัวกรองแต่ละช่องเลือกได้มากกว่า 1 รายการ (คลิกช่องแล้วเลือกได้เรื่อยๆ) · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 45 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
+      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 1 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
     </div>
   </aside>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -1625,12 +1616,23 @@
 
     <div class="panel">
       <h2>📋 รายการเครื่องมือ</h2>
-      <div class="hint">คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · ตารางแยกตามประเภทเครื่องมือ พร้อมช่วงอายุและสถานะสอบเทียบ</div>
+      <div class="hint">คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกหัวคอลัมน์เพื่อจัดเรียง</div>
       <div class="table-search">
         <span>🔎</span>
         <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
       </div>
-      <div id="toolTableWrap"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:64px;">ภาพ</th>
+              <th id="th-name">เครื่องมือ ▾</th>
+              <th id="th-count" style="width:180px;">จำนวนที่มี</th>
+            </tr>
+          </thead>
+          <tbody id="toolTableBody"></tbody>
+        </table>
+      </div>
     </div>
     </div>
   </main>
@@ -1808,13 +1810,12 @@ let mapRecordsCache = [];
 function buildMapRecords(rows){
   return rows.map(r=>{
     const code = matchOrgCode(r.unit);
-    const ageNum = (r.age===null || r.age===undefined || r.age==='') ? NaN : Number(String(r.age).replace(/[^0-9.\-]/g,''));
     return {
       type: r.cat || null,
       name: r.item || null,
       org: code || (r.unit || '').toString().trim(),
       yearGot: r.year || null,
-      age: isNaN(ageNum) ? null : ageNum,
+      age: null,
       statusEquip: r.cond || null,
       statusCalib: r.cal || null,
       statusUse: r.use || null,
@@ -2006,14 +2007,6 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
 function categoryTables(code, withImages, splitPhotoCol){
   const recs = RECORDS_BY_ORG[code] || [];
   if(!recs.length) return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
-  return categoryTablesForRecords(recs, withImages, splitPhotoCol);
-}
-
-// Same grouped "เครื่องมือ + ลักษณะการใช้งาน + เกณฑ์อายุ + สถานะสอบเทียบ" table,
-// generalized to any record set — used both for a single org's popup/PDF and
-// for the main "รายการเครื่องมือ" panel which spans every org currently in view.
-function categoryTablesForRecords(recs, withImages, splitPhotoCol){
-  if(!recs.length) return `<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>`;
   const byCat = {};
   recs.forEach(r=>{ const c = r.type || "อื่นๆ"; (byCat[c]=byCat[c]||[]).push(r); });
   const cats = Object.keys(byCat).sort((a,b)=>{
@@ -2556,9 +2549,9 @@ function applyMapSelectionVisual(code){
 function applyUserOrgSelection(code){
   if(code){
     const match = uniqueUnitValues().find(u => matchOrgCode(u) === code);
-    filters.unit = [match || code];
+    filters.unit = match || code;
   }else{
-    filters.unit = [];
+    filters.unit = null;
   }
   refreshAll();
 }
@@ -2571,7 +2564,7 @@ function syncMapFromDashboard(){
   rebuildRecordsByOrg();
   buildLegend();
   renderOrgPoints();
-  const targetCode = (filters.unit && filters.unit.length===1) ? matchOrgCode(filters.unit[0]) : null;
+  const targetCode = filters.unit ? matchOrgCode(filters.unit) : null;
   applyMapSelectionVisual(targetCode);
 }
 /* ===== Deselect button — clears the currently selected org/area ===== */
@@ -2709,13 +2702,12 @@ const CAL_COLORS = {
 };
 const PALETTE = ['#3D4FE0','#3B82C4','#F0A94E','#C0503F','#7A5FC2','#5AC2E8','#B0793E','#2F9E68','#C25FA0','#8A9A46','#D64545','#5F7AC2','#C29A5F','#4EA3A0','#A65FC2','#6FA85F','#3E8A9E','#9E5F3E','#5F9E7A','#9E3E6F'];
 
-function emptyFilters(){
-  return { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
-}
 let currentData = [];
-let filters = emptyFilters();
+let filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+let tableSort = { key:'count', dir:'desc' };
 let tableFilterItem = null;
 let tableSearchText = '';
+let sortState = {name:'asc', count:'desc'};
 
 /* ======================= CHART TYPE PREFERENCES ======================= */
 // ผู้ใช้สามารถเลือกรูปแบบกราฟที่ต้องการดูเองได้ในแต่ละส่วน
@@ -2801,7 +2793,7 @@ function updateYearlyTrendControlsVisibility(){
   const hint1 = panelYearlyTotalEl && panelYearlyTotalEl.querySelector('.hint');
   // If a "หน่วยงาน" filter is currently active, show its name in the panel
   // title so it's clear which agency the chart below is describing.
-  const unitSuffix = (filters.unit && filters.unit.length) ? ` — ${filters.unit.join(', ')}` : '';
+  const unitSuffix = filters.unit ? ` — ${filters.unit}` : '';
   if(isCombo){
     if(h1) h1.textContent = `📈 แนวโน้มจำนวนเครื่องมือที่ได้รับ รายปี${unitSuffix}`;
     if(hint1) hint1.textContent = 'แท่ง = จำนวนที่ได้รับในปีนั้น · เส้น = ยอดสะสมตั้งแต่ปีแรก (ตามข้อมูลที่ตรงกับตัวกรองอื่น)';
@@ -2820,12 +2812,10 @@ function uniqSorted(arr, key){
 
 function applyFilters(data, excludeKey){
   return data.filter(r=>{
-    for(const k of ['cat','unit','cal','cond','age','use']){
+    for(const k of ['cat','unit','cal','cond','age','use','year']){
       if(k===excludeKey) continue;
-      const sel = filters[k];
-      if(sel && sel.length && !sel.includes(r[k])) return false;
+      if(filters[k] !== null && r[k] !== filters[k]) return false;
     }
-    if(excludeKey!=='year' && filters.year !== null && r.year !== filters.year) return false;
     if(filters.search){
       const q = filters.search.toLowerCase();
       const hay = ((r.item||'')+' '+(r.unit||'')+' '+(r.cat||'')).toLowerCase();
@@ -2847,31 +2837,21 @@ function countBy(data, key){
 function fmt(n){ return n.toLocaleString('en-US'); }
 
 function toggleFilter(key, value){
-  const arr = filters[key] || (filters[key] = []);
-  const idx = arr.indexOf(value);
-  if(idx >= 0) arr.splice(idx,1); else arr.push(value);
+  filters[key] = (filters[key] === value) ? null : value;
   refreshAll();
 }
 
 /* ======================= SEARCHABLE SELECT (combobox) ======================= */
-// Wraps a <select> so it can be typed-into to filter its options. The six
-// sidebar filter fields (cat/unit/cal/cond/age/use) behave as a real
-// multi-select: each option has a checkbox, picking one keeps the dropdown
-// open so several can be picked in a row, and every toggle writes straight
-// into filters[key] (an array) and re-renders the dashboard. The year
-// selector for the yearly-trend chart stays single-pick, closing on choice.
-const MULTI_SELECT_FIELDS = ['f-cat','f-unit','f-cal','f-cond','f-age','f-use'];
-
+// Wraps a <select> so it can be typed-into to filter its options, without touching
+// any of the existing code that reads/sets `.value` or listens for 'change' on it —
+// the original <select> stays in the DOM (just hidden) and keeps firing 'change'.
 function makeSearchable(selectId){
   const sel = document.getElementById(selectId);
   if(!sel || sel.dataset.ssEnhanced) return;
   sel.dataset.ssEnhanced = '1';
-  const isMulti = MULTI_SELECT_FIELDS.includes(selectId);
-  const filterKey = selectId.replace(/^f-/, '');
-  if(isMulti) sel.multiple = true;
 
   const wrap = document.createElement('div');
-  wrap.className = 'ss-wrap' + (isMulti ? ' ss-multi' : '');
+  wrap.className = 'ss-wrap';
   sel.parentNode.insertBefore(wrap, sel);
   wrap.appendChild(sel);
 
@@ -2894,20 +2874,12 @@ function makeSearchable(selectId){
   dropdown.className = 'ss-dropdown';
   wrap.appendChild(dropdown);
 
-  let searchQuery = '';
-
   function currentLabel(){
-    if(isMulti){
-      const opts = Array.from(sel.selectedOptions);
-      if(!opts.length) return '';
-      if(opts.length === 1) return opts[0].textContent;
-      return `เลือกแล้ว ${opts.length} รายการ`;
-    }
     const opt = sel.options[sel.selectedIndex];
     return (opt && opt.value !== '') ? opt.textContent : '';
   }
   function syncClearVisibility(){
-    clearBtn.style.display = (isMulti ? sel.selectedOptions.length>0 : sel.value) ? 'block' : 'none';
+    clearBtn.style.display = sel.value ? 'block' : 'none';
   }
   function renderOptions(filterText){
     const q = (filterText||'').trim().toLowerCase();
@@ -2922,62 +2894,39 @@ function makeSearchable(selectId){
     }
     matches.forEach(o=>{
       const item = document.createElement('div');
-      item.className = 'ss-option' + (o.selected ? ' selected' : '');
-      item.innerHTML = isMulti
-        ? `<span class="ss-check">${o.selected ? '✓' : ''}</span><span class="ss-opt-label">${o.textContent}</span>`
-        : o.textContent;
+      item.className = 'ss-option' + (o.value === sel.value ? ' selected' : '');
+      item.textContent = o.value === '' ? o.textContent : o.textContent;
       item.addEventListener('mousedown', e=>{
         e.preventDefault();
-        if(isMulti){
-          o.selected = !o.selected;
-          filters[filterKey] = Array.from(sel.selectedOptions).map(x=>x.value);
-          renderOptions(searchQuery); // keep dropdown open, refresh checkmarks
-          syncClearVisibility();
-          refreshAll();
-        }else{
-          sel.value = o.value;
-          input.value = currentLabel();
-          syncClearVisibility();
-          closeDropdown();
-          sel.dispatchEvent(new Event('change', {bubbles:true}));
-        }
+        sel.value = o.value;
+        input.value = currentLabel();
+        syncClearVisibility();
+        closeDropdown();
+        sel.dispatchEvent(new Event('change', {bubbles:true}));
       });
       dropdown.appendChild(item);
     });
   }
-  function openDropdown(){ renderOptions(searchQuery); dropdown.classList.add('open'); }
+  function openDropdown(){ renderOptions(''); dropdown.classList.add('open'); }
   function closeDropdown(){ dropdown.classList.remove('open'); }
 
-  input.addEventListener('focus', ()=>{ searchQuery=''; input.value=''; openDropdown(); });
-  input.addEventListener('input', ()=>{ searchQuery = input.value; renderOptions(searchQuery); dropdown.classList.add('open'); });
+  input.addEventListener('focus', ()=>{ input.value = ''; openDropdown(); });
+  input.addEventListener('input', ()=>{ renderOptions(input.value); dropdown.classList.add('open'); });
   input.addEventListener('blur', ()=>{ setTimeout(()=>{ input.value = currentLabel(); closeDropdown(); }, 120); });
   input.addEventListener('keydown', e=>{ if(e.key === 'Escape') input.blur(); });
 
   clearBtn.addEventListener('mousedown', e=>{
     e.preventDefault();
-    if(isMulti){
-      Array.from(sel.options).forEach(o=>{ o.selected = false; });
-      filters[filterKey] = [];
-      input.value = '';
-      syncClearVisibility();
-      closeDropdown();
-      refreshAll();
-    }else{
-      sel.value = '';
-      input.value = '';
-      syncClearVisibility();
-      closeDropdown();
-      sel.dispatchEvent(new Event('change', {bubbles:true}));
-    }
+    sel.value = '';
+    input.value = '';
+    syncClearVisibility();
+    closeDropdown();
+    sel.dispatchEvent(new Event('change', {bubbles:true}));
   });
 
-  // Called after anything rebuilds the option list (populateSelect / syncSelectValues) —
-  // re-renders the dropdown too, if it's currently open, so it never shows stale options.
-  sel._ssRefresh = function(){
-    input.value = currentLabel();
-    syncClearVisibility();
-    if(dropdown.classList.contains('open')) renderOptions(searchQuery);
-  };
+  // Called after anything sets `sel.value` directly (bypassing 'change'), e.g.
+  // populateSelect(), syncSelectValues(), or the reset button.
+  sel._ssRefresh = function(){ input.value = currentLabel(); syncClearVisibility(); };
 
   sel._ssRefresh();
 }
@@ -2989,37 +2938,22 @@ function populateSelect(id, key, data){
   const sel = document.getElementById(id);
   const vals = uniqSorted(data, key);
   const cur = filters[key];
-  if(Array.isArray(cur)){
-    sel.multiple = true;
-    sel.innerHTML = vals.map(v=>`<option value="${v}" ${cur.includes(v)?'selected':''}>${v}</option>`).join('');
-  }else{
-    sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}" ${cur===v?'selected':''}>${v}</option>`).join('');
-  }
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}" ${cur===v?'selected':''}>${v}</option>`).join('');
   if(sel._ssRefresh) sel._ssRefresh();
 }
 
 function renderActiveFilters(){
   const wrap = document.getElementById('activeFilters');
   wrap.innerHTML='';
-  ['cat','unit','cal','cond','age','use'].forEach(k=>{
-    (filters[k]||[]).forEach(val=>{
+  ['cat','unit','cal','cond','age','use','year'].forEach(k=>{
+    if(filters[k] !== null){
       const chip = document.createElement('div');
       chip.className='chip';
-      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${val}</span><button>✕</button>`;
-      chip.querySelector('button').onclick = ()=>{
-        filters[k] = filters[k].filter(v=>v!==val);
-        refreshAll();
-      };
+      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${filters[k]}</span><button data-k="${k}">✕</button>`;
+      chip.querySelector('button').onclick = ()=>{ filters[k]=null; refreshAll(); };
       wrap.appendChild(chip);
-    });
+    }
   });
-  if(filters.year !== null){
-    const chip = document.createElement('div');
-    chip.className='chip';
-    chip.innerHTML = `<span>${FIELD_LABELS.year}: ${filters.year}</span><button>✕</button>`;
-    chip.querySelector('button').onclick = ()=>{ filters.year=null; refreshAll(); };
-    wrap.appendChild(chip);
-  }
 }
 
 function refreshFilterOptions(){
@@ -3410,10 +3344,9 @@ function hBarSVG(container, {labels, data, colors, width=760, height, onBarClick
 
 function renderLegendList(container, items, activeValue, onClick){
   clearNode(container);
-  const activeArr = Array.isArray(activeValue) ? activeValue : (activeValue ? [activeValue] : []);
   items.forEach(it=>{
     const row = document.createElement('div');
-    row.className = 'legend-item' + (activeArr.length && !activeArr.includes(it.label) ? ' dim' : '');
+    row.className = 'legend-item' + (activeValue && activeValue !== it.label ? ' dim' : '');
     row.innerHTML = `<span class="sw" style="background:${it.color}"></span><span>${it.label}</span><span class="n">${fmt(it.value)}</span>`;
     row.onclick = ()=> onClick(it.label);
     container.appendChild(row);
@@ -3505,28 +3438,48 @@ function renderCalBar(filtered){
 
 /* ======================= TABLE ======================= */
 function renderTable(filtered){
-  const recs = buildMapRecords(filtered);
-  let list = recs;
+  const grouped = new Map();
+  filtered.forEach(r=>{
+    const name = r.item ?? '(ไม่ระบุ)';
+    if(!grouped.has(name)) grouped.set(name, {name, count:0, img:null});
+    const g = grouped.get(name);
+    g.count++;
+    if(!g.img && r.img) g.img = r.img;
+  });
+  let rows = Array.from(grouped.values());
   if(tableSearchText){
     const q = tableSearchText.toLowerCase();
-    list = list.filter(r=> (r.name||'').toLowerCase().includes(q));
+    rows = rows.filter(r=>r.name.toLowerCase().includes(q));
   }
-  const wrap = document.getElementById('toolTableWrap');
-  if(!wrap) return;
-  if(!list.length){
-    wrap.innerHTML = `<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>`;
+  rows.sort((a,b)=>{
+    let av = tableSort.key==='name'? a.name : a.count;
+    let bv = tableSort.key==='name'? b.name : b.count;
+    let cmp = (typeof av==='string') ? av.localeCompare(bv,'th') : av-bv;
+    return tableSort.dir==='asc' ? cmp : -cmp;
+  });
+  const max = rows.length ? Math.max(...rows.map(r=>r.count)) : 1;
+  const tbody = document.getElementById('toolTableBody');
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div></td></tr>`;
     return;
   }
-  wrap.innerHTML = categoryTablesForRecords(list, true, false);
-  // Row click filters the whole dashboard by that instrument name — same
-  // behaviour the old flat table had — and highlights the active row.
-  wrap.querySelectorAll('table.eq2 tbody tr').forEach(tr=>{
-    const nameEl = tr.querySelector('.eq-tool-cell > span:last-child');
-    const name = nameEl ? nameEl.textContent.trim() : null;
-    if(!name) return;
-    tr.classList.toggle('sel', tableFilterItem === name);
-    tr.style.cursor = 'pointer';
+  tbody.innerHTML = rows.map(r=>`
+    <tr class="${tableFilterItem===r.name?'sel':''}" data-name="${encodeURIComponent(r.name)}">
+      <td>${r.img
+        ? `<img class="tool-thumb" src="${r.img}" alt="${r.name}" loading="lazy" onerror="this.outerHTML='<div class=&quot;tool-thumb-placeholder&quot;>🔧</div>';">`
+        : `<div class="tool-thumb-placeholder">🔧</div>`}</td>
+      <td>${r.name}</td>
+      <td>
+        <div class="bar-cell">
+          <span class="num" style="width:34px;">${fmt(r.count)}</span>
+          <div class="track"><div class="fill" style="width:${(r.count/max*100).toFixed(1)}%;"></div></div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  Array.from(tbody.querySelectorAll('tr')).forEach(tr=>{
     tr.onclick = ()=>{
+      const name = decodeURIComponent(tr.dataset.name);
       if(tableFilterItem === name){ tableFilterItem = null; filters.search=''; }
       else{ tableFilterItem = name; filters.search = name; }
       document.getElementById('searchInput').value = filters.search;
@@ -4037,21 +3990,27 @@ function refreshAll(){
 }
 
 function syncSelectValues(){
-  ['cat','unit','cal','cond','age','use'].forEach(k=>{
-    const el = document.getElementById('f-'+k);
-    if(!el) return;
-    const cur = filters[k] || [];
-    Array.from(el.options).forEach(o=>{ o.selected = cur.includes(o.value); });
-    if(el._ssRefresh) el._ssRefresh();
-  });
+  document.getElementById('f-cat').value = filters.cat || '';
+  document.getElementById('f-unit').value = filters.unit || '';
+  document.getElementById('f-cal').value = filters.cal || '';
+  document.getElementById('f-cond').value = filters.cond || '';
+  document.getElementById('f-age').value = filters.age || '';
+  document.getElementById('f-use').value = filters.use || '';
   const yEl = document.getElementById('yearlyTrend-year');
-  if(yEl){
-    yEl.value = filters.year !== null ? String(filters.year) : '';
-    if(yEl._ssRefresh) yEl._ssRefresh();
-  }
+  if(yEl) yEl.value = filters.year || '';
+  ['f-cat','f-unit','f-cal','f-cond','f-age','f-use','yearlyTrend-year'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el._ssRefresh) el._ssRefresh();
+  });
 }
 
 /* ======================= EVENTS ======================= */
+['cat','unit','cal','cond','age','use'].forEach(k=>{
+  document.getElementById('f-'+k).addEventListener('change', e=>{
+    filters[k] = e.target.value || null;
+    refreshAll();
+  });
+});
 document.getElementById('yearlyTrend-year').addEventListener('change', e=>{
   // currentData stores year as a Number (see normalizeRows), but <select> values
   // are always strings — comparing them directly in applyFilters() always failed,
@@ -4073,12 +4032,23 @@ document.getElementById('tableSearch').addEventListener('input', e=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  filters = emptyFilters();
+  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('tableSearch').value='';
   tableSearchText='';
   refreshAll();
+});
+
+document.getElementById('th-name').addEventListener('click', ()=>{
+  tableSort = {key:'name', dir: sortState.name};
+  sortState.name = sortState.name==='asc' ? 'desc':'asc';
+  renderTable(applyFilters(currentData));
+});
+document.getElementById('th-count').addEventListener('click', ()=>{
+  tableSort = {key:'count', dir: sortState.count};
+  sortState.count = sortState.count==='asc' ? 'desc':'asc';
+  renderTable(applyFilters(currentData));
 });
 
 /* ======================= OFFLINE FILE PARSERS (no external libs) ======================= */
@@ -4377,7 +4347,7 @@ function showFileError(msg){
 
 function applyLoadedRows(rows, labelText){
   currentData = rows;
-  filters = emptyFilters();
+  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('fileName').textContent = labelText;
@@ -4472,7 +4442,7 @@ function collapseExpandedPanel(){
 // ใช้ Google Visualization API (gviz) รูปแบบ CSV ซึ่งอนุญาตให้เรียกข้ามโดเมนจากเบราว์เซอร์ได้โดยไม่ต้องใช้ API key
 const GOOGLE_SHEET_ID = '1ssqSHSeRIIkdBnWyzYfQyotNWpWJMxM2NKTeS7zu4Dw';
 const GOOGLE_SHEET_GID = '1130129068'; // แท็บที่มีข้อมูลจริง (Sheet1)
-const SHEET_REFRESH_MS = 45*60*1000; // ซิงก์อัตโนมัติทุก 45 นาที
+const SHEET_REFRESH_MS = 60000; // ซิงก์อัตโนมัติทุก 60 วินาที
 
 let dataSource = 'sheet'; // 'sheet' = ใช้ข้อมูลจาก Google Sheet, 'file' = ผู้ใช้อัปโหลดไฟล์เอง
 let sheetPollTimer = null;
@@ -4497,25 +4467,18 @@ function setSheetStatus(state, mainText, subText){
   if(btn) btn.classList.toggle('spinning', state === 'loading');
 }
 
-const SHEET_FETCH_TIMEOUT_MS = 8000; // อย่าให้ค้างเกินนี้ ไม่งั้นจะติดข้อความ "กำลังเชื่อมต่อ..." ตลอดไป
-
 async function fetchSheetCsv(){
   const urls = sheetCsvUrls();
   let lastErr = null;
   for(const url of urls){
     try{
-      const res = await withTimeout(fetch(url, { cache:'no-store' }), SHEET_FETCH_TIMEOUT_MS);
-      if(!res.ok){ lastErr = new Error('HTTP ' + res.status + ' — ชีตอาจไม่ได้แชร์แบบสาธารณะ หรือลิงก์/รหัสชีตไม่ถูกต้อง'); continue; }
+      const res = await fetch(url, { cache:'no-store' });
+      if(!res.ok){ lastErr = new Error('HTTP ' + res.status); continue; }
       const text = await res.text();
-      if(!text || /^\s*<(!doctype|html)/i.test(text)){ lastErr = new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้า HTML แทน CSV (ชีตไม่ได้แชร์เป็น "ทุกคนที่มีลิงก์ - ดูได้")'); continue; }
+      if(!text || /^\s*<(!doctype|html)/i.test(text)){ lastErr = new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้า HTML แทน CSV (อาจไม่ได้แชร์แบบสาธารณะ)'); continue; }
       return text;
     }catch(e){
-      // มักเป็น TypeError: Failed to fetch เมื่อโดน CORS/เครือข่ายบล็อก, หรือ Error: timeout เมื่อเครือข่ายช้า/ถูกกรอง
-      if(e && e.message === 'timeout'){
-        lastErr = new Error('หมดเวลาเชื่อมต่อ (' + (SHEET_FETCH_TIMEOUT_MS/1000) + ' วินาที) — เครือข่ายอาจบล็อกหรือช้าเกินไปในการเข้าถึง docs.google.com (พบบ่อยในเครือข่ายโรงเรียน/องค์กรที่มีตัวกรองเว็บ)');
-      } else {
-        lastErr = new Error('เชื่อมต่อไม่สำเร็จ (' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ') + ') — อาจถูกเครือข่ายบล็อก หรือเปิดไฟล์แบบ file:// ที่ไม่รองรับ CORS');
-      }
+      lastErr = e; // มักเป็น TypeError: Failed to fetch เมื่อโดน CORS หรือเปิดไฟล์แบบ file://
     }
   }
   throw lastErr || new Error('ไม่สามารถเชื่อมต่อได้');
@@ -4550,7 +4513,7 @@ function initGsheetSync(){
   const btn = document.getElementById('sheetRefreshBtn');
   if(btn) btn.addEventListener('click', ()=>loadFromGoogleSheet(false));
   loadFromGoogleSheet(false); // เชื่อมต่อทันทีที่เปิดหน้า
-  startSheetPolling();        // แล้วซิงก์ซ้ำอัตโนมัติทุก 45 นาที
+  startSheetPolling();        // แล้วซิงก์ซ้ำอัตโนมัติทุก 60 วินาที
 }
 
 /* ======================= INIT ======================= */
