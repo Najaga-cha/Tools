@@ -4497,18 +4497,25 @@ function setSheetStatus(state, mainText, subText){
   if(btn) btn.classList.toggle('spinning', state === 'loading');
 }
 
+const SHEET_FETCH_TIMEOUT_MS = 8000; // อย่าให้ค้างเกินนี้ ไม่งั้นจะติดข้อความ "กำลังเชื่อมต่อ..." ตลอดไป
+
 async function fetchSheetCsv(){
   const urls = sheetCsvUrls();
   let lastErr = null;
   for(const url of urls){
     try{
-      const res = await fetch(url, { cache:'no-store' });
-      if(!res.ok){ lastErr = new Error('HTTP ' + res.status); continue; }
+      const res = await withTimeout(fetch(url, { cache:'no-store' }), SHEET_FETCH_TIMEOUT_MS);
+      if(!res.ok){ lastErr = new Error('HTTP ' + res.status + ' — ชีตอาจไม่ได้แชร์แบบสาธารณะ หรือลิงก์/รหัสชีตไม่ถูกต้อง'); continue; }
       const text = await res.text();
-      if(!text || /^\s*<(!doctype|html)/i.test(text)){ lastErr = new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้า HTML แทน CSV (อาจไม่ได้แชร์แบบสาธารณะ)'); continue; }
+      if(!text || /^\s*<(!doctype|html)/i.test(text)){ lastErr = new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้า HTML แทน CSV (ชีตไม่ได้แชร์เป็น "ทุกคนที่มีลิงก์ - ดูได้")'); continue; }
       return text;
     }catch(e){
-      lastErr = e; // มักเป็น TypeError: Failed to fetch เมื่อโดน CORS หรือเปิดไฟล์แบบ file://
+      // มักเป็น TypeError: Failed to fetch เมื่อโดน CORS/เครือข่ายบล็อก, หรือ Error: timeout เมื่อเครือข่ายช้า/ถูกกรอง
+      if(e && e.message === 'timeout'){
+        lastErr = new Error('หมดเวลาเชื่อมต่อ (' + (SHEET_FETCH_TIMEOUT_MS/1000) + ' วินาที) — เครือข่ายอาจบล็อกหรือช้าเกินไปในการเข้าถึง docs.google.com (พบบ่อยในเครือข่ายโรงเรียน/องค์กรที่มีตัวกรองเว็บ)');
+      } else {
+        lastErr = new Error('เชื่อมต่อไม่สำเร็จ (' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ') + ') — อาจถูกเครือข่ายบล็อก หรือเปิดไฟล์แบบ file:// ที่ไม่รองรับ CORS');
+      }
     }
   }
   throw lastErr || new Error('ไม่สามารถเชื่อมต่อได้');
