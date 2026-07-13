@@ -397,6 +397,62 @@
   .ss-wrap .ss-option.selected{background:var(--soft-tint-strong);color:var(--soft-accent);font-weight:600;}
   .ss-wrap .ss-empty{padding:8px 9px;font-size:12px;color:var(--sidebar-muted,#667);}
 
+  /* ===== Multi-select filter dropdown (checkbox combobox) ===== */
+  .ms-wrap{position:relative;}
+  .ms-wrap select{display:none;}
+  .ms-box{
+    display:flex;align-items:center;gap:6px;
+    width:100%;
+    background:var(--field-bg);
+    border:1px solid var(--sidebar-line);
+    color:var(--sidebar-text);
+    border-radius:8px;
+    padding:8px 8px 8px 10px;
+    font-family:'Sarabun',sans-serif;
+    font-size:13px;
+    cursor:pointer;
+    outline:none;
+  }
+  .ms-box:focus, .ms-wrap.open .ms-box{border-color:var(--ok);}
+  .ms-summary{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ms-summary.placeholder{color:var(--sidebar-muted);}
+  .ms-clear{
+    display:none;border:none;background:none;color:var(--sidebar-muted,#667);
+    cursor:pointer;font-size:12px;padding:2px;line-height:1;flex-shrink:0;
+  }
+  .ms-clear:hover{color:var(--err-text);}
+  .ms-caret{font-size:10px;color:var(--sidebar-muted);flex-shrink:0;}
+  .ms-dropdown{
+    display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;
+    background:var(--surface);border:1px solid var(--sidebar-line,#dfe3f5);border-radius:10px;
+    box-shadow:0 10px 28px rgba(20,25,60,0.14);
+    padding:6px;
+  }
+  .ms-dropdown.open{display:block;}
+  .ms-dropdown .ms-search{
+    width:100%;box-sizing:border-box;
+    background:var(--field-bg);
+    border:1px solid var(--sidebar-line);
+    color:var(--sidebar-text);
+    border-radius:7px;
+    padding:6px 9px;
+    font-family:'Sarabun',sans-serif;
+    font-size:12.5px;
+    outline:none;
+    margin-bottom:6px;
+  }
+  .ms-dropdown .ms-search:focus{border-color:var(--ok);}
+  .ms-list{max-height:210px;overflow-y:auto;}
+  .ms-option{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--sidebar-text);
+    cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .ms-option:hover{background:var(--soft-tint);}
+  .ms-option input[type=checkbox]{flex-shrink:0;accent-color:var(--soft-accent);cursor:pointer;}
+  .ms-option span{overflow:hidden;text-overflow:ellipsis;}
+  .ms-empty{padding:8px 9px;font-size:12px;color:var(--sidebar-muted,#667);}
+
   .reset-btn{
     margin-top:2px;
     background:var(--soft-tint);
@@ -1354,7 +1410,7 @@
     </div>
 
     <div class="side-footer">
-      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 1 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
+      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 45 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
     </div>
   </aside>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -2549,9 +2605,11 @@ function applyMapSelectionVisual(code){
 function applyUserOrgSelection(code){
   if(code){
     const match = uniqueUnitValues().find(u => matchOrgCode(u) === code);
-    filters.unit = match || code;
+    // Picking an org on the map sets it as the sole "หน่วยงาน" filter (replacing
+    // any previous multi-select there), since a map click means "show me this one".
+    filters.unit = [match || code];
   }else{
-    filters.unit = null;
+    filters.unit = [];
   }
   refreshAll();
 }
@@ -2564,7 +2622,9 @@ function syncMapFromDashboard(){
   rebuildRecordsByOrg();
   buildLegend();
   renderOrgPoints();
-  const targetCode = filters.unit ? matchOrgCode(filters.unit) : null;
+  // The map can only highlight a single org, so it only lights up when exactly
+  // one หน่วยงาน is selected; 0 or 2+ selections leave the map unhighlighted.
+  const targetCode = (filters.unit && filters.unit.length === 1) ? matchOrgCode(filters.unit[0]) : null;
   applyMapSelectionVisual(targetCode);
 }
 /* ===== Deselect button — clears the currently selected org/area ===== */
@@ -2703,7 +2763,9 @@ const CAL_COLORS = {
 const PALETTE = ['#3D4FE0','#3B82C4','#F0A94E','#C0503F','#7A5FC2','#5AC2E8','#B0793E','#2F9E68','#C25FA0','#8A9A46','#D64545','#5F7AC2','#C29A5F','#4EA3A0','#A65FC2','#6FA85F','#3E8A9E','#9E5F3E','#5F9E7A','#9E3E6F'];
 
 let currentData = [];
-let filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+// cat/unit/cal/cond/age/use are now arrays (multi-select) — an empty array means
+// "no restriction" (equivalent to the old null). year and search stay single-valued.
+let filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
 let tableSort = { key:'count', dir:'desc' };
 let tableFilterItem = null;
 let tableSearchText = '';
@@ -2793,7 +2855,9 @@ function updateYearlyTrendControlsVisibility(){
   const hint1 = panelYearlyTotalEl && panelYearlyTotalEl.querySelector('.hint');
   // If a "หน่วยงาน" filter is currently active, show its name in the panel
   // title so it's clear which agency the chart below is describing.
-  const unitSuffix = filters.unit ? ` — ${filters.unit}` : '';
+  const unitSuffix = (filters.unit && filters.unit.length)
+    ? ` — ${filters.unit.length === 1 ? filters.unit[0] : filters.unit.length + ' หน่วยงาน'}`
+    : '';
   if(isCombo){
     if(h1) h1.textContent = `📈 แนวโน้มจำนวนเครื่องมือที่ได้รับ รายปี${unitSuffix}`;
     if(hint1) hint1.textContent = 'แท่ง = จำนวนที่ได้รับในปีนั้น · เส้น = ยอดสะสมตั้งแต่ปีแรก (ตามข้อมูลที่ตรงกับตัวกรองอื่น)';
@@ -2814,7 +2878,12 @@ function applyFilters(data, excludeKey){
   return data.filter(r=>{
     for(const k of ['cat','unit','cal','cond','age','use','year']){
       if(k===excludeKey) continue;
-      if(filters[k] !== null && r[k] !== filters[k]) return false;
+      const sel = filters[k];
+      if(Array.isArray(sel)){
+        if(sel.length && !sel.includes(r[k])) return false;
+      } else if(sel !== null && r[k] !== sel){
+        return false;
+      }
     }
     if(filters.search){
       const q = filters.search.toLowerCase();
@@ -2837,7 +2906,13 @@ function countBy(data, key){
 function fmt(n){ return n.toLocaleString('en-US'); }
 
 function toggleFilter(key, value){
-  filters[key] = (filters[key] === value) ? null : value;
+  const cur = filters[key];
+  if(Array.isArray(cur)){
+    const idx = cur.indexOf(value);
+    if(idx === -1) cur.push(value); else cur.splice(idx, 1);
+  } else {
+    filters[key] = (cur === value) ? null : value;
+  }
   refreshAll();
 }
 
@@ -2930,30 +3005,179 @@ function makeSearchable(selectId){
 
   sel._ssRefresh();
 }
+/* ======================= MULTI-SELECT (checkbox combobox) ======================= */
+// Wraps a <select> whose backing filter is an array (multi-select). The original
+// <select> stays in the DOM (hidden) purely as the source of available <option>s —
+// selection state itself lives in filters[filterKey], and every checkbox toggle
+// goes through toggleFilter() so chart-click filtering and the sidebar dropdown
+// stay perfectly in sync.
+function makeMultiSelect(selectId, filterKey){
+  const sel = document.getElementById(selectId);
+  if(!sel || sel.dataset.msEnhanced) return;
+  sel.dataset.msEnhanced = '1';
+  sel.style.display = 'none';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ms-wrap';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+
+  const box = document.createElement('div');
+  box.className = 'ms-box';
+  box.tabIndex = 0;
+  wrap.appendChild(box);
+
+  const summary = document.createElement('span');
+  summary.className = 'ms-summary';
+  box.appendChild(summary);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'ms-clear';
+  clearBtn.textContent = '✕';
+  clearBtn.title = 'ล้างค่า';
+  box.appendChild(clearBtn);
+
+  const caret = document.createElement('span');
+  caret.className = 'ms-caret';
+  caret.textContent = '▾';
+  box.appendChild(caret);
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ms-dropdown';
+  wrap.appendChild(dropdown);
+
+  const searchBox = document.createElement('input');
+  searchBox.type = 'text';
+  searchBox.className = 'ms-search';
+  searchBox.placeholder = 'ค้นหา...';
+  searchBox.autocomplete = 'off';
+  searchBox.spellcheck = false;
+  dropdown.appendChild(searchBox);
+
+  const listEl = document.createElement('div');
+  listEl.className = 'ms-list';
+  dropdown.appendChild(listEl);
+
+  function optionValues(){
+    return Array.from(sel.options).filter(o=> o.value !== '');
+  }
+
+  function renderSummary(){
+    const vals = filters[filterKey] || [];
+    if(!vals.length){
+      summary.textContent = 'ทั้งหมด';
+      summary.classList.add('placeholder');
+    } else {
+      summary.classList.remove('placeholder');
+      summary.textContent = vals.length === 1 ? vals[0] : `เลือก ${vals.length} รายการ`;
+      summary.title = vals.join(', ');
+    }
+    clearBtn.style.display = vals.length ? 'inline-flex' : 'none';
+  }
+
+  function renderList(filterText){
+    const q = (filterText||'').trim().toLowerCase();
+    const opts = optionValues().filter(o=> !q || o.textContent.toLowerCase().includes(q));
+    listEl.innerHTML = '';
+    if(!opts.length){
+      const empty = document.createElement('div');
+      empty.className = 'ms-empty';
+      empty.textContent = 'ไม่พบรายการที่ตรงกัน';
+      listEl.appendChild(empty);
+      return;
+    }
+    const vals = filters[filterKey] || [];
+    opts.forEach(o=>{
+      const item = document.createElement('label');
+      item.className = 'ms-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = vals.includes(o.value);
+      cb.addEventListener('change', ()=>{ toggleFilter(filterKey, o.value); });
+      const txt = document.createElement('span');
+      txt.textContent = o.textContent;
+      item.appendChild(cb);
+      item.appendChild(txt);
+      listEl.appendChild(item);
+    });
+  }
+
+  function openDropdown(){
+    dropdown.classList.add('open');
+    renderList(searchBox.value);
+    searchBox.focus();
+  }
+  function closeDropdown(){
+    dropdown.classList.remove('open');
+    searchBox.value = '';
+  }
+
+  box.addEventListener('click', (e)=>{
+    if(e.target === clearBtn) return;
+    dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
+  });
+  searchBox.addEventListener('input', ()=> renderList(searchBox.value));
+  searchBox.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeDropdown(); });
+  clearBtn.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if((filters[filterKey]||[]).length){ filters[filterKey] = []; refreshAll(); }
+  });
+  document.addEventListener('click', (e)=>{
+    if(!wrap.contains(e.target)) closeDropdown();
+  });
+
+  // Called after populateSelect() rebuilds the option list, or after filters[]
+  // changes some other way (chart click, chip removal, reset button, etc).
+  sel._msRefresh = function(){
+    renderSummary();
+    if(dropdown.classList.contains('open')) renderList(searchBox.value);
+  };
+  sel._msRefresh();
+}
+
+const MULTI_FILTER_FIELDS = ['f-cat','f-unit','f-cal','f-cond','f-age','f-use'];
+const MULTI_FILTER_KEYS = { 'f-cat':'cat', 'f-unit':'unit', 'f-cal':'cal', 'f-cond':'cond', 'f-age':'age', 'f-use':'use' };
+
 function initSearchableSelects(){
-  ['f-cat','f-unit','f-cal','f-cond','f-age','f-use','yearlyTrend-year'].forEach(makeSearchable);
+  MULTI_FILTER_FIELDS.forEach(id=> makeMultiSelect(id, MULTI_FILTER_KEYS[id]));
+  makeSearchable('yearlyTrend-year');
 }
 
 function populateSelect(id, key, data){
   const sel = document.getElementById(id);
   const vals = uniqSorted(data, key);
-  const cur = filters[key];
-  sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}" ${cur===v?'selected':''}>${v}</option>`).join('');
-  if(sel._ssRefresh) sel._ssRefresh();
+  if(Array.isArray(filters[key])){
+    // Multi-select field — selection state lives in filters[key], not in <option selected>.
+    sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+    if(sel._msRefresh) sel._msRefresh();
+  } else {
+    const cur = filters[key];
+    sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}" ${cur===v?'selected':''}>${v}</option>`).join('');
+    if(sel._ssRefresh) sel._ssRefresh();
+  }
 }
 
 function renderActiveFilters(){
   const wrap = document.getElementById('activeFilters');
   wrap.innerHTML='';
-  ['cat','unit','cal','cond','age','use','year'].forEach(k=>{
-    if(filters[k] !== null){
+  ['cat','unit','cal','cond','age','use'].forEach(k=>{
+    (filters[k]||[]).forEach(v=>{
       const chip = document.createElement('div');
       chip.className='chip';
-      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${filters[k]}</span><button data-k="${k}">✕</button>`;
-      chip.querySelector('button').onclick = ()=>{ filters[k]=null; refreshAll(); };
+      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${v}</span><button data-k="${k}">✕</button>`;
+      chip.querySelector('button').onclick = ()=>{ toggleFilter(k, v); };
       wrap.appendChild(chip);
-    }
+    });
   });
+  if(filters.year !== null){
+    const chip = document.createElement('div');
+    chip.className='chip';
+    chip.innerHTML = `<span>${FIELD_LABELS.year}: ${filters.year}</span><button data-k="year">✕</button>`;
+    chip.querySelector('button').onclick = ()=>{ filters.year = null; refreshAll(); };
+    wrap.appendChild(chip);
+  }
 }
 
 function refreshFilterOptions(){
@@ -3344,9 +3568,10 @@ function hBarSVG(container, {labels, data, colors, width=760, height, onBarClick
 
 function renderLegendList(container, items, activeValue, onClick){
   clearNode(container);
+  const active = Array.isArray(activeValue) ? activeValue : (activeValue ? [activeValue] : []);
   items.forEach(it=>{
     const row = document.createElement('div');
-    row.className = 'legend-item' + (activeValue && activeValue !== it.label ? ' dim' : '');
+    row.className = 'legend-item' + (active.length && !active.includes(it.label) ? ' dim' : '');
     row.innerHTML = `<span class="sw" style="background:${it.color}"></span><span>${it.label}</span><span class="n">${fmt(it.value)}</span>`;
     row.onclick = ()=> onClick(it.label);
     container.appendChild(row);
@@ -3990,27 +4215,20 @@ function refreshAll(){
 }
 
 function syncSelectValues(){
-  document.getElementById('f-cat').value = filters.cat || '';
-  document.getElementById('f-unit').value = filters.unit || '';
-  document.getElementById('f-cal').value = filters.cal || '';
-  document.getElementById('f-cond').value = filters.cond || '';
-  document.getElementById('f-age').value = filters.age || '';
-  document.getElementById('f-use').value = filters.use || '';
-  const yEl = document.getElementById('yearlyTrend-year');
-  if(yEl) yEl.value = filters.year || '';
-  ['f-cat','f-unit','f-cal','f-cond','f-age','f-use','yearlyTrend-year'].forEach(id=>{
+  // Multi-select fields (cat/unit/cal/cond/age/use) are checkbox dropdowns driven
+  // directly by filters[key] — just ask each widget to redraw its summary/list.
+  MULTI_FILTER_FIELDS.forEach(id=>{
     const el = document.getElementById(id);
-    if(el && el._ssRefresh) el._ssRefresh();
+    if(el && el._msRefresh) el._msRefresh();
   });
+  const yEl = document.getElementById('yearlyTrend-year');
+  if(yEl){
+    yEl.value = filters.year || '';
+    if(yEl._ssRefresh) yEl._ssRefresh();
+  }
 }
 
 /* ======================= EVENTS ======================= */
-['cat','unit','cal','cond','age','use'].forEach(k=>{
-  document.getElementById('f-'+k).addEventListener('change', e=>{
-    filters[k] = e.target.value || null;
-    refreshAll();
-  });
-});
 document.getElementById('yearlyTrend-year').addEventListener('change', e=>{
   // currentData stores year as a Number (see normalizeRows), but <select> values
   // are always strings — comparing them directly in applyFilters() always failed,
@@ -4032,7 +4250,7 @@ document.getElementById('tableSearch').addEventListener('input', e=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('tableSearch').value='';
@@ -4347,7 +4565,7 @@ function showFileError(msg){
 
 function applyLoadedRows(rows, labelText){
   currentData = rows;
-  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('fileName').textContent = labelText;
@@ -4442,7 +4660,7 @@ function collapseExpandedPanel(){
 // ใช้ Google Visualization API (gviz) รูปแบบ CSV ซึ่งอนุญาตให้เรียกข้ามโดเมนจากเบราว์เซอร์ได้โดยไม่ต้องใช้ API key
 const GOOGLE_SHEET_ID = '1ssqSHSeRIIkdBnWyzYfQyotNWpWJMxM2NKTeS7zu4Dw';
 const GOOGLE_SHEET_GID = '1130129068'; // แท็บที่มีข้อมูลจริง (Sheet1)
-const SHEET_REFRESH_MS = 60000; // ซิงก์อัตโนมัติทุก 60 วินาที
+const SHEET_REFRESH_MS = 45 * 60000; // ซิงก์อัตโนมัติทุก 45 นาที
 
 let dataSource = 'sheet'; // 'sheet' = ใช้ข้อมูลจาก Google Sheet, 'file' = ผู้ใช้อัปโหลดไฟล์เอง
 let sheetPollTimer = null;
@@ -4513,7 +4731,7 @@ function initGsheetSync(){
   const btn = document.getElementById('sheetRefreshBtn');
   if(btn) btn.addEventListener('click', ()=>loadFromGoogleSheet(false));
   loadFromGoogleSheet(false); // เชื่อมต่อทันทีที่เปิดหน้า
-  startSheetPolling();        // แล้วซิงก์ซ้ำอัตโนมัติทุก 60 วินาที
+  startSheetPolling();        // แล้วซิงก์ซ้ำอัตโนมัติทุก 45 นาที
 }
 
 /* ======================= INIT ======================= */
