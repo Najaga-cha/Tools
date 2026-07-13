@@ -927,6 +927,39 @@
     box-shadow:0 12px 40px rgba(0,0,0,.5);
     background:var(--map-panel);
   }#mapSection details.raw-list{margin:-6px 0 16px; font-size:12px;}#mapSection details.raw-list summary{cursor:pointer; color:var(--map-teal); font-weight:600; padding:4px 0;}#mapSection .raw-table-wrap{max-height:260px; overflow:auto; border:1px solid var(--map-line); border-radius:8px; margin-top:6px;}#mapSection table.raw{width:100%; border-collapse:collapse; font-size:11.5px;}#mapSection table.raw th{position:sticky; top:0; background:#E7EAFB; color:var(--map-teal-deep); padding:6px 8px; text-align:left; white-space:nowrap;}#mapSection table.raw td{padding:5px 8px; border-bottom:1px solid #E4E7F8; white-space:nowrap;}#mapSection .tag{padding:1px 7px; border-radius:999px; font-size:10.5px; font-weight:600;}#mapSection .tag.ok{background:#e4f5ea; color:#1e8449;}#mapSection .tag.bad{background:#fdecea; color:#b03a2e;}#mapSection .pts-list{list-style:none; margin:0; padding:0; font-size:12px; max-height:220px; overflow-y:auto; border:1px solid var(--map-line); border-radius:8px;}#mapSection .pts-list li{padding:6px 9px; border-bottom:1px solid #E4E7F8; display:flex; justify-content:space-between; gap:8px;}#mapSection .pts-list li:last-child{border-bottom:none;}#mapSection .pts-list .pname{color:var(--map-muted);}#mapSection /* ===== Toggle button ===== */
+  /* ===== Equipment-list panel (#toolTableBody) — lives OUTSIDE #mapSection,
+     so it needs its own copies of the eq2/region-title/stat-pill rules above,
+     same reasoning as the #printArea duplication noted at the top of this file. */
+  #toolTableBody .tool-org-section{margin-bottom:26px; padding-bottom:22px; border-bottom:1px solid var(--map-line);}
+  #toolTableBody .tool-org-section:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
+  #toolTableBody .region-title{display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  #toolTableBody .region-title .swatch{width:14px;height:14px;border-radius:4px;flex-shrink:0;}
+  #toolTableBody .region-title h3{font-size:16px; margin:0; color:var(--map-teal-deep);}
+  #toolTableBody .province-list{font-size:12px; color:var(--map-muted); margin:0 0 10px; line-height:1.6;}
+  #toolTableBody .stat-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  #toolTableBody .stat-pill{background:#EAEDFA; color:var(--map-teal-deep); border-radius:8px; padding:6px 10px; font-size:11.5px; font-weight:600; line-height:1.4;}
+  #toolTableBody .stat-pill span{display:block; font-size:15px; font-weight:700;}
+  #toolTableBody .no-data{color:var(--map-muted); font-size:12px; font-style:italic; padding:8px 0 16px;}
+  #toolTableBody table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}
+  #toolTableBody table.eq2 .print-cat-row{display:none;}
+  #toolTableBody table.eq2 caption{text-align:left; font-weight:700; font-size:12.5px; color:#fff; background:var(--map-teal); padding:7px 10px;}
+  #toolTableBody table.eq2 th{background:#E7EAFB; color:var(--map-teal-deep); text-align:center; padding:6px 5px; font-weight:700; border:1px solid var(--map-line); line-height:1.3; white-space:nowrap;}
+  #toolTableBody table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}
+  #toolTableBody table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}
+  #toolTableBody table.eq2 td.colTotal, #toolTableBody table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}
+  #toolTableBody table.eq2 td.colTool{min-width:150px;}
+  #toolTableBody table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}
+  #toolTableBody table.eq2 tbody tr{cursor:pointer;}
+  #toolTableBody table.eq2 tbody tr:hover td{background:var(--teal-tint);}
+  #toolTableBody table.eq2 tbody tr.sel td{background:var(--teal-tint); box-shadow:inset 0 0 0 1px var(--teal);}
+  #toolTableBody .eq-tool-cell{display:flex; align-items:center; gap:8px;}
+  #toolTableBody .eq-tool-cell span:last-child{font-weight:600; font-size:11.5px;}
+  #toolTableBody .eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC; cursor:zoom-in;}
+  #toolTableBody .eq-photo-fallback{width:34px; height:34px; border-radius:6px; background:#EAEDFA; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px;}
+  [data-theme="dark"] #toolTableBody table.eq2 th{background:var(--surface-soft);color:var(--map-teal-deep);}
+  [data-theme="dark"] #toolTableBody table.eq2 td{border-color:var(--map-line);}
+  [data-theme="dark"] #toolTableBody .eq-photo, [data-theme="dark"] #toolTableBody .eq-photo-fallback{background:var(--surface-soft);}
+  [data-theme="dark"] #toolTableBody table.eq2 td.colTotal, [data-theme="dark"] #toolTableBody table.eq2 th.colTotal{background:var(--soft-tint);}
   #toggleBtn{
     position:absolute;
     top:16px;
@@ -1672,23 +1705,12 @@
 
     <div class="panel">
       <h2>📋 รายการเครื่องมือ</h2>
-      <div class="hint">คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกหัวคอลัมน์เพื่อจัดเรียง</div>
+      <div class="hint">แยกตามหน่วยงานที่ตรงกับตัวกรองปัจจุบัน · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกรูปภาพเพื่อดูภาพขยาย</div>
       <div class="table-search">
         <span>🔎</span>
         <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:64px;">ภาพ</th>
-              <th id="th-name">เครื่องมือ ▾</th>
-              <th id="th-count" style="width:180px;">จำนวนที่มี</th>
-            </tr>
-          </thead>
-          <tbody id="toolTableBody"></tbody>
-        </table>
-      </div>
+      <div id="toolTableBody" class="tool-report"></div>
     </div>
     </div>
   </main>
@@ -2038,7 +2060,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     }else{
       toolCell = `<div class="eq-tool-cell eq-tool-cell-noimg"><span>${name}</span></div>`;
     }
-    html += `<tr>
+    html += `<tr data-tool-name="${encodeURIComponent(name)}" class="${typeof tableFilterItem!=='undefined' && tableFilterItem===name ? 'sel':''}">
       ${photoCellHTML}
       <td class="colTool">${toolCell}</td>
       <td class="colUse">${usageDescFor(name,row.recs)}</td>
@@ -2060,9 +2082,12 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   return `<div class="${cls.join(' ')}">${html}</div>`;
 }
 
-function categoryTables(code, withImages, splitPhotoCol){
-  const recs = RECORDS_BY_ORG[code] || [];
-  if(!recs.length) return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
+// Groups an arbitrary list of equipment records into the category tables
+// (ด้านน้ำ / ด้านดิน / ด้านอากาศ / ด้านฉุกเฉิน). Shared by categoryTables()
+// (per-organization, sourced from RECORDS_BY_ORG) and the main dashboard's
+// equipment-list panel (sourced straight from the current filtered rows).
+function categoryTablesFromRecords(recs, withImages, splitPhotoCol){
+  if(!recs.length) return "";
   const byCat = {};
   recs.forEach(r=>{ const c = r.type || "อื่นๆ"; (byCat[c]=byCat[c]||[]).push(r); });
   const cats = Object.keys(byCat).sort((a,b)=>{
@@ -2074,6 +2099,12 @@ function categoryTables(code, withImages, splitPhotoCol){
   // still room left on the previous page, instead of relying on the
   // browser to decide whether/where to split.
   return cats.map((c,i)=>buildAgeCalibTable(c, byCat[c], withImages, splitPhotoCol, i>0)).join("");
+}
+
+function categoryTables(code, withImages, splitPhotoCol){
+  const recs = RECORDS_BY_ORG[code] || [];
+  if(!recs.length) return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
+  return categoryTablesFromRecords(recs, withImages, splitPhotoCol);
 }
 
 /* =========================================================
@@ -2727,12 +2758,22 @@ document.getElementById("mapPopup").addEventListener("click",(ev)=>{
   imgLightboxImg.src = img.dataset.zoom || img.src;
   imgLightbox.classList.add("open");
 });
-// Click a tool photo in the main equipment table (below) to view it enlarged too
+// Main equipment table (below): click a tool photo to zoom, or click a row
+// to filter the whole dashboard down to that tool name.
 document.getElementById("toolTableBody").addEventListener("click",(ev)=>{
-  const img = ev.target.closest(".tool-thumb");
-  if(!img) return;
-  imgLightboxImg.src = img.dataset.zoom || img.src;
-  imgLightbox.classList.add("open");
+  const img = ev.target.closest(".eq-photo");
+  if(img){
+    imgLightboxImg.src = img.dataset.zoom || img.src;
+    imgLightbox.classList.add("open");
+    return;
+  }
+  const tr = ev.target.closest("tr[data-tool-name]");
+  if(!tr) return;
+  const name = decodeURIComponent(tr.dataset.toolName);
+  if(tableFilterItem === name){ tableFilterItem = null; filters.search=''; }
+  else{ tableFilterItem = name; filters.search = name; }
+  document.getElementById('searchInput').value = filters.search;
+  refreshAll();
 });
 imgLightbox.addEventListener("click", ()=>{
   imgLightbox.classList.remove("open");
@@ -3662,55 +3703,54 @@ function renderCalBar(filtered){
 }
 
 /* ======================= TABLE ======================= */
+// Builds the same "PDF-style" เครื่องมือ + ลักษณะการใช้งาน + เกณฑ์อายุ +
+// สถานะสอบเทียบ table used in the map sidebar, but for the main dashboard's
+// equipment-list panel: grouped per-organization (หน่วยงาน) according to
+// whichever rows currently pass the dashboard's own filters, so picking a
+// unit filter (or several) naturally narrows which organization sections show up.
 function renderTable(filtered){
-  const grouped = new Map();
-  filtered.forEach(r=>{
-    const name = r.item ?? '(ไม่ระบุ)';
-    if(!grouped.has(name)) grouped.set(name, {name, count:0, img:null});
-    const g = grouped.get(name);
-    g.count++;
-    if(!g.img && r.img) g.img = r.img;
-  });
-  let rows = Array.from(grouped.values());
+  const container = document.getElementById('toolTableBody');
+  let rows = filtered;
   if(tableSearchText){
     const q = tableSearchText.toLowerCase();
-    rows = rows.filter(r=>r.name.toLowerCase().includes(q));
+    rows = rows.filter(r => (r.item||'').toLowerCase().includes(q));
   }
-  rows.sort((a,b)=>{
-    let av = tableSort.key==='name'? a.name : a.count;
-    let bv = tableSort.key==='name'? b.name : b.count;
-    let cmp = (typeof av==='string') ? av.localeCompare(bv,'th') : av-bv;
-    return tableSort.dir==='asc' ? cmp : -cmp;
-  });
-  const max = rows.length ? Math.max(...rows.map(r=>r.count)) : 1;
-  const tbody = document.getElementById('toolTableBody');
   if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div></td></tr>`;
+    container.innerHTML = `<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>`;
     return;
   }
-  tbody.innerHTML = rows.map(r=>`
-    <tr class="${tableFilterItem===r.name?'sel':''}" data-name="${encodeURIComponent(r.name)}">
-      <td>${r.img
-        ? `<img class="tool-thumb" src="${r.img}" alt="${r.name}" loading="lazy" onerror="this.outerHTML='<div class=&quot;tool-thumb-placeholder&quot;>🔧</div>';">`
-        : `<div class="tool-thumb-placeholder">🔧</div>`}</td>
-      <td>${r.name}</td>
-      <td>
-        <div class="bar-cell">
-          <span class="num" style="width:34px;">${fmt(r.count)}</span>
-          <div class="track"><div class="fill" style="width:${(r.count/max*100).toFixed(1)}%;"></div></div>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-  Array.from(tbody.querySelectorAll('tr')).forEach(tr=>{
-    tr.onclick = ()=>{
-      const name = decodeURIComponent(tr.dataset.name);
-      if(tableFilterItem === name){ tableFilterItem = null; filters.search=''; }
-      else{ tableFilterItem = name; filters.search = name; }
-      document.getElementById('searchInput').value = filters.search;
-      refreshAll();
-    };
+  const mapRecs = buildMapRecords(rows);
+  const byOrg = {};
+  mapRecs.forEach(r=>{
+    if(!r.org) return;
+    (byOrg[r.org] = byOrg[r.org] || []).push(r);
   });
+  const knownCodes = [...REGION_CODES, ...SPECIAL_CODES].filter(c=>byOrg[c] && byOrg[c].length);
+  const unknownCodes = Object.keys(byOrg).filter(c=>!ORGS[c]).sort();
+  const orderedCodes = [...knownCodes, ...unknownCodes];
+
+  container.innerHTML = orderedCodes.map(code=>{
+    const recs = byOrg[code];
+    const org = ORGS[code];
+    let head;
+    if(org){
+      const locLine = org.kind==='region'
+        ? `พื้นที่รับผิดชอบ: ${org.provinces.map(p=>p.th).join(', ')}`
+        : `หน่วยงานส่วนกลาง (ที่ตั้ง: ${org.provinces.map(p=>p.th).join(', ')})`;
+      head = `<div class="region-title"><span class="swatch" style="background:${org.color}"></span><h3>${org.label}</h3></div>
+        <div class="province-list">${locLine}</div>`;
+    }else{
+      head = `<div class="region-title"><h3>${code || 'ไม่ระบุหน่วยงาน'}</h3></div>`;
+    }
+    const stats = {total:recs.length, ok:0, broken:0};
+    recs.forEach(r=>{ if(r.statusUse==='ใช้งานได้') stats.ok++; else if(r.statusUse==='ชำรุด') stats.broken++; });
+    const statRow = `<div class="stat-row">
+      <div class="stat-pill">เครื่องมือทั้งหมด<span>${fmt(stats.total)}</span></div>
+      <div class="stat-pill">ใช้งานได้<span>${fmt(stats.ok)}</span></div>
+      <div class="stat-pill">ชำรุด<span>${fmt(stats.broken)}</span></div>
+    </div>`;
+    return `<div class="tool-org-section">${head}${statRow}${categoryTablesFromRecords(recs, true, false)}</div>`;
+  }).join('');
 }
 
 /* ======================= MASTER REFRESH ======================= */
@@ -4256,17 +4296,6 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   document.getElementById('tableSearch').value='';
   tableSearchText='';
   refreshAll();
-});
-
-document.getElementById('th-name').addEventListener('click', ()=>{
-  tableSort = {key:'name', dir: sortState.name};
-  sortState.name = sortState.name==='asc' ? 'desc':'asc';
-  renderTable(applyFilters(currentData));
-});
-document.getElementById('th-count').addEventListener('click', ()=>{
-  tableSort = {key:'count', dir: sortState.count};
-  sortState.count = sortState.count==='asc' ? 'desc':'asc';
-  renderTable(applyFilters(currentData));
 });
 
 /* ======================= OFFLINE FILE PARSERS (no external libs) ======================= */
