@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>เครื่องมือตรวจวัดมลพิษ | กรมควบคุมมลพิษ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -168,13 +168,7 @@
   }
   [data-mobile="on"] .sidebar.open{transform:translateX(0);box-shadow:0 20px 60px rgba(0,0,0,.4);}
   [data-mobile="on"] .main{padding:0;}
-  [data-mobile="on"] .topbar{
-    padding:12px 14px;gap:10px;
-    position:sticky; top:0; z-index:50;
-    border-radius:0 0 16px 16px;
-    margin-bottom:12px;
-    box-shadow:0 4px 14px rgba(0,0,0,.18);
-  }
+  [data-mobile="on"] .topbar{padding:12px 14px;gap:10px;}
   [data-mobile="on"] .topbar h1{font-size:15px;line-height:1.3;}
   [data-mobile="on"] .topbar .sub{display:none;}
   [data-mobile="on"] .topbar-badge{width:40px;height:40px;border-radius:10px;}
@@ -195,11 +189,6 @@
   [data-mobile="on"] .legend-col{max-height:180px;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  html{
-    -webkit-text-size-adjust:100%; text-size-adjust:100%; /* stop iOS
-      auto-boosting font sizes on rotate, which was shifting the whole
-      mobile layout around after an orientation change */
-  }
   body{
     font-family:'Sarabun',-apple-system,'Noto Sans Thai',sans-serif;
     background:var(--body-grad);
@@ -207,21 +196,11 @@
     font-size:15px;
     line-height:1.5;
     transition:background .2s;
-    overflow-x:hidden; /* a single element running 1-2px wider than the
-      viewport (a stray table, a long unbroken word, etc.) used to make
-      the whole mobile page horizontally scrollable/jumpy; clip it instead */
-    width:100%;
-    max-width:100vw;
   }
   .num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
-  button, .mobile-toggle, .theme-toggle, .chart-switch button, .reset-btn, a{
-    touch-action:manipulation; /* removes the ~300ms tap delay and stops a
-      fast double-tap on a control from being read as a zoom gesture */
-  }
 
   .frame{
     max-width:1500px;
-    width:100%;
     margin:0 auto;
     background:var(--frame);
     border-radius:26px;
@@ -396,6 +375,9 @@
   .ss-wrap .ss-option:hover{background:var(--soft-tint);}
   .ss-wrap .ss-option.selected{background:var(--soft-tint-strong);color:var(--soft-accent);font-weight:600;}
   .ss-wrap .ss-empty{padding:8px 9px;font-size:12px;color:var(--sidebar-muted,#667);}
+  .ss-wrap .ms-option{display:flex;align-items:center;gap:8px;white-space:normal;}
+  .ss-wrap .ms-option input[type=checkbox]{flex-shrink:0;width:14px;height:14px;accent-color:var(--soft-accent);cursor:pointer;}
+  .ss-wrap .ms-option span{overflow:hidden;text-overflow:ellipsis;}
 
   .reset-btn{
     margin-top:2px;
@@ -578,49 +560,6 @@
   }
   .topn-select:focus{border-color:var(--teal);}
 
-  /* ===== "ปี พ.ศ." year filter — styled as its own pill so it stands out
-     from the plain topn-select dropdowns next to it. Note: this control
-     gets enhanced by makeSearchable() into a text-input + dropdown widget
-     (the real <select> is hidden via .ss-wrap select{display:none}), so
-     the visible styling below targets input.ss-input, not select — and
-     because it isn't nested in a .field wrapper like the sidebar filters,
-     it needs its own base box styling (border/padding/font) too. ===== */
-  .year-filter{
-    display:inline-flex;align-items:center;gap:7px;
-    background:linear-gradient(135deg, var(--teal-tint), var(--surface));
-    border:1.5px solid var(--soft-border);
-    border-radius:999px;
-    padding:4px 6px 4px 12px;
-    box-shadow:0 1px 2px rgba(20,25,64,0.06);
-    transition:.15s;
-  }
-  .year-filter:hover{border-color:var(--teal); box-shadow:0 2px 6px rgba(20,25,64,0.1);}
-  .year-filter-icon{font-size:13px;line-height:1;}
-  .year-filter label{font-size:11.5px;font-weight:700;color:var(--teal-dark);white-space:nowrap;cursor:default;}
-  .year-filter .ss-wrap{position:relative;width:118px;}
-  .year-filter input.ss-input{
-    width:100%;box-sizing:border-box;
-    background-color:var(--surface);
-    border:1px solid var(--soft-border);
-    color:var(--ink);
-    border-radius:999px;
-    padding:5px 26px 5px 12px;
-    font-family:'Sarabun',sans-serif;
-    font-size:12px;font-weight:700;
-    cursor:pointer;outline:none;
-    transition:.15s;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234B5478' fill='none' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;
-    background-position:right 10px center;
-    background-size:9px 5px;
-  }
-  .year-filter input.ss-input:hover{border-color:var(--teal);}
-  .year-filter input.ss-input:focus{border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-tint);}
-  .year-filter .ss-clear{right:22px;}
-  [data-theme="dark"] .year-filter input.ss-input{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23AEB4DE' fill='none' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  }
-
   .expand-btn{
     margin-left:auto; background:var(--surface-soft); border:1px solid var(--line); color:var(--ink-soft);
     width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1;
@@ -664,7 +603,7 @@
   .bar-cell{display:flex;align-items:center;gap:8px;}
   .bar-cell .track{flex:1;height:7px;border-radius:4px;background:var(--surface-soft);overflow:hidden;}
   .bar-cell .fill{height:100%;background:var(--teal);border-radius:4px;}
-  .table-wrap{max-height:360px;overflow-y:auto;overflow-x:auto;}
+  .table-wrap{max-height:640px;overflow-y:auto;overflow-x:auto;}
   .tool-thumb{
     width:44px;height:44px;border-radius:9px;object-fit:cover;
     background:var(--surface-soft);border:1px solid var(--line);display:block;
@@ -674,6 +613,35 @@
     width:44px;height:44px;border-radius:9px;background:var(--surface-soft);
     border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
     font-size:17px;color:var(--ink-faint);
+  }
+  /* ===== Main "รายการเครื่องมือ" table: category-grouped, age-bucket +
+     calibration-status breakdown (same layout as the per-org detail table,
+     unscoped here so it also renders correctly inside the main panel). ===== */
+  .eq2main-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}
+  table.eq2main{border-collapse:collapse; font-size:12px; width:100%; min-width:680px;}
+  table.eq2main caption{
+    text-align:left; font-weight:700; font-size:13px; color:#fff;
+    background:var(--map-teal); padding:8px 12px;
+  }
+  table.eq2main th{
+    background:#E7EAFB; color:var(--map-teal-deep); text-align:center;
+    padding:7px 6px; font-weight:700; border:1px solid var(--map-line); line-height:1.3;
+    white-space:nowrap;
+  }
+  table.eq2main td{padding:6px; border:1px solid #E4E7F8; vertical-align:middle;}
+  table.eq2main td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:42px;}
+  table.eq2main td.colTotal, table.eq2main th.colTotal{background:#EFF2FC; font-weight:800;}
+  table.eq2main td.colTool{min-width:160px;}
+  table.eq2main td.colUse{min-width:190px; color:var(--map-muted); font-size:11px; line-height:1.4;}
+  table.eq2main tbody tr:hover{background:var(--teal-tint);}
+  table.eq2main tbody tr.sel{background:var(--teal-tint); box-shadow:inset 3px 0 0 var(--teal);}
+  table.eq2main tbody tr{cursor:pointer;}
+  .eq-tool-cell{display:flex; align-items:center; gap:8px;}
+  .eq-tool-cell span:last-child{font-weight:600; font-size:12px;}
+  .eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:var(--surface-soft); cursor:zoom-in;}
+  .eq-photo-fallback{
+    width:34px; height:34px; border-radius:6px; background:var(--surface-soft); flex-shrink:0;
+    align-items:center; justify-content:center; font-size:16px;
   }
   .table-search{
     display:flex;align-items:center;gap:8px;margin-bottom:10px;
@@ -846,7 +814,7 @@
   }#mapSection table.eq td{
     padding:7px 9px; border-bottom:1px solid #E4E7F8; vertical-align:top;
   }#mapSection table.eq tr:last-child td{border-bottom:none;}#mapSection table.eq td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:52px;}#mapSection .no-data{color:var(--map-muted); font-size:12px; font-style:italic; padding:8px 0 16px;}#mapSection /* ===== PDF-style equipment summary table (image + age buckets + calibration) ===== */
-  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}#mapSection table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}#mapSection table.eq2 .print-cat-row{display:none;}#mapSection table.eq2 caption{
+  .eq2-wrap{overflow-x:auto; margin-bottom:16px; border:1px solid var(--map-line); border-radius:8px;}#mapSection table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}#mapSection table.eq2 caption{
     text-align:left; font-weight:700; font-size:12.5px; color:#fff;
     background:var(--map-teal); padding:7px 10px;
   }#mapSection table.eq2 th{
@@ -1032,10 +1000,8 @@
     font-weight:700;
     cursor:pointer;
     transition:.15s;
-  }#mapSection #exportPdfBtn:hover{background:var(--map-teal-deep);}#mapSection #exportPdfBtn:disabled{background:#B9BFE0; cursor:not-allowed;}#mapSection #exportPdfHint{font-size:11px; color:var(--map-muted); margin:7px 2px 0; text-align:center;}
-  /* ===== Print output (A4 แนวนอน) ===== */
-  #printArea{display:none;}
-  .print-header{display:none;}
+  }#mapSection #exportPdfBtn:hover{background:var(--map-teal-deep);}#mapSection #exportPdfBtn:disabled{background:#B9BFE0; cursor:not-allowed;}#mapSection #exportPdfHint{font-size:11px; color:var(--map-muted); margin:7px 2px 0; text-align:center;}#mapSection /* ===== Print output (A4 แนวนอน) ===== */
+  #printArea{display:none;}#mapSection .print-header{display:none;}
 
 
 /* ---- layout overrides: fit inside a dashboard panel instead of 100vh page ---- */
@@ -1146,47 +1112,13 @@
          pushed the entire table to page 2 by itself. */
       page-break-inside:auto; break-inside:auto;
     }
-    /* A short category section (few rows) still uses the same page-break
-       rule above, EXCEPT when it's small enough that splitting it would
-       just strand a row or two with the header on one page and the rest
-       on the next (e.g. "เครื่องมือสำหรับกรณีฉุกเฉิน" with only a handful of
-       rows). For those, keep the whole block together so it moves wholly
-       onto the next page instead — safe to force whole here because a
-       compact block is short enough that it won't itself leave a big
-       blank gap the way a long table would. */
-    #printArea .eq2-wrap.eq2-compact{
-      page-break-inside:avoid; break-inside:avoid;
-    }
-    /* Every category after the first (ด้านน้ำ / ด้านดิน / ด้านอากาศ /
-       ด้านฉุกเฉิน) starts on a fresh page — guarantees its header and rows
-       always print together, even if there was still room left below the
-       previous category's table. */
-    #printArea .eq2-wrap.eq2-page-start{
-      page-break-before:always; break-before:page;
-    }
-    /* The real <caption> only ever prints once (browsers don't repeat table
-       captions across page breaks the way they repeat <thead>), so on a
-       table long enough to split across pages, every page after the first
-       loses the section title — leaving orphaned rows with no heading.
-       Hide it in print and use .print-cat-row instead: it's a <tr> living
-       inside <thead>, and #printArea table.eq2 thead below is set to
-       display:table-header-group, so it reprints at the top of the table
-       on every page the table spans. */
-    #printArea table.eq2 caption{ display:none; }
-    #printArea table.eq caption{
+    #printArea table.eq2 caption, #printArea table.eq caption{
       font-size:12px; padding:7px 10px; text-align:left; font-weight:700;
       background:var(--map-teal-deep); color:#fff;
     }
-    #printArea table.eq2 thead tr.print-cat-row th{
-      font-size:12px; padding:7px 10px; text-align:left; font-weight:700;
-      background:var(--map-teal-deep); color:#fff; border:none;
-    }
     /* Two-tone header: group row a touch darker than the sub-header row,
-       so the column grouping reads clearly at a glance.
-       NOTE: .print-cat-row is now the first <tr> in thead, so the group
-       row is the 2nd child and the column-label row is still the last
-       child — target by position rather than :first-child. */
-    #printArea table.eq2 thead tr:nth-child(2) th{
+       so the column grouping reads clearly at a glance. */
+    #printArea table.eq2 thead tr:first-child th{
       padding:6px 7px; background:var(--map-teal-deep); color:#fff;
       font-weight:700; text-align:left; border:1px solid #fff2; border-bottom:none;
     }
@@ -1194,22 +1126,17 @@
       padding:5px 6px; background:var(--map-teal); color:#fff;
       font-weight:600; text-align:center; font-size:9px; border:1px solid #fff2; border-top:none;
     }
-    #printArea table.eq2 thead tr:nth-child(2) th.colTool,
-    #printArea table.eq2 thead tr:nth-child(2) th.colUse,
-    #printArea table.eq2 thead tr:nth-child(2) th.colTotal{ text-align:left; }
+    #printArea table.eq2 thead tr:first-child th.colTool,
+    #printArea table.eq2 thead tr:first-child th.colUse,
+    #printArea table.eq2 thead tr:first-child th.colTotal{ text-align:left; }
     #printArea table.eq2 td{
       padding:6px 7px; border-bottom:1px solid var(--map-line); border-right:1px solid var(--map-line);
       overflow-wrap:break-word; word-break:break-word; vertical-align:middle;
     }
-    /* colPhoto is a dedicated column (PDF export only) so the equipment
-       photo can print bigger and clearer instead of being squeezed into
-       the name cell. Give the tool-name column back some of the width it
-       loses to the new photo column. */
-    #printArea table.eq2 td.colPhoto, #printArea table.eq2 th.colPhoto{width:15%; text-align:center;}
-    #printArea table.eq2 td.colTool{width:16%; font-weight:600;}
-    #printArea table.eq2 td.colUse{width:28%; color:var(--map-muted); font-size:9.5px;}
-    #printArea table.eq2 td.num{width:7%; text-align:center; font-weight:700; color:var(--map-teal-deep);}
-    #printArea table.eq2 td.colTotal, #printArea table.eq2 th.colTotal{width:6%; background:#EFF2FC; font-weight:800; text-align:center;}
+    #printArea table.eq2 td.colTool{width:20%; font-weight:600;}
+    #printArea table.eq2 td.colUse{width:30%; color:var(--map-muted); font-size:9.5px;}
+    #printArea table.eq2 td.num{width:7.5%; text-align:center; font-weight:700; color:var(--map-teal-deep);}
+    #printArea table.eq2 td.colTotal, #printArea table.eq2 th.colTotal{width:6.5%; background:#EFF2FC; font-weight:800; text-align:center;}
     #printArea table.eq2 tbody tr:nth-child(even) td{background:#F5F7FD;}
     #printArea table.eq2 tbody tr:last-child td{border-bottom:none;}
     #printArea .eq-tool-cell{display:flex; align-items:center; gap:7px;}
@@ -1223,22 +1150,6 @@
     }
     #printArea.print-density-2 .eq-photo, #printArea.print-density-2 .eq-photo-fallback{width:24px; height:24px; font-size:12px;}
     #printArea.print-density-3 .eq-photo, #printArea.print-density-3 .eq-photo-fallback{width:20px; height:20px; font-size:11px; border-radius:5px;}
-
-    /* Bigger, clearer photo in its own column (PDF export only). Sized well
-       above the old inline icon at every density tier so it stays legible
-       even when the list is long enough to shrink the rest of the table. */
-    #printArea .eq-photo.eq-photo-col{
-      width:56px; height:56px; border-radius:8px; margin:0 auto;
-      border:1px solid var(--map-line); box-shadow:0 1px 3px rgba(20,25,64,0.12);
-    }
-    #printArea .eq-photo-fallback.eq-photo-col{
-      width:56px; height:56px; border-radius:8px; margin:0 auto; font-size:22px;
-      background:#EAEDFA;
-    }
-    #printArea.print-density-2 .eq-photo.eq-photo-col,
-    #printArea.print-density-2 .eq-photo-fallback.eq-photo-col{width:46px; height:46px; font-size:19px;}
-    #printArea.print-density-3 .eq-photo.eq-photo-col,
-    #printArea.print-density-3 .eq-photo-fallback.eq-photo-col{width:38px; height:38px; font-size:16px; border-radius:6px;}
     #printArea table.eq{font-size:10.5px; margin-bottom:12px; width:100%;}
     #printArea table.eq th, #printArea table.eq td{padding:6px 8px;}
 
@@ -1354,7 +1265,7 @@
     </div>
 
     <div class="side-footer">
-      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 1 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
+      💡 คลิกที่กราฟหรือป้ายสี เพื่อกรองข้อมูลทั้งแดชบอร์ด · ข้อมูลซิงค์อัตโนมัติจาก Google Sheet ทุก 45 นาที (อัปโหลดไฟล์เองได้หากต้องการดูข้อมูลชุดอื่นชั่วคราว)
     </div>
   </aside>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -1425,11 +1336,8 @@
         <option value="15">15 หน่วยงาน</option>
         <option value="9999">ทั้งหมด</option>
       </select>
-      <div class="year-filter">
-        <span class="year-filter-icon">📅</span>
-        <label for="yearlyTrend-year">ปี พ.ศ.</label>
-        <select id="yearlyTrend-year"></select>
-      </div>
+      <label for="yearlyTrend-year" style="font-size:13px;color:var(--muted,#667);margin-left:6px;">ปี พ.ศ.:</label>
+      <select class="topn-select" id="yearlyTrend-year"></select>
       <label for="topn-yearlyTrendYears" style="font-size:13px;color:var(--muted,#667);margin-left:6px;">แสดงกี่ปีล่าสุด:</label>
       <select class="topn-select" id="topn-yearlyTrendYears" data-key="yearlyTrendYears">
         <option value="5">5 ปีล่าสุด</option>
@@ -1616,22 +1524,13 @@
 
     <div class="panel">
       <h2>📋 รายการเครื่องมือ</h2>
-      <div class="hint">คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกหัวคอลัมน์เพื่อจัดเรียง</div>
+      <div class="hint">แยกตามประเภทเครื่องมือ พร้อมจำนวนตามเกณฑ์อายุและสถานะสอบเทียบ · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ</div>
       <div class="table-search">
         <span>🔎</span>
         <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
       </div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:64px;">ภาพ</th>
-              <th id="th-name">เครื่องมือ ▾</th>
-              <th id="th-count" style="width:180px;">จำนวนที่มี</th>
-            </tr>
-          </thead>
-          <tbody id="toolTableBody"></tbody>
-        </table>
+        <div id="toolTableBody"></div>
       </div>
     </div>
     </div>
@@ -1677,12 +1576,11 @@ function cv(name){
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebarOverlay');
 
-  // Width is the one signal that's actually reliable across devices — UA
-  // sniffing and pointer:coarse both silently fail on plenty of real
-  // hardware (e.g. iPadOS reports a desktop UA by default), which was the
-  // main reason auto-detection felt inconsistent.
   function isPhoneLike(){
-    return window.matchMedia('(max-width:800px)').matches;
+    const narrow = window.matchMedia('(max-width:800px)').matches;
+    const coarse = window.matchMedia('(pointer:coarse)').matches;
+    const ua = /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent);
+    return narrow && (coarse || ua);
   }
   function apply(on){
     if(on){ root.setAttribute('data-mobile','on'); }
@@ -1702,17 +1600,14 @@ function cv(name){
     if(overlay) overlay.classList.remove('show');
   }
 
-  let userOverride = false; // true once the person taps the toggle themselves
   let saved = null;
   try{ saved = localStorage.getItem('pcd_mobile_mode'); }catch(e){}
-  if(saved !== null) userOverride = true;
   const initialOn = saved !== null ? (saved === '1') : isPhoneLike();
   apply(initialOn);
 
   if(btn){
     btn.addEventListener('click', ()=>{
       const nowOn = root.getAttribute('data-mobile') !== 'on';
-      userOverride = true;
       apply(nowOn);
       try{ localStorage.setItem('pcd_mobile_mode', nowOn ? '1':'0'); }catch(e){}
     });
@@ -1727,20 +1622,6 @@ function cv(name){
     if(t.closest && (t.id==='uploadBox' || t.tagName==='SELECT' || t.closest('.reset-btn'))){
       setTimeout(closeDrawer, 150);
     }
-  });
-
-  // Re-check on rotation / real resizes (not on every pixel of a drag —
-  // debounced) so the layout keeps matching the actual screen without a
-  // manual toggle, as long as the person hasn't picked a mode themselves.
-  let resizeTimer = null;
-  window.addEventListener('resize', ()=>{
-    if(userOverride) return;
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(()=>{ apply(isPhoneLike()); }, 150);
-  });
-  window.addEventListener('orientationchange', ()=>{
-    if(userOverride) return;
-    setTimeout(()=>{ apply(isPhoneLike()); }, 200);
   });
 })();
 
@@ -1900,6 +1781,25 @@ function usageDescFor(name, records){
   return "-";
 }
 
+// Age -> one of the 4 buckets, accepting either a numeric age or the
+// dashboard's own textual "อายุของเครื่อง" values (e.g. "1-5 ปี", "มากกว่า 16 ปี").
+function ageBucketFlexible(ageVal){
+  if(ageVal===null || ageVal===undefined || ageVal==='') return null;
+  const n = Number(ageVal);
+  if(!isNaN(n) && ageVal!==''){
+    if(n>=1 && n<=5) return "b15";
+    if(n>=6 && n<=10) return "b610";
+    if(n>=11 && n<=15) return "b1115";
+    if(n>=16) return "b16p";
+  }
+  const s = ageVal.toString();
+  if(/16|มากกว่า/.test(s)) return "b16p";
+  if(/11.{0,2}15/.test(s)) return "b1115";
+  if(/6.{0,2}10/.test(s)) return "b610";
+  if(/1.{0,2}5/.test(s)) return "b15";
+  return null;
+}
+
 // Age (years) -> one of the 4 PDF buckets
 function ageBucket(age){
   if(age===null || age===undefined || isNaN(age)) return null;
@@ -1924,7 +1824,7 @@ function equipmentImage(name, records){
   return withImg ? withImg.image : null;
 }
 
-function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceNewPage){
+function buildAgeCalibTable(category, records, withImages){
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
@@ -1941,11 +1841,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   let html = `<table class="eq2">
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
-      <tr class="print-cat-row">
-        <th colspan="${splitPhotoCol?11:10}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
-      </tr>
       <tr>
-        ${splitPhotoCol?`<th rowspan="2" class="colPhoto">รูป</th>`:``}
         <th rowspan="2" class="colTool">เครื่องมือ</th>
         <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
         <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
@@ -1960,30 +1856,18 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
 
   names.forEach(name=>{
     const row = byName[name];
-    let toolCell, photoCellHTML = "";
+    let toolCell;
     if(withImages){
       const img = equipmentImage(name, row.recs);
-      if(splitPhotoCol){
-        // Photo lives in its own dedicated column (bigger, clearer) — used
-        // for the PDF export. The tool-name cell no longer carries the icon.
-        const photoInner = img
-          ? `<img src="${img}" alt="" class="eq-photo eq-photo-col" data-zoom="${img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-             <span class="eq-photo-fallback eq-photo-col" style="display:none;">${CATEGORY_ICON[category]||"🔧"}</span>`
-          : `<span class="eq-photo-fallback eq-photo-col" style="display:flex;">${CATEGORY_ICON[category]||"🔧"}</span>`;
-        photoCellHTML = `<td class="colPhoto">${photoInner}</td>`;
-        toolCell = `<div class="eq-tool-cell eq-tool-cell-noimg"><span>${name}</span></div>`;
-      }else{
-        const iconCell = img
-          ? `<img src="${img}" alt="" class="eq-photo" data-zoom="${img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-             <span class="eq-photo-fallback" style="display:none;">${CATEGORY_ICON[category]||"🔧"}</span>`
-          : `<span class="eq-photo-fallback" style="display:flex;">${CATEGORY_ICON[category]||"🔧"}</span>`;
-        toolCell = `<div class="eq-tool-cell">${iconCell}<span>${name}</span></div>`;
-      }
+      const iconCell = img
+        ? `<img src="${img}" alt="" class="eq-photo" data-zoom="${img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+           <span class="eq-photo-fallback" style="display:none;">${CATEGORY_ICON[category]||"🔧"}</span>`
+        : `<span class="eq-photo-fallback" style="display:flex;">${CATEGORY_ICON[category]||"🔧"}</span>`;
+      toolCell = `<div class="eq-tool-cell">${iconCell}<span>${name}</span></div>`;
     }else{
       toolCell = `<div class="eq-tool-cell eq-tool-cell-noimg"><span>${name}</span></div>`;
     }
     html += `<tr>
-      ${photoCellHTML}
       <td class="colTool">${toolCell}</td>
       <td class="colUse">${usageDescFor(name,row.recs)}</td>
       <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
@@ -1993,18 +1877,82 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     </tr>`;
   });
   html += "</tbody></table>";
-  // A "compact" section is short enough (few equipment rows) that keeping
-  // it whole across a page break is safe — it won't itself create a big
-  // blank gap. Longer sections keep the free page-break behaviour so they
-  // still split cleanly instead of leaving a huge empty area above them.
-  const isCompact = names.length <= 8;
-  const cls = ['eq2-wrap'];
-  if(isCompact) cls.push('eq2-compact');
-  if(forceNewPage) cls.push('eq2-page-start');
-  return `<div class="${cls.join(' ')}">${html}</div>`;
+  return `<div class="eq2-wrap">${html}</div>`;
 }
 
-function categoryTables(code, withImages, splitPhotoCol){
+// Same PDF-style breakdown as buildAgeCalibTable(), but built straight from the
+// dashboard's own filtered rows (cat/item/unit/year/age/cond/cal/use/img) instead
+// of the map's per-org record shape — this is what powers the main "รายการเครื่องมือ" table.
+function buildMainCategoryTable(category, rows){
+  const byName = {};
+  rows.forEach(r=>{
+    const key = r.item || "(ไม่ระบุชื่อเครื่องมือ)";
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[]};
+    const row = byName[key];
+    row.total++;
+    row.recs.push(r);
+    const ab = ageBucketFlexible(r.age); if(ab) row[ab]++;
+    row[calibBucket(r.cal)]++;
+  });
+  const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
+  if(!names.length) return "";
+
+  let html = `<table class="eq2main">
+    <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
+    <thead>
+      <tr>
+        <th rowspan="2" class="colTool">เครื่องมือ</th>
+        <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
+        <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
+        <th colspan="3">สถานะสอบเทียบ</th>
+        <th rowspan="2" class="colTotal">รวม</th>
+      </tr>
+      <tr>
+        <th>1-5 ปี</th><th>6-10 ปี</th><th>11-15 ปี</th><th>มากกว่า<br>16 ปี</th>
+        <th>สอบเทียบ<br>แล้ว</th><th>ไม่เคย<br>สอบเทียบ</th><th>รอสอบ<br>เทียบ</th>
+      </tr>
+    </thead><tbody>`;
+
+  names.forEach(name=>{
+    const row = byName[name];
+    const img = row.recs.find(r=>r.img)?.img;
+    const iconCell = img
+      ? `<img src="${img}" alt="" class="eq-photo tool-thumb" data-zoom="${img}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+         <span class="eq-photo-fallback" style="display:none;">${CATEGORY_ICON[category]||"🔧"}</span>`
+      : `<span class="eq-photo-fallback" style="display:flex;">${CATEGORY_ICON[category]||"🔧"}</span>`;
+    const toolCell = `<div class="eq-tool-cell">${iconCell}<span>${name}</span></div>`;
+    html += `<tr data-name="${encodeURIComponent(name)}">
+      <td class="colTool">${toolCell}</td>
+      <td class="colUse">${usageDescFor(name,row.recs)}</td>
+      <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
+      <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
+      <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
+      <td class="num colTotal">${row.total}</td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  return `<div class="eq2main-wrap">${html}</div>`;
+}
+
+// Groups the dashboard's currently filtered rows by ประเภทเครื่องมือ (cat) and
+// renders one breakdown table per category, replacing the old flat item+count list.
+function buildMainEquipmentTables(filteredRows, searchText){
+  let rows = filteredRows;
+  if(searchText){
+    const q = searchText.toLowerCase();
+    rows = rows.filter(r=> (r.item||'').toLowerCase().includes(q));
+  }
+  if(!rows.length) return `<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>`;
+  const byCat = {};
+  rows.forEach(r=>{ const c = r.cat || "อื่นๆ"; (byCat[c]=byCat[c]||[]).push(r); });
+  const cats = Object.keys(byCat).sort((a,b)=>{
+    const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
+    return (ia<0?99:ia) - (ib<0?99:ib);
+  });
+  return cats.map(c=>buildMainCategoryTable(c, byCat[c])).join("");
+}
+
+function categoryTables(code, withImages){
   const recs = RECORDS_BY_ORG[code] || [];
   if(!recs.length) return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
   const byCat = {};
@@ -2013,11 +1961,7 @@ function categoryTables(code, withImages, splitPhotoCol){
     const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
     return (ia<0?99:ia) - (ib<0?99:ib);
   });
-  // Every category after the first starts on a fresh page — this keeps its
-  // header and all of its rows together on one page even when there was
-  // still room left on the previous page, instead of relying on the
-  // browser to decide whether/where to split.
-  return cats.map((c,i)=>buildAgeCalibTable(c, byCat[c], withImages, splitPhotoCol, i>0)).join("");
+  return cats.map(c=>buildAgeCalibTable(c, byCat[c], withImages)).join("");
 }
 
 /* =========================================================
@@ -2293,16 +2237,16 @@ function buildDetailHeaderHTML(code){
   return html;
 }
 
-function buildDetailTablesHTML(code, withImages, includeCategoryTable, splitPhotoCol){
+function buildDetailTablesHTML(code, withImages, includeCategoryTable){
   if(includeCategoryTable === undefined) includeCategoryTable = true;
   let html="";
-  if(includeCategoryTable) html += categoryTables(code, withImages, splitPhotoCol);
+  if(includeCategoryTable) html += categoryTables(code, withImages);
   html += rawTable(code);
   return html;
 }
 
-function buildDetailHTML(code, withImages, includeCategoryTable, splitPhotoCol){
-  return buildDetailHeaderHTML(code) + buildDetailTablesHTML(code, withImages, includeCategoryTable, splitPhotoCol);
+function buildDetailHTML(code, withImages, includeCategoryTable){
+  return buildDetailHeaderHTML(code) + buildDetailTablesHTML(code, withImages, includeCategoryTable);
 }
 
 function renderDetail(){
@@ -2407,7 +2351,7 @@ function exportDetailToPDF(){
         </div>
       </div>
       <div class="print-tables">
-        ${buildDetailTablesHTML(selected, true, true, true)}
+        ${buildDetailTablesHTML(selected, true)}
       </div>
     </div>
   `;
@@ -2549,9 +2493,9 @@ function applyMapSelectionVisual(code){
 function applyUserOrgSelection(code){
   if(code){
     const match = uniqueUnitValues().find(u => matchOrgCode(u) === code);
-    filters.unit = match || code;
+    filters.unit = [match || code];
   }else{
-    filters.unit = null;
+    filters.unit = [];
   }
   refreshAll();
 }
@@ -2564,7 +2508,7 @@ function syncMapFromDashboard(){
   rebuildRecordsByOrg();
   buildLegend();
   renderOrgPoints();
-  const targetCode = filters.unit ? matchOrgCode(filters.unit) : null;
+  const targetCode = (filters.unit && filters.unit.length===1) ? matchOrgCode(filters.unit[0]) : null;
   applyMapSelectionVisual(targetCode);
 }
 /* ===== Deselect button — clears the currently selected org/area ===== */
@@ -2703,11 +2647,10 @@ const CAL_COLORS = {
 const PALETTE = ['#3D4FE0','#3B82C4','#F0A94E','#C0503F','#7A5FC2','#5AC2E8','#B0793E','#2F9E68','#C25FA0','#8A9A46','#D64545','#5F7AC2','#C29A5F','#4EA3A0','#A65FC2','#6FA85F','#3E8A9E','#9E5F3E','#5F9E7A','#9E3E6F'];
 
 let currentData = [];
-let filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
-let tableSort = { key:'count', dir:'desc' };
+let filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+const MULTI_FILTER_KEYS = ['cat','unit','cal','cond','age','use'];
 let tableFilterItem = null;
 let tableSearchText = '';
-let sortState = {name:'asc', count:'desc'};
 
 /* ======================= CHART TYPE PREFERENCES ======================= */
 // ผู้ใช้สามารถเลือกรูปแบบกราฟที่ต้องการดูเองได้ในแต่ละส่วน
@@ -2793,7 +2736,7 @@ function updateYearlyTrendControlsVisibility(){
   const hint1 = panelYearlyTotalEl && panelYearlyTotalEl.querySelector('.hint');
   // If a "หน่วยงาน" filter is currently active, show its name in the panel
   // title so it's clear which agency the chart below is describing.
-  const unitSuffix = filters.unit ? ` — ${filters.unit}` : '';
+  const unitSuffix = (filters.unit && filters.unit.length) ? ` — ${filters.unit.join(', ')}` : '';
   if(isCombo){
     if(h1) h1.textContent = `📈 แนวโน้มจำนวนเครื่องมือที่ได้รับ รายปี${unitSuffix}`;
     if(hint1) hint1.textContent = 'แท่ง = จำนวนที่ได้รับในปีนั้น · เส้น = ยอดสะสมตั้งแต่ปีแรก (ตามข้อมูลที่ตรงกับตัวกรองอื่น)';
@@ -2812,10 +2755,12 @@ function uniqSorted(arr, key){
 
 function applyFilters(data, excludeKey){
   return data.filter(r=>{
-    for(const k of ['cat','unit','cal','cond','age','use','year']){
+    for(const k of MULTI_FILTER_KEYS){
       if(k===excludeKey) continue;
-      if(filters[k] !== null && r[k] !== filters[k]) return false;
+      const arr = filters[k];
+      if(arr && arr.length && !arr.includes(r[k])) return false;
     }
+    if(excludeKey!=='year' && filters.year !== null && r.year !== filters.year) return false;
     if(filters.search){
       const q = filters.search.toLowerCase();
       const hay = ((r.item||'')+' '+(r.unit||'')+' '+(r.cat||'')).toLowerCase();
@@ -2837,7 +2782,14 @@ function countBy(data, key){
 function fmt(n){ return n.toLocaleString('en-US'); }
 
 function toggleFilter(key, value){
-  filters[key] = (filters[key] === value) ? null : value;
+  if(key==='year'){
+    filters.year = (filters.year === value) ? null : value;
+    refreshAll();
+    return;
+  }
+  const arr = filters[key] || (filters[key]=[]);
+  const idx = arr.indexOf(value);
+  if(idx>=0) arr.splice(idx,1); else arr.push(value);
   refreshAll();
 }
 
@@ -2930,30 +2882,137 @@ function makeSearchable(selectId){
 
   sel._ssRefresh();
 }
+// Wraps a <select> as a multi-select checkbox combobox: options stay listed in
+// the (hidden) <select>, but the actual selection state lives in filters[key]
+// (an array) — clicking an option toggles it in/out without closing the dropdown,
+// so several values can be picked in one go, same click-through as the map/chart slicers.
+function makeMultiSelectable(selectId, filterKey){
+  const sel = document.getElementById(selectId);
+  if(!sel || sel.dataset.msEnhanced) return;
+  sel.dataset.msEnhanced = '1';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ss-wrap ms-wrap';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'ss-input';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.placeholder = 'ทั้งหมด';
+  wrap.appendChild(input);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'ss-clear';
+  clearBtn.textContent = '✕';
+  clearBtn.title = 'ล้างค่า';
+  wrap.appendChild(clearBtn);
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ss-dropdown';
+  wrap.appendChild(dropdown);
+
+  function currentLabel(){
+    const arr = filters[filterKey] || [];
+    if(!arr.length) return '';
+    if(arr.length === 1) return arr[0];
+    return `เลือกแล้ว ${arr.length} รายการ`;
+  }
+  function syncClearVisibility(){
+    clearBtn.style.display = (filters[filterKey]&&filters[filterKey].length) ? 'block' : 'none';
+  }
+  function renderOptions(filterText){
+    const q = (filterText||'').trim().toLowerCase();
+    const opts = Array.from(sel.options).filter(o=>o.value!=='');
+    const matches = opts.filter(o=> !q || o.textContent.toLowerCase().includes(q));
+    dropdown.innerHTML = '';
+    if(!matches.length){
+      const empty = document.createElement('div');
+      empty.className = 'ss-empty';
+      empty.textContent = 'ไม่พบรายการที่ตรงกัน';
+      dropdown.appendChild(empty);
+      return;
+    }
+    const arr = filters[filterKey] || [];
+    matches.forEach(o=>{
+      const checked = arr.includes(o.value);
+      const item = document.createElement('label');
+      item.className = 'ss-option ms-option' + (checked ? ' selected' : '');
+      item.innerHTML = `<input type="checkbox" tabindex="-1" ${checked?'checked':''}><span>${o.textContent}</span>`;
+      item.addEventListener('mousedown', e=>{ e.preventDefault(); }); // don't blur the input
+      item.addEventListener('click', e=>{
+        e.preventDefault();
+        toggleFilter(filterKey, o.value);
+        input.focus();
+        dropdown.classList.add('open');
+      });
+      dropdown.appendChild(item);
+    });
+  }
+  function openDropdown(){ renderOptions(input.value); dropdown.classList.add('open'); }
+  function closeDropdown(){ dropdown.classList.remove('open'); }
+
+  input.addEventListener('focus', openDropdown);
+  input.addEventListener('input', ()=>{ renderOptions(input.value); dropdown.classList.add('open'); });
+  input.addEventListener('blur', ()=>{ setTimeout(()=>{ input.value=''; input.placeholder = currentLabel()||'ทั้งหมด'; closeDropdown(); }, 150); });
+  input.addEventListener('keydown', e=>{ if(e.key === 'Escape') input.blur(); });
+
+  clearBtn.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    filters[filterKey] = [];
+    refreshAll();
+  });
+
+  // Called after populateSelect() rebuilds the option list, and after every
+  // refreshAll() so the placeholder / checkbox states stay in sync with filters[].
+  sel._msRefresh = function(){
+    input.placeholder = currentLabel() || 'ทั้งหมด';
+    syncClearVisibility();
+    if(dropdown.classList.contains('open')) renderOptions(input.value);
+  };
+  sel._msRefresh();
+}
+
 function initSearchableSelects(){
-  ['f-cat','f-unit','f-cal','f-cond','f-age','f-use','yearlyTrend-year'].forEach(makeSearchable);
+  MULTI_FILTER_KEYS.forEach(k=> makeMultiSelectable('f-'+k, k));
+  makeSearchable('yearlyTrend-year');
 }
 
 function populateSelect(id, key, data){
   const sel = document.getElementById(id);
   const vals = uniqSorted(data, key);
   const cur = filters[key];
-  sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>`<option value="${v}" ${cur===v?'selected':''}>${v}</option>`).join('');
+  const isMulti = Array.isArray(cur);
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' + vals.map(v=>{
+    const isSel = isMulti ? cur.includes(v) : cur===v;
+    return `<option value="${v}" ${isSel?'selected':''}>${v}</option>`;
+  }).join('');
   if(sel._ssRefresh) sel._ssRefresh();
+  if(sel._msRefresh) sel._msRefresh();
 }
 
 function renderActiveFilters(){
   const wrap = document.getElementById('activeFilters');
   wrap.innerHTML='';
-  ['cat','unit','cal','cond','age','use','year'].forEach(k=>{
-    if(filters[k] !== null){
+  MULTI_FILTER_KEYS.forEach(k=>{
+    (filters[k]||[]).forEach(val=>{
       const chip = document.createElement('div');
       chip.className='chip';
-      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${filters[k]}</span><button data-k="${k}">✕</button>`;
-      chip.querySelector('button').onclick = ()=>{ filters[k]=null; refreshAll(); };
+      chip.innerHTML = `<span>${FIELD_LABELS[k]}: ${val}</span><button>✕</button>`;
+      chip.querySelector('button').onclick = ()=>{ toggleFilter(k, val); };
       wrap.appendChild(chip);
-    }
+    });
   });
+  if(filters.year !== null){
+    const chip = document.createElement('div');
+    chip.className='chip';
+    chip.innerHTML = `<span>${FIELD_LABELS.year}: ${filters.year}</span><button>✕</button>`;
+    chip.querySelector('button').onclick = ()=>{ filters.year=null; refreshAll(); };
+    wrap.appendChild(chip);
+  }
 }
 
 function refreshFilterOptions(){
@@ -3344,9 +3403,10 @@ function hBarSVG(container, {labels, data, colors, width=760, height, onBarClick
 
 function renderLegendList(container, items, activeValue, onClick){
   clearNode(container);
+  const activeArr = Array.isArray(activeValue) ? activeValue : (activeValue ? [activeValue] : []);
   items.forEach(it=>{
     const row = document.createElement('div');
-    row.className = 'legend-item' + (activeValue && activeValue !== it.label ? ' dim' : '');
+    row.className = 'legend-item' + (activeArr.length && !activeArr.includes(it.label) ? ' dim' : '');
     row.innerHTML = `<span class="sw" style="background:${it.color}"></span><span>${it.label}</span><span class="n">${fmt(it.value)}</span>`;
     row.onclick = ()=> onClick(it.label);
     container.appendChild(row);
@@ -3438,47 +3498,12 @@ function renderCalBar(filtered){
 
 /* ======================= TABLE ======================= */
 function renderTable(filtered){
-  const grouped = new Map();
-  filtered.forEach(r=>{
-    const name = r.item ?? '(ไม่ระบุ)';
-    if(!grouped.has(name)) grouped.set(name, {name, count:0, img:null});
-    const g = grouped.get(name);
-    g.count++;
-    if(!g.img && r.img) g.img = r.img;
-  });
-  let rows = Array.from(grouped.values());
-  if(tableSearchText){
-    const q = tableSearchText.toLowerCase();
-    rows = rows.filter(r=>r.name.toLowerCase().includes(q));
-  }
-  rows.sort((a,b)=>{
-    let av = tableSort.key==='name'? a.name : a.count;
-    let bv = tableSort.key==='name'? b.name : b.count;
-    let cmp = (typeof av==='string') ? av.localeCompare(bv,'th') : av-bv;
-    return tableSort.dir==='asc' ? cmp : -cmp;
-  });
-  const max = rows.length ? Math.max(...rows.map(r=>r.count)) : 1;
-  const tbody = document.getElementById('toolTableBody');
-  if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = rows.map(r=>`
-    <tr class="${tableFilterItem===r.name?'sel':''}" data-name="${encodeURIComponent(r.name)}">
-      <td>${r.img
-        ? `<img class="tool-thumb" src="${r.img}" alt="${r.name}" loading="lazy" onerror="this.outerHTML='<div class=&quot;tool-thumb-placeholder&quot;>🔧</div>';">`
-        : `<div class="tool-thumb-placeholder">🔧</div>`}</td>
-      <td>${r.name}</td>
-      <td>
-        <div class="bar-cell">
-          <span class="num" style="width:34px;">${fmt(r.count)}</span>
-          <div class="track"><div class="fill" style="width:${(r.count/max*100).toFixed(1)}%;"></div></div>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-  Array.from(tbody.querySelectorAll('tr')).forEach(tr=>{
-    tr.onclick = ()=>{
+  const wrap = document.getElementById('toolTableBody');
+  wrap.innerHTML = buildMainEquipmentTables(filtered, tableSearchText);
+  Array.from(wrap.querySelectorAll('tbody tr[data-name]')).forEach(tr=>{
+    tr.classList.toggle('sel', tableFilterItem === decodeURIComponent(tr.dataset.name));
+    tr.onclick = (ev)=>{
+      if(ev.target.closest('.eq-photo')) return; // let the lightbox handler take clicks on the photo
       const name = decodeURIComponent(tr.dataset.name);
       if(tableFilterItem === name){ tableFilterItem = null; filters.search=''; }
       else{ tableFilterItem = name; filters.search = name; }
@@ -3990,27 +4015,21 @@ function refreshAll(){
 }
 
 function syncSelectValues(){
-  document.getElementById('f-cat').value = filters.cat || '';
-  document.getElementById('f-unit').value = filters.unit || '';
-  document.getElementById('f-cal').value = filters.cal || '';
-  document.getElementById('f-cond').value = filters.cond || '';
-  document.getElementById('f-age').value = filters.age || '';
-  document.getElementById('f-use').value = filters.use || '';
-  const yEl = document.getElementById('yearlyTrend-year');
-  if(yEl) yEl.value = filters.year || '';
-  ['f-cat','f-unit','f-cal','f-cond','f-age','f-use','yearlyTrend-year'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el && el._ssRefresh) el._ssRefresh();
+  MULTI_FILTER_KEYS.forEach(k=>{
+    const el = document.getElementById('f-'+k);
+    if(el && el._msRefresh) el._msRefresh();
   });
+  const yEl = document.getElementById('yearlyTrend-year');
+  if(yEl){
+    yEl.value = filters.year || '';
+    if(yEl._ssRefresh) yEl._ssRefresh();
+  }
 }
 
 /* ======================= EVENTS ======================= */
-['cat','unit','cal','cond','age','use'].forEach(k=>{
-  document.getElementById('f-'+k).addEventListener('change', e=>{
-    filters[k] = e.target.value || null;
-    refreshAll();
-  });
-});
+// Note: f-cat/f-unit/f-cal/f-cond/f-age/f-use are multi-select checkbox
+// comboboxes (see makeMultiSelectable) — they write straight into filters[key]
+// and call refreshAll() themselves, no 'change' listener needed here.
 document.getElementById('yearlyTrend-year').addEventListener('change', e=>{
   // currentData stores year as a Number (see normalizeRows), but <select> values
   // are always strings — comparing them directly in applyFilters() always failed,
@@ -4032,23 +4051,12 @@ document.getElementById('tableSearch').addEventListener('input', e=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('tableSearch').value='';
   tableSearchText='';
   refreshAll();
-});
-
-document.getElementById('th-name').addEventListener('click', ()=>{
-  tableSort = {key:'name', dir: sortState.name};
-  sortState.name = sortState.name==='asc' ? 'desc':'asc';
-  renderTable(applyFilters(currentData));
-});
-document.getElementById('th-count').addEventListener('click', ()=>{
-  tableSort = {key:'count', dir: sortState.count};
-  sortState.count = sortState.count==='asc' ? 'desc':'asc';
-  renderTable(applyFilters(currentData));
 });
 
 /* ======================= OFFLINE FILE PARSERS (no external libs) ======================= */
@@ -4347,7 +4355,7 @@ function showFileError(msg){
 
 function applyLoadedRows(rows, labelText){
   currentData = rows;
-  filters = { cat:null, unit:null, cal:null, cond:null, age:null, use:null, year:null, search:'' };
+  filters = { cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('fileName').textContent = labelText;
@@ -4442,7 +4450,7 @@ function collapseExpandedPanel(){
 // ใช้ Google Visualization API (gviz) รูปแบบ CSV ซึ่งอนุญาตให้เรียกข้ามโดเมนจากเบราว์เซอร์ได้โดยไม่ต้องใช้ API key
 const GOOGLE_SHEET_ID = '1ssqSHSeRIIkdBnWyzYfQyotNWpWJMxM2NKTeS7zu4Dw';
 const GOOGLE_SHEET_GID = '1130129068'; // แท็บที่มีข้อมูลจริง (Sheet1)
-const SHEET_REFRESH_MS = 60000; // ซิงก์อัตโนมัติทุก 60 วินาที
+const SHEET_REFRESH_MS = 45 * 60000; // ซิงก์อัตโนมัติทุก 45 นาที
 
 let dataSource = 'sheet'; // 'sheet' = ใช้ข้อมูลจาก Google Sheet, 'file' = ผู้ใช้อัปโหลดไฟล์เอง
 let sheetPollTimer = null;
@@ -4506,14 +4514,14 @@ async function loadFromGoogleSheet(isAutoRefresh){
 
 function startSheetPolling(){
   if(sheetPollTimer) clearInterval(sheetPollTimer);
-  sheetPollTimer = setInterval(()=>loadFromGoogleSheet(true), SHEET_REFRESH_MS);
+  sheetPollTimer = setInterval(()=>loadFromGoogleSheet(true), SHEET_REFRESH_MS); // ทุก 45 นาที
 }
 
 function initGsheetSync(){
   const btn = document.getElementById('sheetRefreshBtn');
   if(btn) btn.addEventListener('click', ()=>loadFromGoogleSheet(false));
   loadFromGoogleSheet(false); // เชื่อมต่อทันทีที่เปิดหน้า
-  startSheetPolling();        // แล้วซิงก์ซ้ำอัตโนมัติทุก 60 วินาที
+  startSheetPolling();        // แล้วซิงก์ซ้ำอัตโนมัติทุก 45 นาที
 }
 
 /* ======================= INIT ======================= */
