@@ -876,7 +876,7 @@
     align-items:center;
     gap:6px;
     transition:.12s;
-  }#mapSection .chip:hover{border-color:var(--map-teal);}#mapSection .chip.active{background:var(--map-teal); color:#fff; border-color:var(--map-teal);}#mapSection .chip .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}#mapSection .chip .count{
+  }#mapSection .chip:hover{border-color:var(--map-teal);}#mapSection .chip.active{background:var(--map-teal); color:#fff; border-color:var(--map-teal);}#mapSection .chip.zero-match{opacity:.4;}#mapSection .chip.zero-match.active{opacity:1;}#mapSection .chip .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}#mapSection .chip .count{
     font-size:10px; background:rgba(0,0,0,.08); border-radius:999px; padding:1px 6px;
   }#mapSection .chip.active .count{background:rgba(255,255,255,.25);}#mapSection #detailPane{padding:16px 20px; flex:1;}#mapSection #detailPane .empty{
     color:var(--map-muted); font-size:13px; text-align:center; padding:40px 10px; line-height:1.7;
@@ -995,13 +995,14 @@
     vector-effect:non-scaling-stroke;
     cursor:pointer;
     transition:filter .1s;
-  }#mapSection .province:hover{filter:brightness(1.12);}#mapSection .province.selected{stroke:var(--map-teal-deep); stroke-width:2;}#mapSection .province.dim{opacity:.35;}#mapSection .orgpt{
+  }#mapSection .province:hover{filter:brightness(1.12);}#mapSection .province.selected{stroke:var(--map-teal-deep); stroke-width:2;}#mapSection .province.dim{opacity:.35;}#mapSection .province.zero-match{opacity:.3; filter:saturate(.45);}#mapSection .province.dim.zero-match{opacity:.14;}#mapSection .orgpt{
     stroke:#fff;
     stroke-width:1;
     vector-effect:non-scaling-stroke;
     cursor:pointer;
     opacity:.9;
-  }#mapSection .orgpt.dim{opacity:.18;}#mapSection .orgpt.selected{stroke:var(--map-teal-deep); stroke-width:2;}#mapSection .pt{
+    transition:r .2s, opacity .2s;
+  }#mapSection .orgpt.dim{opacity:.18;}#mapSection .orgpt.zero-match{opacity:.3;}#mapSection .orgpt.dim.zero-match{opacity:.1;}#mapSection .orgpt.selected{stroke:var(--map-teal-deep); stroke-width:2;}#mapSection .pt{
     fill:#20201f;
     stroke:#fff;
     stroke-width:.8;
@@ -2260,18 +2261,29 @@ function renderOrgPoints(){
       pts.push({org: org.code, th:p.th, lat:p.lat, lon:p.lon});
     });
   });
+  // Size each point by how many equipment records currently pass the
+  // dashboard's filters for that org — so the map itself (not just the
+  // legend counts) visibly reflects whatever the person has filtered to.
+  const counts = Object.keys(ORGS).map(c=>(RECORDS_BY_ORG[c]||[]).length);
+  const maxCount = Math.max(1, ...counts);
+  const rScale = d3.scaleSqrt().domain([0, maxCount]).range([0, 9]);
   gOrgPoints.selectAll("circle")
     .data(pts)
     .join("circle")
     .attr("class","orgpt")
-    .attr("r", d=> ORGS[d.org].kind==="special" ? 6 : 4)
+    .attr("r", d=>{
+      const base = ORGS[d.org].kind==="special" ? 6 : 4;
+      const n = (RECORDS_BY_ORG[d.org]||[]).length;
+      return n ? base + rScale(n) : base*0.55;
+    })
+    .classed("zero-match", d=> !(RECORDS_BY_ORG[d.org] && RECORDS_BY_ORG[d.org].length))
     .attr("fill", d=>ORGS[d.org].color)
     .attr("data-org", d=>d.org)
     .attr("cx", d=>projection([d.lon,d.lat])[0])
     .attr("cy", d=>projection([d.lon,d.lat])[1])
     .on("click", (ev,d)=>selectOrgOnMap(d.org, ev))
     .append("title")
-    .text(d=> `${ORGS[d.org].label} — ${d.th} — เครื่องมือ ${(RECORDS_BY_ORG[d.org]||[]).length} รายการ`);
+    .text(d=> `${ORGS[d.org].label} — ${d.th} — เครื่องมือ ${(RECORDS_BY_ORG[d.org]||[]).length} รายการ (ตามตัวกรองปัจจุบัน)`);
 }
 
 /* =========================================================
@@ -2292,6 +2304,7 @@ function buildLegend(){
 function makeChip(label,color,onClick,id,count){
   const el=document.createElement("div");
   el.className="chip"; el.dataset.id=id;
+  if(count===0) el.classList.add("zero-match");
   el.innerHTML=`<span class="dot" style="background:${color}"></span>${label}`;
   if(count!==undefined) el.innerHTML += `<span class="count">${count}</span>`;
   el.addEventListener("click",onClick);
@@ -2324,6 +2337,13 @@ function highlightMap(){
     .classed("dim", function(){
       const r = d3.select(this).attr("data-org");
       return selected && r && r!==selected;
+    })
+    // Provinces belonging to an org with zero records under the current
+    // filters are visibly faded, same idea as the point-size/legend-count
+    // changes above — the whole map, not just the sidebar, tracks the filters.
+    .classed("zero-match", function(){
+      const r = d3.select(this).attr("data-org");
+      return !!r && !(RECORDS_BY_ORG[r] && RECORDS_BY_ORG[r].length);
     });
   gOrgPoints.selectAll(".orgpt")
     .classed("selected", function(d){ return d && d.org===selected; })
