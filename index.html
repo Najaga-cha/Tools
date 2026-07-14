@@ -1922,6 +1922,7 @@ function buildMapRecords(rows){
       org: code || (r.unit || '').toString().trim(),
       yearGot: r.year || null,
       age: (r.age===null || r.age===undefined || r.age==='') ? null : r.age,
+      ageBracket: (r.ageBracket===null || r.ageBracket===undefined || r.ageBracket==='') ? null : r.ageBracket.toString().trim(),
       statusEquip: r.cond || null,
       statusCalib: r.cal || null,
       statusUse: r.use || null,
@@ -2015,8 +2016,6 @@ function ageBucket(age){
   if(age>=16) return "b16p";
   return null;
 }
-// Bucket key -> Thai display label (matches the header labels of the age-bucket columns)
-const AGE_BUCKET_LABEL = {b15:"1-5 ปี", b610:"6-10 ปี", b1115:"11-15 ปี", b16p:"มากกว่า 16 ปี"};
 // สถานะสอบเทียบ -> one of the 3 PDF columns (anything that isn't a clear
 // "calibrated" / "awaiting calibration" value is grouped under "ไม่เคยสอบเทียบ",
 // which also absorbs "ไม่ต้องส่งสอบเทียบ" / blank values, same as the source sheet).
@@ -2036,25 +2035,27 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
-    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[],ages:{}};
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[],ageGroups:{}};
     const row = byName[key];
     row.total++;
     row.recs.push(r);
     const ab = ageBucket(r.age); if(ab) row[ab]++;
     row[calibBucket(r.statusCalib)]++;
     const ageKey = (r.age===null || r.age===undefined || r.age==='') ? "-" : r.age;
-    row.ages[ageKey] = (row.ages[ageKey]||0)+1;
+    if(!row.ageGroups[ageKey]) row.ageGroups[ageKey] = {count:0, bracket:r.ageBracket||null};
+    row.ageGroups[ageKey].count++;
+    if(!row.ageGroups[ageKey].bracket && r.ageBracket) row.ageGroups[ageKey].bracket = r.ageBracket;
   });
   const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
   if(!names.length) return "";
   names.forEach(name=>{
     const row = byName[name];
-    row.ageStr = Object.entries(row.ages)
+    row.ageStr = Object.entries(row.ageGroups)
       .sort((a,b)=> a[0]==="-" ? 1 : b[0]==="-" ? -1 : (+a[0])-(+b[0]))
-      .map(([a,c])=>{
+      .map(([a,info])=>{
+        const c = info.count;
         if(a==="-") return `<div class="age-line">ไม่ระบุอายุ${c>1?` <span class="age-count">×${c}</span>`:''}</div>`;
-        const bl = AGE_BUCKET_LABEL[ageBucket(+a)];
-        return `<div class="age-line">${a} ปี${c>1?` <span class="age-count">×${c}</span>`:''}${bl?` <span class="age-tag">(เกณฑ์ ${bl})</span>`:''}</div>`;
+        return `<div class="age-line">${a} ปี${c>1?` <span class="age-count">×${c}</span>`:''}${info.bracket?` <span class="age-tag">(${info.bracket})</span>`:''}</div>`;
       })
       .join("");
   });
@@ -4818,7 +4819,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 /* ======================= OFFLINE FILE PARSERS (no external libs) ======================= */
 const REV_MAP = {
   'ประเภทเครื่องมือ':'cat','เครื่องมือ':'item','หน่วยงาน':'unit','ปี พ.ศ. ที่ได้มา':'year',
-  'อายุของเครื่อง':'age','สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
+  'อายุของเครื่อง':'age','เกณฑ์อายุของแต่ละเครื่อง':'ageBracket','สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
   'ละติจูด':'lat','Latitude':'lat','latitude':'lat','lat':'lat',
   'ลองจิจูด':'lng','Longitude':'lng','longitude':'lng','lng':'lng','long':'lng',
   'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
