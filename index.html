@@ -915,7 +915,7 @@
     background:#E7EAFB; color:var(--map-teal-deep); text-align:center;
     padding:6px 5px; font-weight:700; border:1px solid var(--map-line); line-height:1.3;
     white-space:nowrap;
-  }#mapSection table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}#mapSection table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}#mapSection table.eq2 td.colTotal, #mapSection table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}#mapSection table.eq2 td.colTool{min-width:150px;}#mapSection table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}#mapSection .eq-tool-cell{display:flex; align-items:center; gap:8px;}#mapSection .eq-tool-cell span:last-child{font-weight:600; font-size:11.5px;}#mapSection .eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC; cursor:zoom-in;}#mapSection .eq-photo-fallback{
+  }#mapSection table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}#mapSection table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}#mapSection table.eq2 td.colTotal, #mapSection table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}#mapSection table.eq2 td.colTool{min-width:150px;}#mapSection table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}#mapSection table.eq2 td.colAge{min-width:90px; color:var(--map-muted); font-size:10.5px; line-height:1.4; text-align:center;}#mapSection .eq-tool-cell{display:flex; align-items:center; gap:8px;}#mapSection .eq-tool-cell span:last-child{font-weight:600; font-size:11.5px;}#mapSection .eq-photo{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); flex-shrink:0; background:#F2F4FC; cursor:zoom-in;}#mapSection .eq-photo-fallback{
     width:34px; height:34px; border-radius:6px; background:#EAEDFA; flex-shrink:0;
     align-items:center; justify-content:center; font-size:16px;
   }#mapSection /* ===== Image lightbox (click a tool photo in the sidebar table to zoom) ===== */
@@ -955,6 +955,7 @@
   #toolTableBody table.eq2 td.colTotal, #toolTableBody table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}
   #toolTableBody table.eq2 td.colTool{min-width:150px;}
   #toolTableBody table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}
+  #toolTableBody table.eq2 td.colAge{min-width:90px; color:var(--map-muted); font-size:10.5px; line-height:1.4; text-align:center;}
   #toolTableBody table.eq2 tbody tr{cursor:pointer;}
   #toolTableBody table.eq2 tbody tr:hover td{background:var(--teal-tint);}
   #toolTableBody table.eq2 tbody tr.sel td{background:var(--teal-tint); box-shadow:inset 0 0 0 1px var(--teal);}
@@ -1313,7 +1314,8 @@
        loses to the new photo column. */
     #printArea table.eq2 td.colPhoto, #printArea table.eq2 th.colPhoto{width:15%; text-align:center;}
     #printArea table.eq2 td.colTool{width:16%; font-weight:600;}
-    #printArea table.eq2 td.colUse{width:28%; color:var(--map-muted); font-size:9.5px;}
+    #printArea table.eq2 td.colUse{width:20%; color:var(--map-muted); font-size:9.5px;}
+    #printArea table.eq2 td.colAge, #printArea table.eq2 th.colAge{width:8%; color:var(--map-muted); font-size:9px; text-align:center;}
     #printArea table.eq2 td.num{width:7%; text-align:center; font-weight:700; color:var(--map-teal-deep);}
     #printArea table.eq2 td.colTotal, #printArea table.eq2 th.colTotal{width:6%; background:#EFF2FC; font-weight:800; text-align:center;}
     #printArea table.eq2 tbody tr:nth-child(even) td{background:#F5F7FD;}
@@ -1912,7 +1914,7 @@ function buildMapRecords(rows){
       name: r.item || null,
       org: code || (r.unit || '').toString().trim(),
       yearGot: r.year || null,
-      age: null,
+      age: (r.age===null || r.age===undefined || r.age==='') ? null : r.age,
       statusEquip: r.cond || null,
       statusCalib: r.cal || null,
       statusUse: r.use || null,
@@ -2025,26 +2027,36 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
-    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[]};
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[],ages:{}};
     const row = byName[key];
     row.total++;
     row.recs.push(r);
     const ab = ageBucket(r.age); if(ab) row[ab]++;
     row[calibBucket(r.statusCalib)]++;
+    const ageKey = (r.age===null || r.age===undefined || r.age==='') ? "-" : r.age;
+    row.ages[ageKey] = (row.ages[ageKey]||0)+1;
   });
   const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
   if(!names.length) return "";
+  names.forEach(name=>{
+    const row = byName[name];
+    row.ageStr = Object.entries(row.ages)
+      .sort((a,b)=> a[0]==="-" ? 1 : b[0]==="-" ? -1 : (+a[0])-(+b[0]))
+      .map(([a,c])=> a==="-" ? (c>1?`ไม่ระบุ(${c})`:"ไม่ระบุ") : (c>1?`${a} ปี(${c})`:`${a} ปี`))
+      .join(", ");
+  });
 
   let html = `<table class="eq2">
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
       <tr class="print-cat-row">
-        <th colspan="${splitPhotoCol?11:10}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
+        <th colspan="${splitPhotoCol?12:11}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
       </tr>
       <tr>
         ${splitPhotoCol?`<th rowspan="2" class="colPhoto">รูป</th>`:``}
         <th rowspan="2" class="colTool">เครื่องมือ</th>
         <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
+        <th rowspan="2" class="colAge">อายุ<br>(ปี)</th>
         <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
         <th colspan="3">สถานะสอบเทียบ</th>
         <th rowspan="2" class="colTotal">รวม</th>
@@ -2083,6 +2095,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
       ${photoCellHTML}
       <td class="colTool">${toolCell}</td>
       <td class="colUse">${usageDescFor(name,row.recs)}</td>
+      <td class="colAge">${row.ageStr || "-"}</td>
       <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
       <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
       <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
@@ -4805,7 +4818,7 @@ function normalizeRows(json){
       const mapped = REV_MAP[k.trim()] || null;
       if(mapped){
         let v = row[k];
-        if(mapped==='year'){ v = parseInt(v); if(isNaN(v)) v=null; }
+        if(mapped==='year' || mapped==='age'){ v = parseInt(v); if(isNaN(v)) v=null; }
         else if(mapped==='lat' || mapped==='lng'){ v = parseFloat(v); if(isNaN(v)) v=null; }
         else if(typeof v === 'string'){ v = v.trim(); }
         out[mapped] = (v===undefined || v==='') ? null : v;
