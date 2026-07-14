@@ -635,12 +635,13 @@
   .topn-select:focus{border-color:var(--teal);}
 
   /* ===== "ปี พ.ศ." year filter — styled as its own pill so it stands out
-     from the plain topn-select dropdowns next to it. Note: this control
-     gets enhanced by makeSearchable() into a text-input + dropdown widget
-     (the real <select> is hidden via .ss-wrap select{display:none}), so
-     the visible styling below targets input.ss-input, not select — and
-     because it isn't nested in a .field wrapper like the sidebar filters,
-     it needs its own base box styling (border/padding/font) too. ===== */
+     from the plain topn-select dropdowns next to it. This control gets
+     enhanced by makeMultiSelect() into a checkbox-list combobox (the real
+     <select> is hidden via .ms-wrap select{display:none}), which lets more
+     than one ปี พ.ศ. be ticked at once to compare — the visible styling
+     below targets .ms-box, not select — and because it isn't nested in a
+     .field wrapper like the sidebar filters, it needs its own base box
+     styling (border/padding/font) too. ===== */
   .year-filter{
     display:inline-flex;align-items:center;gap:7px;
     background:linear-gradient(135deg, var(--teal-tint), var(--surface));
@@ -653,29 +654,22 @@
   .year-filter:hover{border-color:var(--teal); box-shadow:0 2px 6px rgba(20,25,64,0.1);}
   .year-filter-icon{font-size:13px;line-height:1;}
   .year-filter label{font-size:11.5px;font-weight:700;color:var(--teal-dark);white-space:nowrap;cursor:default;}
-  .year-filter .ss-wrap{position:relative;width:118px;}
-  .year-filter input.ss-input{
+  .year-filter .ms-wrap{position:relative;width:168px;}
+  .year-filter .ms-box{
     width:100%;box-sizing:border-box;
     background-color:var(--surface);
     border:1px solid var(--soft-border);
     color:var(--ink);
     border-radius:999px;
-    padding:5px 26px 5px 12px;
+    padding:5px 10px 5px 12px;
     font-family:'Sarabun',sans-serif;
     font-size:12px;font-weight:700;
-    cursor:pointer;outline:none;
     transition:.15s;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234B5478' fill='none' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;
-    background-position:right 10px center;
-    background-size:9px 5px;
   }
-  .year-filter input.ss-input:hover{border-color:var(--teal);}
-  .year-filter input.ss-input:focus{border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-tint);}
-  .year-filter .ss-clear{right:22px;}
-  [data-theme="dark"] .year-filter input.ss-input{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23AEB4DE' fill='none' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  }
+  .year-filter .ms-box:hover{border-color:var(--teal);}
+  .year-filter .ms-wrap:focus-within .ms-box{border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-tint);}
+  .year-filter .ms-summary.placeholder{color:var(--ink);}
+  .year-filter .ms-dropdown{width:210px;}
 
   .expand-btn{
     margin-left:auto; background:var(--surface-soft); border:1px solid var(--line); color:var(--ink-soft);
@@ -1562,7 +1556,8 @@
         <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelYearlyTotal','chartYearlyTotal')" style="margin-left:auto;">⛶</button>
       </div>
       <div class="hint">ผลรวมจำนวนเครื่องมือทั้งหมดที่แต่ละหน่วยงานได้รับ ตามข้อมูลที่ตรงกับตัวกรอง</div>
-      <div class="svgchart" id="chartYearlyTotal" style="height:230px;"></div>
+      <div class="svgchart" id="chartYearlyTotal" style="height:300px;"></div>
+      <div class="legend-wrap" id="legendYearlyStacked" style="display:none;"></div>
     </div>
 
     <div class="panel" id="panelAgeBar" style="margin-bottom:18px;">
@@ -1630,7 +1625,7 @@
 
     <div class="section-divider">รายละเอียดเชิงลึก · ปรับมุมมองกราฟและกรองข้อมูลได้ด้านล่าง</div>
 
-    <div class="grid2b">
+    <div style="margin-bottom:18px;">
       <div class="panel">
         <h2>🔋 สถานะการใช้งานตามเครื่องมือ <span class="clickable-note">คลิกเพื่อกรอง</span></h2>
         <div class="hint">สัดส่วนเครื่องมือที่ใช้งานได้ / ชำรุด</div>
@@ -1638,15 +1633,6 @@
         <div class="chart-flex">
           <div class="svgchart" id="chartUsePie" style="width:240px;height:240px;flex-shrink:0;"></div>
           <div class="legend-col" id="legendUsePie"></div>
-        </div>
-      </div>
-      <div class="panel">
-        <h2>🧪 ประเภทเครื่องมือ <span class="clickable-note">คลิกเพื่อกรอง</span></h2>
-        <div class="hint">แยกตาม ด้านน้ำ / อากาศ / ดิน / ฉุกเฉิน</div>
-        <div class="chart-switch" id="switchCatPie" data-key="catPie"></div>
-        <div class="chart-flex">
-          <div class="svgchart" id="chartCatPie" style="width:240px;height:240px;flex-shrink:0;"></div>
-          <div class="legend-col" id="legendCatPie"></div>
         </div>
       </div>
     </div>
@@ -1856,7 +1842,7 @@ function cv(name){
 })();
 
 /* ===================== embedded equipment map (linked to slicers) ===================== */
-const ORG_LOCATIONS = {"สคพ.1":[{"th":"ลำพูน","en":"Lamphun","lat":18.5744606,"lon":99.0087221},{"th":"เชียงใหม่","en":"Chiang Mai","lat":18.7877477,"lon":98.9931311},{"th":"เชียงราย","en":"Chiang Rai","lat":19.9071656,"lon":99.830955},{"th":"แม่ฮ่องสอน","en":"Mae Hong Son","lat":19.2990643,"lon":97.9656226}],"สคพ.2":[{"th":"ลำปาง","en":"Lampang","lat":18.2888404,"lon":99.490874},{"th":"แพร่","en":null,"lat":18.1445774,"lon":100.1402831},{"th":"พะเยา","en":"Phayao","lat":19.1664789,"lon":99.9019419},{"th":"น่าน","en":"Nan","lat":18.7756318,"lon":100.7730417}],"สคพ.3":[{"th":"สุโขทัย","en":"Sukhothai","lat":17.0055573,"lon":99.8263712},{"th":"ตาก","en":"Tak","lat":16.8839901,"lon":99.1258498},{"th":"เพชรบูรณ์","en":"Phetchabun","lat":16.4189807,"lon":101.1550926},{"th":"พิษณุโลก","en":"Phitsanulok","lat":16.8298048,"lon":100.2614915},{"th":"อุตรดิตถ์","en":"Uttaradit","lat":17.6200886,"lon":100.0992942}],"สคพ.4":[{"th":"นครสวรรค์","en":"Nakhon Sawan","lat":15.6930072,"lon":100.1225595},{"th":"พิจิตร","en":"Phichit","lat":16.4429516,"lon":100.3482329},{"th":"อุทัยธานี","en":"Uthai Thani","lat":15.3835001,"lon":100.0245527},{"th":"กำแพงเพชร","en":"Kamphaeng Phet","lat":16.4827798,"lon":99.5226618}],"สคพ.5":[{"th":"นครปฐม","en":"Nakhon Pathom","lat":13.8199206,"lon":100.0621676},{"th":"ชัยนาท","en":"Chai Nat","lat":15.1851971,"lon":100.125125},{"th":"สุพรรณบุรี","en":"Suphan Buri","lat":14.4744892,"lon":100.1177128},{"th":"สมุทรสาคร","en":"Samut Sakhon","lat":13.5475216,"lon":100.2743956}],"สคพ.6":[{"th":"นนทบุรี","en":"Nonthaburi","lat":13.8621125,"lon":100.5143528},{"th":"สิงห์บุรี","en":"Sing Buri","lat":14.8936253,"lon":100.3967314},{"th":"อ่างทอง","en":"Ang Thong","lat":14.5896054,"lon":100.455052},{"th":"ปทุมธานี","en":"Pathum Thani","lat":14.0208391,"lon":100.5250276},{"th":"พระนครศรีอยุธยา","en":"Phra Nakhon Si Ayutthaya","lat":14.3532128,"lon":100.5689599}],"สคพ.7":[{"th":"สระบุรี","en":"Saraburi","lat":14.5289154,"lon":100.9101421},{"th":"ปราจีนบุรี","en":"Prachinburi","lat":14.1256248,"lon":101.3725264},{"th":"ลพบุรี","en":"Lopburi","lat":14.7995081,"lon":100.6533706},{"th":"นครนายก","en":"Nakhon Nayok","lat":14.2069466,"lon":101.2130511},{"th":"สระแก้ว","en":"Sa Kaeo","lat":13.824038,"lon":102.0645839}],"สคพ.8":[{"th":"ราชบุรี","en":"Ratchaburi","lat":13.5282893,"lon":99.8134211},{"th":"กาญจนบุรี","en":"Kanchanaburi","lat":14.0227797,"lon":99.5328115},{"th":"สมุทรสงคราม","en":"Samut Songkhram","lat":13.4098217,"lon":100.0022645},{"th":"เพชรบุรี","en":"Phetchaburi","lat":13.1111601,"lon":99.9391307},{"th":"ประจวบคิรีขันธ์","en":"Prachuap Khiri Khan","lat":11.812367,"lon":99.7973271}],"สคพ.9":[{"th":"อุดรธานี","en":"Udon Thani","lat":17.4138413,"lon":102.7872325},{"th":"หนองคาย","en":"Nong Khai","lat":17.8782803,"lon":102.7412638},{"th":"เลย","en":"Loei","lat":17.4860232,"lon":101.7223002},{"th":"นครพนม","en":"Nakhon Phanom","lat":17.392039,"lon":104.7695508},{"th":"สกลนคร","en":"Sakon Nakhon","lat":17.1545995,"lon":104.1348365},{"th":"บึงกาฬ","en":"Bueng Kan","lat":18.3609104,"lon":103.6464463}],"สคพ.10":[{"th":"ขอนแก่น","en":"Khon Kaen","lat":16.4419355,"lon":102.8359921},{"th":"มหาสารคาม","en":"Maha Sarakham","lat":16.1850896,"lon":103.3026461},{"th":"กาฬสินธุ์","en":"Kalasin","lat":16.4314078,"lon":103.5058755},{"th":"หนองบัวลำภู","en":"Nong Bua Lam Phu","lat":17.2218247,"lon":102.4260368},{"th":"ร้อยเอ็ด","en":"Roi Et","lat":16.0538196,"lon":103.6520036}],"สคพ.11":[{"th":"นครราชสีมา","en":"Nakhon Ratchasima","lat":14.9798997,"lon":102.0977693},{"th":"สุรินทร์","en":"Surin","lat":14.882905,"lon":103.4937107},{"th":"ชัยภูมิ","en":"Chaiyaphum","lat":15.8068173,"lon":102.0315027},{"th":"บุรีรัมย์","en":"Buriram","lat":14.9930017,"lon":103.1029191}],"สคพ.12":[{"th":"อุบลราชธานี","en":"Ubon Ratchathani","lat":15.2286861,"lon":104.8564217},{"th":"อำนาจเจริญ","en":"Amnat Charoen","lat":15.8656783,"lon":104.6257774},{"th":"ยโสธร","en":"Yasothon","lat":15.792641,"lon":104.1452827},{"th":"มุกดาหาร","en":"Mukdahan","lat":16.542443,"lon":104.7209151},{"th":"ศรีสะเกษ","en":"Si Sa Ket","lat":15.1186009,"lon":104.3220095}],"สคพ.13":[{"th":"ชลบุรี","en":"Chonburi","lat":13.3611431,"lon":100.9846717},{"th":"ระยอง","en":"Rayong","lat":12.6822609096555,"lon":101.276714},{"th":"ตราด","en":"Trat","lat":12.2427563,"lon":102.5174734},{"th":"ฉะเชิงเทรา","en":"Chachoengsao","lat":13.6904194,"lon":101.0779596},{"th":"จันทบุรี","en":"Chanthaburi","lat":12.61134,"lon":102.1038546},{"th":"สมุทรปราการ","en":"Samut Prakan","lat":13.5990961,"lon":100.5998319}],"สคพ.14":[{"th":"สุราษร์ธานี","en":"Surat Thani","lat":9.1382389,"lon":99.3217483},{"th":"ชุมพร","en":"Chumphon","lat":10.4930496,"lon":99.1800199},{"th":"นครศรีธรรมราช","en":"Nakhon Si Thammarat","lat":8.4303975,"lon":99.9631219},{"th":"พัทลุง","en":"Phatthalung","lat":7.6166823,"lon":100.0740231}],"สคพ.15":[{"th":"ภูเก็ต","en":"Phuket","lat":7.9810496,"lon":98.3638824},{"th":"กระบี่","en":"Krabi","lat":8.0862997,"lon":98.9062835},{"th":"ตรัง","en":"Trang","lat":7.5593851,"lon":99.6110065},{"th":"ระนอง","en":"Ranong","lat":9.9528702,"lon":98.6084641},{"th":"พังงา","en":"Phang Nga","lat":8.4407456,"lon":98.5193032}],"สคพ.16":[{"th":"สงขลา","en":"Songkhla","lat":7.1756004,"lon":100.614347},{"th":"สตูล","en":"Satun","lat":6.6238158,"lon":100.0673744},{"th":"ยะลา","en":"Yala","lat":6.541147,"lon":101.2803947},{"th":"ปัตตานี","en":"Pattani","lat":6.8694844,"lon":101.2504826},{"th":"นราธิวาส","en":"Narathiwat","lat":6.4254607,"lon":101.8253143}],"กตพ.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจอ.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจน.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจส.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}]};
+const ORG_LOCATIONS = {"สคพ.1":[{"th":"ลำพูน","en":"Lamphun","lat":18.5744606,"lon":99.0087221},{"th":"เชียงใหม่","en":"Chiang Mai","lat":18.7877477,"lon":98.9931311},{"th":"เชียงราย","en":"Chiang Rai","lat":19.9071656,"lon":99.830955},{"th":"แม่ฮ่องสอน","en":"Mae Hong Son","lat":19.2990643,"lon":97.9656226}],"สคพ.2":[{"th":"ลำปาง","en":"Lampang","lat":18.2888404,"lon":99.490874},{"th":"แพร่","en":null,"lat":18.1445774,"lon":100.1402831},{"th":"พะเยา","en":"Phayao","lat":19.1664789,"lon":99.9019419},{"th":"น่าน","en":"Nan","lat":18.7756318,"lon":100.7730417}],"สคพ.3":[{"th":"สุโขทัย","en":"Sukhothai","lat":17.0055573,"lon":99.8263712},{"th":"ตาก","en":"Tak","lat":16.8839901,"lon":99.1258498},{"th":"เพชรบูรณ์","en":"Phetchabun","lat":16.4189807,"lon":101.1550926},{"th":"พิษณุโลก","en":"Phitsanulok","lat":16.8298048,"lon":100.2614915},{"th":"อุตรดิตถ์","en":"Uttaradit","lat":17.6200886,"lon":100.0992942}],"สคพ.4":[{"th":"นครสวรรค์","en":"Nakhon Sawan","lat":15.6930072,"lon":100.1225595},{"th":"พิจิตร","en":"Phichit","lat":16.4429516,"lon":100.3482329},{"th":"อุทัยธานี","en":"Uthai Thani","lat":15.3835001,"lon":100.0245527},{"th":"กำแพงเพชร","en":"Kamphaeng Phet","lat":16.4827798,"lon":99.5226618}],"สคพ.5":[{"th":"นครปฐม","en":"Nakhon Pathom","lat":13.8199206,"lon":100.0621676},{"th":"ชัยนาท","en":"Chai Nat","lat":15.1851971,"lon":100.125125},{"th":"สุพรรณบุรี","en":"Suphan Buri","lat":14.4744892,"lon":100.1177128},{"th":"สมุทรสาคร","en":"Samut Sakhon","lat":13.5475216,"lon":100.2743956}],"สคพ.6":[{"th":"นนทบุรี","en":"Nonthaburi","lat":13.8621125,"lon":100.5143528},{"th":"สิงห์บุรี","en":"Sing Buri","lat":14.8936253,"lon":100.3967314},{"th":"อ่างทอง","en":"Ang Thong","lat":14.5896054,"lon":100.455052},{"th":"ปทุมธานี","en":"Pathum Thani","lat":14.0208391,"lon":100.5250276},{"th":"พระนครศรีอยุธยา","en":"Phra Nakhon Si Ayutthaya","lat":14.3532128,"lon":100.5689599}],"สคพ.7":[{"th":"สระบุรี","en":"Saraburi","lat":14.5289154,"lon":100.9101421},{"th":"ปราจีนบุรี","en":"Prachinburi","lat":14.1256248,"lon":101.3725264},{"th":"ลพบุรี","en":"Lopburi","lat":14.7995081,"lon":100.6533706},{"th":"นครนายก","en":"Nakhon Nayok","lat":14.2069466,"lon":101.2130511},{"th":"สระแก้ว","en":"Sa Kaeo","lat":13.824038,"lon":102.0645839}],"สคพ.8":[{"th":"ราชบุรี","en":"Ratchaburi","lat":13.5282893,"lon":99.8134211},{"th":"กาญจนบุรี","en":"Kanchanaburi","lat":14.0227797,"lon":99.5328115},{"th":"สมุทรสงคราม","en":"Samut Songkhram","lat":13.4098217,"lon":100.0022645},{"th":"เพชรบุรี","en":"Phetchaburi","lat":13.1111601,"lon":99.9391307},{"th":"ประจวบคิรีขันธ์","en":"Prachuap Khiri Khan","lat":11.812367,"lon":99.7973271}],"สคพ.9":[{"th":"อุดรธานี","en":"Udon Thani","lat":17.4138413,"lon":102.7872325},{"th":"หนองคาย","en":"Nong Khai","lat":17.8782803,"lon":102.7412638},{"th":"เลย","en":"Loei","lat":17.4860232,"lon":101.7223002},{"th":"นครพนม","en":"Nakhon Phanom","lat":17.392039,"lon":104.7695508},{"th":"สกลนคร","en":"Sakon Nakhon","lat":17.1545995,"lon":104.1348365},{"th":"บึงกาฬ","en":"Bueng Kan","lat":18.3609104,"lon":103.6464463}],"สคพ.10":[{"th":"ขอนแก่น","en":"Khon Kaen","lat":16.4419355,"lon":102.8359921},{"th":"มหาสารคาม","en":"Maha Sarakham","lat":16.1850896,"lon":103.3026461},{"th":"กาฬสินธุ์","en":"Kalasin","lat":16.4314078,"lon":103.5058755},{"th":"หนองบัวลำภู","en":"Nong Bua Lam Phu","lat":17.2218247,"lon":102.4260368},{"th":"ร้อยเอ็ด","en":"Roi Et","lat":16.0538196,"lon":103.6520036}],"สคพ.11":[{"th":"นครราชสีมา","en":"Nakhon Ratchasima","lat":14.9798997,"lon":102.0977693},{"th":"สุรินทร์","en":"Surin","lat":14.882905,"lon":103.4937107},{"th":"ชัยภูมิ","en":"Chaiyaphum","lat":15.8068173,"lon":102.0315027},{"th":"บุรีรัมย์","en":"Buriram","lat":14.9930017,"lon":103.1029191}],"สคพ.12":[{"th":"อุบลราชธานี","en":"Ubon Ratchathani","lat":15.2286861,"lon":104.8564217},{"th":"อำนาจเจริญ","en":"Amnat Charoen","lat":15.8656783,"lon":104.6257774},{"th":"ยโสธร","en":"Yasothon","lat":15.792641,"lon":104.1452827},{"th":"มุกดาหาร","en":"Mukdahan","lat":16.542443,"lon":104.7209151},{"th":"ศรีสะเกษ","en":"Si Sa Ket","lat":15.1186009,"lon":104.3220095}],"สคพ.13":[{"th":"ชลบุรี","en":"Chonburi","lat":13.3611431,"lon":100.9846717},{"th":"ระยอง","en":"Rayong","lat":12.6822609096555,"lon":101.276714},{"th":"ตราด","en":"Trat","lat":12.2427563,"lon":102.5174734},{"th":"ฉะเชิงเทรา","en":"Chachoengsao","lat":13.6904194,"lon":101.0779596},{"th":"จันทบุรี","en":"Chanthaburi","lat":12.61134,"lon":102.1038546},{"th":"สมุทรปราการ","en":"Samut Prakan","lat":13.5990961,"lon":100.5998319}],"สคพ.14":[{"th":"สุราษฎร์ธานี","en":"Surat Thani","lat":9.1382389,"lon":99.3217483},{"th":"ชุมพร","en":"Chumphon","lat":10.4930496,"lon":99.1800199},{"th":"นครศรีธรรมราช","en":"Nakhon Si Thammarat","lat":8.4303975,"lon":99.9631219},{"th":"พัทลุง","en":"Phatthalung","lat":7.6166823,"lon":100.0740231}],"สคพ.15":[{"th":"ภูเก็ต","en":"Phuket","lat":7.9810496,"lon":98.3638824},{"th":"กระบี่","en":"Krabi","lat":8.0862997,"lon":98.9062835},{"th":"ตรัง","en":"Trang","lat":7.5593851,"lon":99.6110065},{"th":"ระนอง","en":"Ranong","lat":9.9528702,"lon":98.6084641},{"th":"พังงา","en":"Phang Nga","lat":8.4407456,"lon":98.5193032}],"สคพ.16":[{"th":"สงขลา","en":"Songkhla","lat":7.1756004,"lon":100.614347},{"th":"สตูล","en":"Satun","lat":6.6238158,"lon":100.0673744},{"th":"ยะลา","en":"Yala","lat":6.541147,"lon":101.2803947},{"th":"ปัตตานี","en":"Pattani","lat":6.8694844,"lon":101.2504826},{"th":"นราธิวาส","en":"Narathiwat","lat":6.4254607,"lon":101.8253143}],"กตพ.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจอ.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจน.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}],"กจส.":[{"th":"กรุงเทพมหานคร","en":"Bangkok","lat":13.7525,"lon":100.494167}]};
 
 
 // Office city label for each สคพ region (for display only)
@@ -2167,6 +2153,26 @@ function matchOrgFromProps(props){
   return best;
 }
 
+// Fallback for any province polygon whose name text didn't match the
+// LOOKUP table (e.g. spelling variants in the public geoJSON source) —
+// pick the region office whose seat is geographically closest to that
+// province's centroid, so every polygon still gets colored to match its
+// region and stays clickable instead of falling back to plain gray.
+function nearestOrgForFeature(feature){
+  let center;
+  try{ center = d3.geoCentroid(feature); }catch(e){ return null; }
+  if(!center || isNaN(center[0]) || isNaN(center[1])) return null;
+  let best=null, bestDist=Infinity;
+  REGION_CODES.forEach(code=>{
+    ORGS[code].provinces.forEach(p=>{
+      const dLon=center[0]-p.lon, dLat=center[1]-p.lat;
+      const dist=dLon*dLon+dLat*dLat;
+      if(dist<bestDist){ bestDist=dist; best=code; }
+    });
+  });
+  return best;
+}
+
 /* =========================================================
    5. State
    ========================================================= */
@@ -2175,6 +2181,11 @@ let uploadedPoints = [];       // {lat, lon, org, raw} from user-imported CSV/XL
 let provinceFeatures = [];     // [{feature, org}]
 let mapMode = "geo";           // "geo" | "schematic"
 let projection=null, pathGen=null;
+// Legend toggle state + cached render args for the single-year "จำนวนที่มีอยู่ /
+// จำนวนที่ได้มา / จำนวนสะสม" stacked chart — lets the user click a legend chip to
+// show/hide that series without re-fetching or re-filtering the underlying data.
+let stackedUnitLegendState = {existing:false, acquired:false, total:false};
+let lastStackedUnitRenderArgs = null;
 
 const svg = d3.select("#mapSvg");
 const zoomLayer = svg.append("g").attr("id","zoomLayer");
@@ -2228,7 +2239,8 @@ function buildGeoMap(gj){
   pathGen = d3.geoPath().projection(projection);
 
   provinceFeatures = gj.features.map(f=>{
-    const org = matchOrgFromProps(f.properties);
+    let org = matchOrgFromProps(f.properties);
+    if(!org) org = nearestOrgForFeature(f);
     return {feature:f, org};
   });
 
@@ -2856,9 +2868,9 @@ const CAL_COLORS = {
 const PALETTE = ['#3D4FE0','#3B82C4','#F0A94E','#C0503F','#7A5FC2','#5AC2E8','#B0793E','#2F9E68','#C25FA0','#8A9A46','#D64545','#5F7AC2','#C29A5F','#4EA3A0','#A65FC2','#6FA85F','#3E8A9E','#9E5F3E','#5F9E7A','#9E3E6F'];
 
 let currentData = [];
-// cat/unit/cal/cond/age/use are now arrays (multi-select) — an empty array means
+// cat/unit/cal/cond/age/use/year are now arrays (multi-select) — an empty array means
 // "no restriction" (equivalent to the old null). year and search stay single-valued.
-let filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+let filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:[], search:'' };
 let tableSort = { key:'count', dir:'desc' };
 let tableFilterItem = null;
 let tableSearchText = '';
@@ -2867,7 +2879,7 @@ let sortState = {name:'asc', count:'desc'};
 /* ======================= CHART TYPE PREFERENCES ======================= */
 // ผู้ใช้สามารถเลือกรูปแบบกราฟที่ต้องการดูเองได้ในแต่ละส่วน
 let chartTypes = {
-  yearlyTrend: 'line',   // line | bar
+  yearlyTrend: 'stacked',   // stacked | line | bar | combo
   catDonut: 'donut',     // donut | pie | bar
   topUnits: 'list',      // list | pie | donut
   topItems: 'list',      // list | pie | donut
@@ -2892,7 +2904,7 @@ function initTopNControls(){
 }
 
 const CHART_TYPE_OPTIONS = {
-  yearlyTrend: [ {v:'line', l:'เส้น'}, {v:'bar', l:'แท่ง'}, {v:'combo', l:'กราฟเชิงซ้อน (รายปี)'} ],
+  yearlyTrend: [ {v:'stacked', l:'แท่งสะสม'}, {v:'combo', l:'กราฟเชิงซ้อน (รายปี)'} ],
   catDonut: [ {v:'donut', l:'โดนัท'}, {v:'pie', l:'วงกลม'}, {v:'bar', l:'แท่งแนวนอน'} ],
   topUnits: [ {v:'list', l:'แท่งรายการ'}, {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'} ],
   topItems: [ {v:'list', l:'แท่งรายการ'}, {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'} ],
@@ -2925,6 +2937,7 @@ function initChartSwitchers(){
 // by-unit views) are hidden, and the panel titles switch to describe the by-year view.
 function updateYearlyTrendControlsVisibility(){
   const isCombo = chartTypes.yearlyTrend === 'combo';
+  const isStacked = chartTypes.yearlyTrend === 'stacked';
   const topnSel = document.getElementById('topn-yearlyTrend');
   const yearSel = document.getElementById('yearlyTrend-year');
   const yearsSel = document.getElementById('topn-yearlyTrendYears');
@@ -2939,9 +2952,18 @@ function updateYearlyTrendControlsVisibility(){
     const lbl = yearsSel.previousElementSibling;
     if(lbl && lbl.tagName === 'LABEL') lbl.style.display = isCombo ? '' : 'none';
   }
+  const isYearCompare = isStacked && (filters.year||[]).length >= 2;
   const chartYearlyTotalEl = document.getElementById('chartYearlyTotal');
   if(chartYearlyTotalEl && !chartYearlyTotalEl.dataset.expandedHeight){
-    chartYearlyTotalEl.style.height = isCombo ? '380px' : '230px';
+    // Comparing several years needs the same breathing room as a grouped-bar
+    // view (rotated unit labels + one bar per year), so give it the ageBar
+    // treatment instead of the compact single-year height.
+    chartYearlyTotalEl.style.height = isCombo ? '380px' : (isYearCompare ? '620px' : '300px');
+  }
+  const legendYearlyStackedEl = document.getElementById('legendYearlyStacked');
+  if(legendYearlyStackedEl && !isStacked){
+    legendYearlyStackedEl.style.display = 'none';
+    legendYearlyStackedEl.innerHTML = '';
   }
   const panelYearlyTotalEl = document.getElementById('panelYearlyTotal');
   const h1 = panelYearlyTotalEl && panelYearlyTotalEl.querySelector('h2');
@@ -2954,6 +2976,12 @@ function updateYearlyTrendControlsVisibility(){
   if(isCombo){
     if(h1) h1.textContent = `📈 แนวโน้มจำนวนเครื่องมือที่ได้รับ รายปี${unitSuffix}`;
     if(hint1) hint1.textContent = 'แท่ง = จำนวนที่ได้รับในปีนั้น · เส้น = ยอดสะสมตั้งแต่ปีแรก (ตามข้อมูลที่ตรงกับตัวกรองอื่น)';
+  } else if(isYearCompare){
+    if(h1) h1.textContent = `📊 เปรียบเทียบจำนวนเครื่องมือสะสมของหน่วยงาน ระหว่างปีที่เลือก${unitSuffix}`;
+    if(hint1) hint1.textContent = 'แต่ละกลุ่มแท่ง = 1 หน่วยงาน · แต่ละแท่งในกลุ่ม = 1 ปีที่เลือก แบ่งเป็นสีเข้ม (ด้านล่าง) = จำนวนที่มีอยู่ก่อนปีนั้น และสีตามปี (ด้านบน) = จำนวนที่ได้มาในปีนั้น · ตัวเลขบนสุด = จำนวนสะสม ณ ปีนั้น — ติ๊กเลือกได้หลายปีที่ตัวกรอง "ปี พ.ศ." ด้านบนเพื่อเปรียบเทียบ';
+  } else if(isStacked){
+    if(h1) h1.textContent = `📊 กราฟหน่วยงานที่ได้รับเครื่องมือตามปี พ.ศ.${unitSuffix}`;
+    if(hint1) hint1.textContent = 'แต่ละแท่ง = 1 หน่วยงาน · สีเข้ม (ด้านล่าง) = จำนวนที่มีอยู่ก่อนปีที่เลือก · สีอ่อน (ด้านบน) = จำนวนที่ได้มาในปีที่เลือก · ตัวเลขบนสุด = จำนวนสะสม — เลือกปี พ.ศ. ได้ที่ตัวกรองด้านบน (เลือกได้มากกว่า 1 ปีเพื่อเปรียบเทียบ)';
   } else {
     if(h1) h1.textContent = `📈 แสดงข้อมูลปีพ.ศ.ที่หน่วยงานได้รับเครื่องมือ${unitSuffix}`;
     if(hint1) hint1.textContent = 'ผลรวมจำนวนเครื่องมือทั้งหมดที่แต่ละหน่วยงานได้รับ ตามข้อมูลที่ตรงกับตัวกรอง';
@@ -2973,7 +3001,12 @@ function applyFilters(data, excludeKey){
       if(k===excludeKey) continue;
       const sel = filters[k];
       if(Array.isArray(sel)){
-        if(sel.length && !sel.includes(r[k])) return false;
+        if(sel.length){
+          // ปี พ.ศ. checkboxes carry string values (e.g. "2569") while every row's
+          // .year is a Number (see normalizeRows) — compare numerically for that key.
+          const match = k === 'year' ? sel.map(Number).includes(r[k]) : sel.includes(r[k]);
+          if(!match) return false;
+        }
       } else if(sel !== null && r[k] !== sel){
         return false;
       }
@@ -3235,7 +3268,9 @@ const MULTI_FILTER_KEYS = { 'f-item':'item', 'f-cat':'cat', 'f-unit':'unit', 'f-
 
 function initSearchableSelects(){
   MULTI_FILTER_FIELDS.forEach(id=> makeMultiSelect(id, MULTI_FILTER_KEYS[id]));
-  makeSearchable('yearlyTrend-year');
+  // ปี พ.ศ. is now a checkbox multi-select too, so more than one year can be
+  // ticked at once to compare — see renderYearlyStackedChart().
+  makeMultiSelect('yearlyTrend-year', 'year');
 }
 
 function populateSelect(id, key, data){
@@ -3255,7 +3290,7 @@ function populateSelect(id, key, data){
 function renderActiveFilters(){
   const wrap = document.getElementById('activeFilters');
   wrap.innerHTML='';
-  ['item','cat','unit','cal','cond','age','use'].forEach(k=>{
+  ['item','cat','unit','cal','cond','age','use','year'].forEach(k=>{
     (filters[k]||[]).forEach(v=>{
       const chip = document.createElement('div');
       chip.className='chip';
@@ -3264,13 +3299,6 @@ function renderActiveFilters(){
       wrap.appendChild(chip);
     });
   });
-  if(filters.year !== null){
-    const chip = document.createElement('div');
-    chip.className='chip';
-    chip.innerHTML = `<span>${FIELD_LABELS.year}: ${filters.year}</span><button data-k="year">✕</button>`;
-    chip.querySelector('button').onclick = ()=>{ filters.year = null; refreshAll(); };
-    wrap.appendChild(chip);
-  }
 }
 
 function refreshFilterOptions(){
@@ -3607,6 +3635,116 @@ function groupedBarSVG(container, {labels, series, width=760, height=280, onBarC
 
   container.appendChild(svg);
 }
+
+// Grouped + stacked bar: one group per label (หน่วยงาน), and within each group one
+// stacked bar per "years[j]" — every stacked bar splits into existingMatrix[i][j]
+// (the neutral, shared "มีอยู่ก่อนปีนั้น" base segment, same color for every year so
+// it reads as background context) stacked under acquiredMatrix[i][j] (that specific
+// year's "ได้มา" segment, colored per year via yearColors[j] so the years are told
+// apart at a glance), with the running total (จำนวนสะสม) printed above each bar.
+function segmentTextColor(hexColor){
+  const c = (hexColor||'').replace('#','');
+  if(c.length!==6) return '#1a1a1a';
+  const r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
+  const luminance = (0.299*r + 0.587*g + 0.114*b)/255;
+  return luminance > 0.6 ? '#1a1a1a' : '#ffffff';
+}
+
+function stackedGroupedBarSVG(container, {labels, years, existingMatrix, acquiredMatrix, existingColor, yearColors, width=760, height=460, onBarClick}){
+  clearNode(container);
+  if(!labels.length){
+    container.innerHTML = '<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>';
+    return;
+  }
+  const padding = {top:44, right:16, bottom:118, left:70};
+  const plotW = width - padding.left - padding.right;
+  const plotH = height - padding.top - padding.bottom;
+  const maxVal = Math.max(1, ...labels.map((_,i)=> Math.max(...years.map((_,j)=> (existingMatrix[i][j]||0)+(acquiredMatrix[i][j]||0)))));
+  const niceMax = maxVal*1.18;
+  const gap = plotW/labels.length;
+  const groupW = gap*0.86;
+  const barW = Math.min(groupW/years.length, 60);
+
+  const svg = svgEl('svg', {viewBox:`0 0 ${width} ${height}`, preserveAspectRatio:'xMidYMid meet'});
+
+  const ticks = 4;
+  for(let t=0; t<=ticks; t++){
+    const val = niceMax/ticks*t;
+    const y = padding.top + plotH - (val/niceMax)*plotH;
+    svg.appendChild(svgEl('line',{x1:padding.left, x2:width-padding.right, y1:y, y2:y, stroke:'#E3E8E6', 'stroke-width':1}));
+    const txt = svgEl('text', {x:padding.left-10, y:y+4.5, 'text-anchor':'end', 'font-size':15, fill:cv('--ink-faint'), 'font-family':'JetBrains Mono, monospace'});
+    txt.textContent = Math.round(val).toLocaleString('en-US');
+    svg.appendChild(txt);
+  }
+
+  labels.forEach((lab, i)=>{
+    const groupX = padding.left + gap*i + (gap-groupW)/2 + (groupW - barW*years.length)/2;
+    years.forEach((yr, j)=>{
+      const exV = existingMatrix[i][j]||0, acV = acquiredMatrix[i][j]||0, totV = exV+acV;
+      const exH = exV>0 ? Math.max((exV/niceMax)*plotH, 20) : 0;
+      const acH = acV>0 ? Math.max((acV/niceMax)*plotH, 20) : 0;
+      const x = groupX + j*barW;
+      const bw = Math.max(barW-2, 3);
+      const yBase = padding.top + plotH;
+      const yExTop = yBase - exH;
+      const yAcTop = yExTop - acH;
+
+      if(exV>0){
+        const rect = svgEl('rect', {x:x.toFixed(2), y:yExTop.toFixed(2), width:bw.toFixed(2), height:exH.toFixed(2), fill:existingColor, rx:2});
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', ()=> onBarClick && onBarClick(lab));
+        const title = svgEl('title'); title.textContent = `${lab} · ปี ${fmt(yr)} · มีอยู่ก่อนปีนั้น: ${fmt(exV)}`;
+        rect.appendChild(title);
+        svg.appendChild(rect);
+        if(exH >= 15 && bw >= 15){
+          const segFs = bw >= 26 ? 12.5 : 10.5;
+          const segTxt = svgEl('text', {x:(x+bw/2).toFixed(2), y:(yExTop+exH/2+segFs*0.35).toFixed(2), 'text-anchor':'middle', 'font-size':segFs, 'font-weight':700, fill:segmentTextColor(existingColor), 'pointer-events':'none'});
+          segTxt.textContent = fmt(exV);
+          svg.appendChild(segTxt);
+        }
+      }
+      if(acV>0){
+        const rect = svgEl('rect', {x:x.toFixed(2), y:yAcTop.toFixed(2), width:bw.toFixed(2), height:acH.toFixed(2), fill:yearColors[j], rx:2});
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', ()=> onBarClick && onBarClick(lab));
+        const title = svgEl('title'); title.textContent = `${lab} · ปี ${fmt(yr)} · ได้มาปีนั้น: ${fmt(acV)}`;
+        rect.appendChild(title);
+        svg.appendChild(rect);
+        if(acH >= 15 && bw >= 15){
+          const segFs = bw >= 26 ? 12.5 : 10.5;
+          const segTxt = svgEl('text', {x:(x+bw/2).toFixed(2), y:(yAcTop+acH/2+segFs*0.35).toFixed(2), 'text-anchor':'middle', 'font-size':segFs, 'font-weight':700, fill:segmentTextColor(yearColors[j]), 'pointer-events':'none'});
+          segTxt.textContent = fmt(acV);
+          svg.appendChild(segTxt);
+        }
+      }
+      if(totV>0){
+        const totLabelY = Math.max(yAcTop-7, padding.top-8);
+        const fs = bw >= 26 ? 15 : (bw >= 17 ? 13 : 11);
+        const rotate = bw < 16;
+        const lxc = (x+bw/2).toFixed(2);
+        const totAttrs = {x:lxc, y:totLabelY.toFixed(2), 'text-anchor':'middle', 'font-size':fs, 'font-weight':800, fill:cv('--ink'), 'pointer-events':'none'};
+        if(rotate) totAttrs.transform = `rotate(-60 ${lxc} ${totLabelY.toFixed(2)})`;
+        const totTxt = svgEl('text', totAttrs);
+        totTxt.textContent = fmt(totV);
+        svg.appendChild(totTxt);
+      }
+    });
+    const lx = padding.left + gap*i + gap/2;
+    const ly = padding.top+plotH+20;
+    const shortLab = lab.length > 16 ? lab.slice(0,15)+'…' : lab;
+    const txt = svgEl('text', {x:lx.toFixed(2), y:ly, 'text-anchor':'end', 'font-size':16, 'font-weight':700, fill:cv('--ink-soft'), transform:`rotate(-35 ${lx.toFixed(2)} ${ly})`});
+    txt.textContent = shortLab;
+    const title = svgEl('title'); title.textContent = lab;
+    txt.appendChild(title);
+    svg.appendChild(txt);
+  });
+
+  svg.appendChild(svgEl('line',{x1:padding.left,x2:padding.left,y1:padding.top,y2:padding.top+plotH, stroke:cv('--line')}));
+  svg.appendChild(svgEl('line',{x1:padding.left,x2:width-padding.right,y1:padding.top+plotH,y2:padding.top+plotH, stroke:cv('--line')}));
+
+  container.appendChild(svg);
+}
+
 
 function hBarSVG(container, {labels, data, colors, width=760, height, onBarClick}){
   clearNode(container);
@@ -4072,6 +4210,140 @@ function lineAreaChart(containerId, values, labels, color, mode='line'){
     </svg>`;
 }
 
+// Per-หน่วยงาน stacked bar (ตามภาพร่าง): bottom segment = จำนวนที่มีอยู่ (ก่อนปีที่เลือก),
+// stacked on top = จำนวนที่ได้มา (ในปีที่เลือก), with the running total (จำนวนสะสม)
+// printed above the bar. A small legend + reference-year caption sits under the chart.
+function stackedBarByUnitChart(containerId, labels, existingValues, acquiredValues, opts){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const { existingColor, acquiredColor, refYear } = opts || {};
+  lastStackedUnitRenderArgs = {containerId, labels, existingValues, acquiredValues, opts};
+  if(!labels.length){
+    el.innerHTML = '<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>';
+    const legendEl = document.getElementById('legendYearlyStacked');
+    if(legendEl){ legendEl.style.display = 'none'; legendEl.innerHTML = ''; }
+    return;
+  }
+
+  const rawSt = stackedUnitLegendState;
+  const anySelected = rawSt.existing || rawSt.acquired || rawSt.total;
+  // Nothing clicked yet = show everything (no filtering). Once the user clicks a
+  // chip, isolate to just the clicked series until they deselect it again.
+  const st = anySelected ? rawSt : {existing:true, acquired:true, total:true};
+  const totals = labels.map((_,i)=> (existingValues[i]||0) + (acquiredValues[i]||0));
+  const manyLabels = labels.length > 8;
+  // Bigger canvas + bigger fonts + more headroom than the original 520x230 —
+  // the old size crowded the value labels together and made the chart hard
+  // to read at a glance.
+  const W = 720, H = 300, padL = 52, padR = 18, padB = manyLabels ? 54 : 34;
+  const padT = 34;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const actualMax = Math.max(1, ...totals);
+  const max = actualMax * 1.2;
+
+  function xLabel(x, label){
+    if(manyLabels){
+      const y = H - padB + 18;
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="end" transform="rotate(-40 ${x.toFixed(1)} ${y.toFixed(1)})" class="axis-label" style="font-size:12px;font-weight:600;">${label}</text>`;
+    }
+    return `<text x="${x.toFixed(1)}" y="${(H-10).toFixed(1)}" text-anchor="middle" class="axis-label" style="font-size:13px;font-weight:600;">${label}</text>`;
+  }
+
+  let grid = '';
+  const gridCount = 5;
+  for(let g=0; g<=gridCount; g++){
+    const y = padT + innerH - (g/gridCount)*innerH;
+    const val = Math.round((g/gridCount)*max);
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;
+    grid += `<text x="${(padL-9).toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="end" class="axis-label" style="font-size:12px;">${val}</text>`;
+  }
+
+  const segW = innerW / labels.length;
+  const barW = Math.min(segW*0.62, 68);
+  const labelFontSize = Math.max(10.5, Math.min(13.5, segW*0.32)).toFixed(1);
+
+  let bars = '', segLabels = '', totalLabels = '', xLabels = '';
+  labels.forEach((lab,i)=>{
+    const x = padL + i*segW + (segW-barW)/2;
+    const exV = existingValues[i]||0, acV = acquiredValues[i]||0, totV = totals[i];
+    const exH = st.existing ? (exV/max)*innerH : 0;
+    const acH = st.acquired ? (acV/max)*innerH : 0;
+    const yBase = padT + innerH;
+    const yExTop = yBase - exH;
+    const yAcTop = yExTop - acH;
+
+    if(exV > 0 && st.existing){
+      bars += `<rect x="${x.toFixed(1)}" y="${yExTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${exH.toFixed(1)}" fill="${existingColor}" rx="3"><title>${lab} · มีอยู่ก่อนปีที่เลือก: ${fmt(exV)}</title></rect>`;
+      if(exH > 17){
+        segLabels += `<text x="${(x+barW/2).toFixed(1)}" y="${(yExTop+exH/2+4).toFixed(1)}" text-anchor="middle" style="font-size:${labelFontSize}px;font-weight:700;fill:#fff;">${fmt(exV)}</text>`;
+      }
+    }
+    if(acV > 0 && st.acquired){
+      bars += `<rect x="${x.toFixed(1)}" y="${yAcTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${acH.toFixed(1)}" fill="${acquiredColor}" rx="3"><title>${lab} · ได้มาในปีที่เลือก: ${fmt(acV)}</title></rect>`;
+      if(acH > 17){
+        segLabels += `<text x="${(x+barW/2).toFixed(1)}" y="${(yAcTop+acH/2+4).toFixed(1)}" text-anchor="middle" style="font-size:${labelFontSize}px;font-weight:700;fill:#fff;">${fmt(acV)}</text>`;
+      }
+    }
+    if(st.total){
+      const totalY = Math.max(yAcTop - 10, padT - 6);
+      totalLabels += `<text x="${(x+barW/2).toFixed(1)}" y="${totalY.toFixed(1)}" text-anchor="middle" style="font-size:14px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3.5px;">${fmt(totV)}</text>`;
+    }
+    xLabels += xLabel(x + barW/2, lab);
+  });
+
+  const refYearNote = refYear!==null && refYear!==undefined
+    ? `ข้อมูล ณ ปี พ.ศ. ${fmt(refYear)}${(!filters.year || !filters.year.length) ? ' (ปีล่าสุดที่มีข้อมูล — เลือกปีอื่นได้ที่ตัวกรองด้านบน)' : ''}`
+    : 'ไม่พบข้อมูลปี พ.ศ. ที่ใช้อ้างอิง';
+
+  el.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;">
+      ${grid}
+      ${bars}
+      ${segLabels}
+      ${totalLabels}
+      ${xLabels}
+    </svg>`;
+
+  const legendEl = document.getElementById('legendYearlyStacked');
+  if(legendEl){
+    legendEl.style.display = '';
+    const hexToRgba = (hex, a)=>{
+      const c = (hex||'').replace('#','');
+      if(c.length!==6) return `rgba(90,90,90,${a})`;
+      const r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
+      return `rgba(${r},${g},${b},${a})`;
+    };
+    const chip = (key, accentColor, swatchHtml, label)=>{
+      const on = rawSt[key];
+      // "on" (shown) = a clearly highlighted pill in the series' own color, like a
+      // selected filter chip. "off" (hidden) = a plain, neutral outline — it just
+      // looks unselected, not dimmed/removed.
+      const style = on
+        ? `cursor:pointer;display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:${hexToRgba(accentColor,0.14)};border:1.5px solid ${accentColor};font-weight:700;color:var(--ink);transition:.15s;`
+        : `cursor:pointer;display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:transparent;border:1.5px solid var(--line);font-weight:500;color:var(--ink-faint);transition:.15s;`;
+      return `<span onclick="toggleStackedUnitSeries('${key}')" title="คลิกเพื่อ${on?'ไม่แสดง':'แสดง'}ข้อมูลนี้ในกราฟ" style="${style}">${swatchHtml}${label}${on?' <span style="margin-left:5px;font-size:11px;">✓</span>':''}</span>`;
+    };
+    legendEl.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;font-size:12.5px;color:var(--ink-soft);">
+        ${chip('existing', existingColor, `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${existingColor};margin-right:5px;vertical-align:-1px;"></span>`, 'จำนวนที่มีอยู่ (ก่อนปีที่เลือก)')}
+        ${chip('acquired', acquiredColor, `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${acquiredColor};margin-right:5px;vertical-align:-1px;"></span>`, 'จำนวนที่ได้มา (ในปีที่เลือก)')}
+        ${chip('total', resolveCssColor('--teal-dark') || '#333', `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid var(--ink-soft);margin-right:5px;vertical-align:-1px;"></span>`, 'จำนวนสะสม (ตัวเลขบนสุด)')}
+      </div>
+      <div style="text-align:center;margin-top:4px;font-size:12px;color:var(--ink-soft);">${refYearNote} · คลิกป้ายด้านบนเพื่อเลือกดูเฉพาะข้อมูลชนิดนั้น (ไม่คลิกเลย = แสดงครบทุกชนิด)</div>`;
+  }
+}
+
+// Called when the user clicks a legend chip on the single-year stacked chart —
+// toggles that series's "selected" (shown) state, then redraws the chart so the
+// bars/labels for that series appear or disappear accordingly.
+function toggleStackedUnitSeries(key){
+  stackedUnitLegendState[key] = !stackedUnitLegendState[key];
+  if(lastStackedUnitRenderArgs){
+    const {containerId, labels, existingValues, acquiredValues, opts} = lastStackedUnitRenderArgs;
+    stackedBarByUnitChart(containerId, labels, existingValues, acquiredValues, opts);
+  }
+}
+
 // Composite chart: bars (left axis) + an overlaid line (right axis) sharing the
 // same category axis — e.g. count received per year (bars) vs. cumulative total (line).
 function comboChartSVG(containerId, {categories, barValues, lineValues, barColor, lineColor, barLabel, lineLabel, axisLeftLabel, axisRightLabel}){
@@ -4179,6 +4451,10 @@ function renderOverviewLines(filtered){
     renderYearlyComboCharts();
     return;
   }
+  if(mode === 'stacked'){
+    renderYearlyStackedChart();
+    return;
+  }
   const units = topUnitsByCount(filtered, topN.yearlyTrend);
   const totalMap = countBy(filtered, 'unit');
   const totalValues = units.map(u=> totalMap.get(u) || 0);
@@ -4266,6 +4542,100 @@ function renderYearlyComboCharts(){
   });
   // "แนวโน้มการสอบเทียบ รายปี" chart removed per earlier request — only the
   // "ได้รับในปีนั้น" bar+cumulative-line chart remains in combo mode.
+}
+
+// By-unit stacked view (ตามภาพร่าง): one stacked bar per หน่วยงาน, split into
+// "จำนวนที่มีอยู่" (received before the reference year) stacked underneath
+// "จำนวนที่ได้มา" (received in the reference year itself); the top of the bar
+// is labelled with the running total ("จำนวนสะสม" = มีอยู่ + ได้มา). The
+// reference year comes from the shared "ปี พ.ศ." picker above the chart —
+// picking a year re-slices every bar around that year; leaving it on
+// "ทั้งหมด" falls back to the latest year present in the (other-filtered) data
+// so the split is always meaningful.
+function renderYearlyStackedChart(){
+  const base = applyFilters(currentData, 'year'); // respect every other filter, not the year picker
+  const selectedYears = (filters.year||[]).map(Number).filter(y=>!isNaN(y)).sort((a,b)=>a-b);
+
+  if(selectedYears.length >= 2){
+    renderYearlyCompareChart(base, selectedYears);
+    return;
+  }
+
+  const yearsPresent = uniqSorted(base, 'year').filter(y=>y!==null && y!==undefined);
+  const refYear = selectedYears.length === 1
+    ? selectedYears[0]
+    : (yearsPresent.length ? yearsPresent[yearsPresent.length-1] : null);
+
+  const upToRef = refYear===null ? base : base.filter(r=> r.year!==null && r.year!==undefined && r.year<=refYear);
+  const totalMap = countBy(upToRef, 'unit');
+  const units = [...totalMap.entries()]
+    .filter(([u])=>u && u!=='(ไม่ระบุ)')
+    .sort((a,b)=> b[1]-a[1])
+    .slice(0, topN.yearlyTrend)
+    .map(e=>e[0]);
+
+  const existingValues = units.map(u => refYear===null ? 0 :
+    base.filter(r=> r.unit===u && r.year!==null && r.year!==undefined && r.year<refYear).length);
+  const acquiredValues = units.map(u => refYear===null ?
+    base.filter(r=> r.unit===u).length :
+    base.filter(r=> r.unit===u && r.year===refYear).length);
+
+  stackedBarByUnitChart('chartYearlyTotal', units, existingValues, acquiredValues, {
+    existingColor: resolveCssColor('--teal'),
+    acquiredColor: resolveCssColor('--ok'),
+    refYear
+  });
+}
+
+// Multi-year comparison (2+ ปี ticked in the "ปี พ.ศ." filter): one group of bars
+// per หน่วยงาน, one STACKED bar per selected year — each bar splits into "มีอยู่
+// ก่อนปีนั้น" (shared neutral base) + "ได้มาในปีนั้น" (colored per year), topped
+// with the running total (จำนวนสะสม ณ ปีนั้น). So every bar carries all three
+// numbers the single-year view had (มีอยู่ก่อนหน้า / ได้มา / สะสม), just repeated
+// once per selected year so the years can be compared side by side.
+function renderYearlyCompareChart(base, selectedYears){
+  const container = document.getElementById('chartYearlyTotal');
+  const latestYear = selectedYears[selectedYears.length-1];
+  const existingCount = (u, y)=> base.filter(r=> r.unit===u && r.year!==null && r.year!==undefined && r.year<y).length;
+  const acquiredCount = (u, y)=> base.filter(r=> r.unit===u && r.year===y).length;
+
+  const totalMap = countBy(base.filter(r=> r.year!==null && r.year!==undefined && r.year<=latestYear), 'unit');
+  const units = [...totalMap.entries()]
+    .filter(([u])=>u && u!=='(ไม่ระบุ)')
+    .sort((a,b)=> b[1]-a[1])
+    .slice(0, topN.yearlyTrend)
+    .map(e=>e[0]);
+
+  const existingMatrix = units.map(u=> selectedYears.map(y=> existingCount(u,y)));
+  const acquiredMatrix = units.map(u=> selectedYears.map(y=> acquiredCount(u,y)));
+  const existingColor = '#F2C230'; // yellow base, kept visually distinct from every year color below
+  const YEAR_COMPARE_COLORS = ['#2354E0','#E8399B','#2FA36B','#C0392B','#7A5FC2','#8D6E43','#00897B','#F2B705'];
+  const yearColors = selectedYears.map((_,i)=> YEAR_COMPARE_COLORS[i % YEAR_COMPARE_COLORS.length]);
+
+  if(container){
+    container.style.height = container.dataset.expandedHeight || '620px';
+    const w = container.clientWidth || 900;
+    stackedGroupedBarSVG(container, {
+      labels: units, years: selectedYears, existingMatrix, acquiredMatrix,
+      existingColor, yearColors,
+      width: w, height: parseInt(container.style.height,10) || 460,
+      onBarClick: (unitLab)=> toggleFilter('unit', unitLab)
+    });
+  }
+
+  const legendEl = document.getElementById('legendYearlyStacked');
+  if(legendEl){
+    legendEl.style.display = '';
+    const yearSwatches = selectedYears.map((y,i)=>
+      `<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${yearColors[i]};margin-right:5px;vertical-align:-1px;"></span>ได้มาปี ${fmt(y)}</span>`
+    ).join('');
+    legendEl.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;font-size:14.5px;color:var(--ink-soft);">
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${existingColor};margin-right:6px;vertical-align:-1px;"></span>มีอยู่ก่อนปีนั้น (ฐานร่วมทุกปี)</span>
+        ${yearSwatches}
+      </div>
+      <div style="text-align:center;margin-top:6px;font-size:13.5px;color:var(--ink-soft);">แต่ละแท่ง: มีอยู่ก่อนปีนั้น + ได้มาในปีนั้น = จำนวนสะสม (ตัวเลขบนสุด) · เปรียบเทียบ ${selectedYears.length} ปี: ${selectedYears.map(fmt).join(', ')} · คลิกแท่งเพื่อกรองตามหน่วยงาน</div>`;
+  }
 }
 
 function resolveCssColor(varName){
@@ -4374,7 +4744,6 @@ function refreshAll(){
   renderOverviewDonut(filtered);
   renderOverviewTopBars(filtered);
   renderUsePie(filtered);
-  renderCatPie(filtered);
   renderCalBar(filtered);
   renderTable(filtered);
   renderActiveFilters();
@@ -4385,26 +4754,16 @@ function refreshAll(){
 function syncSelectValues(){
   // Multi-select fields (cat/unit/cal/cond/age/use) are checkbox dropdowns driven
   // directly by filters[key] — just ask each widget to redraw its summary/list.
-  MULTI_FILTER_FIELDS.forEach(id=>{
+  MULTI_FILTER_FIELDS.concat(['yearlyTrend-year']).forEach(id=>{
     const el = document.getElementById(id);
     if(el && el._msRefresh) el._msRefresh();
   });
-  const yEl = document.getElementById('yearlyTrend-year');
-  if(yEl){
-    yEl.value = filters.year || '';
-    if(yEl._ssRefresh) yEl._ssRefresh();
-  }
 }
 
 /* ======================= EVENTS ======================= */
-document.getElementById('yearlyTrend-year').addEventListener('change', e=>{
-  // currentData stores year as a Number (see normalizeRows), but <select> values
-  // are always strings — comparing them directly in applyFilters() always failed,
-  // which is why picking any year emptied every chart on the page.
-  const raw = e.target.value;
-  filters.year = raw ? parseInt(raw, 10) : null;
-  refreshAll();
-});
+// ปี พ.ศ. is now a checkbox multi-select (see initSearchableSelects/makeMultiSelect),
+// so it no longer needs its own 'change' listener — every tick already goes through
+// toggleFilter('year', ...) directly.
 
 document.getElementById('searchInput').addEventListener('input', e=>{
   filters.search = e.target.value.trim();
@@ -4418,7 +4777,7 @@ document.getElementById('tableSearch').addEventListener('input', e=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
-  filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+  filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:[], search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('tableSearch').value='';
@@ -4722,7 +5081,7 @@ function showFileError(msg){
 
 function applyLoadedRows(rows, labelText){
   currentData = rows;
-  filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:null, search:'' };
+  filters = { item:[], cat:[], unit:[], cal:[], cond:[], age:[], use:[], year:[], search:'' };
   tableFilterItem = null;
   document.getElementById('searchInput').value='';
   document.getElementById('fileName').textContent = labelText;
