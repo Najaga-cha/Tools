@@ -1912,7 +1912,8 @@ function buildMapRecords(rows){
       name: r.item || null,
       org: code || (r.unit || '').toString().trim(),
       yearGot: r.year || null,
-      age: null,
+      age: r.age || null,
+      ageYears: (typeof r.ageYears === 'number' && !isNaN(r.ageYears)) ? r.ageYears : null,
       statusEquip: r.cond || null,
       statusCalib: r.cal || null,
       statusUse: r.use || null,
@@ -1997,13 +1998,27 @@ function usageDescFor(name, records){
   return "-";
 }
 
-// Age (years) -> one of the 4 PDF buckets
+// อายุของเครื่อง (column F: text bucket e.g. "มากกว่า 16 ปี", "ระหว่าง 6 - 10 ปี")
+// or a plain number of years -> one of the 4 PDF buckets
 function ageBucket(age){
-  if(age===null || age===undefined || isNaN(age)) return null;
-  if(age>=1 && age<=5) return "b15";
-  if(age>=6 && age<=10) return "b610";
-  if(age>=11 && age<=15) return "b1115";
-  if(age>=16) return "b16p";
+  if(age===null || age===undefined || age==="") return null;
+  const s = age.toString().trim();
+  if(/มากกว่า/.test(s)) return "b16p";
+  const nums = (s.match(/\d+/g)||[]).map(Number);
+  if(nums.length>=2){
+    const lo = nums[0], hi = nums[1];
+    if(lo===1 && hi===5) return "b15";
+    if(lo===6 && hi===10) return "b610";
+    if(lo===11 && hi===15) return "b1115";
+    if(lo>=16 || hi>=16) return "b16p";
+  }
+  if(nums.length===1){
+    const n = nums[0];
+    if(n>=1 && n<=5) return "b15";
+    if(n>=6 && n<=10) return "b610";
+    if(n>=11 && n<=15) return "b1115";
+    if(n>=16) return "b16p";
+  }
   return null;
 }
 // สถานะสอบเทียบ -> one of the 3 PDF columns (anything that isn't a clear
@@ -2025,12 +2040,13 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
-    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[]};
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[],ageYearsSum:0,ageYearsCount:0};
     const row = byName[key];
     row.total++;
     row.recs.push(r);
     const ab = ageBucket(r.age); if(ab) row[ab]++;
     row[calibBucket(r.statusCalib)]++;
+    if(typeof r.ageYears === 'number' && !isNaN(r.ageYears)){ row.ageYearsSum += r.ageYears; row.ageYearsCount++; }
   });
   const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
   if(!names.length) return "";
@@ -2039,12 +2055,13 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
       <tr class="print-cat-row">
-        <th colspan="${splitPhotoCol?11:10}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
+        <th colspan="${splitPhotoCol?12:11}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
       </tr>
       <tr>
         ${splitPhotoCol?`<th rowspan="2" class="colPhoto">รูป</th>`:``}
         <th rowspan="2" class="colTool">เครื่องมือ</th>
         <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
+        <th rowspan="2" class="colAge">เกณฑ์อายุเฉลี่ย<br>(ปี)</th>
         <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
         <th colspan="3">สถานะสอบเทียบ</th>
         <th rowspan="2" class="colTotal">รวม</th>
@@ -2083,6 +2100,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
       ${photoCellHTML}
       <td class="colTool">${toolCell}</td>
       <td class="colUse">${usageDescFor(name,row.recs)}</td>
+      <td class="num colAge">${row.ageYearsCount ? (row.ageYearsSum/row.ageYearsCount).toFixed(1) : '-'}</td>
       <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
       <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
       <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
@@ -4792,7 +4810,8 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 /* ======================= OFFLINE FILE PARSERS (no external libs) ======================= */
 const REV_MAP = {
   'ประเภทเครื่องมือ':'cat','เครื่องมือ':'item','หน่วยงาน':'unit','ปี พ.ศ. ที่ได้มา':'year',
-  'อายุของเครื่อง':'age','สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
+  'อายุของเครื่อง':'age','เกณฑ์อายุของแต่ละเครื่อง':'ageYears','เกณฑ์อายุ':'ageYears',
+  'สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
   'ละติจูด':'lat','Latitude':'lat','latitude':'lat','lat':'lat',
   'ลองจิจูด':'lng','Longitude':'lng','longitude':'lng','lng':'lng','long':'lng',
   'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
@@ -4805,7 +4824,7 @@ function normalizeRows(json){
       const mapped = REV_MAP[k.trim()] || null;
       if(mapped){
         let v = row[k];
-        if(mapped==='year'){ v = parseInt(v); if(isNaN(v)) v=null; }
+        if(mapped==='year' || mapped==='ageYears'){ v = parseInt(v); if(isNaN(v)) v=null; }
         else if(mapped==='lat' || mapped==='lng'){ v = parseFloat(v); if(isNaN(v)) v=null; }
         else if(typeof v === 'string'){ v = v.trim(); }
         out[mapped] = (v===undefined || v==='') ? null : v;
