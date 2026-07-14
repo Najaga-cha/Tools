@@ -1878,7 +1878,7 @@ Object.keys(ORG_LOCATIONS).forEach(code=>{
     const num = +m[1];
     ORGS[code] = {
       code, kind:"region", num,
-      label: `สคพ.${num}${OFFICE_CITY[num] ? " ("+OFFICE_CITY[num]+")" : ""}`,
+      label: `สคพ.${num}`,
       color: COLORS[num] || "#888",
       provinces
     };
@@ -2367,7 +2367,11 @@ function refreshChipStates(){
 function selectOrg(code){
   if(!ORGS[code]) return;
   hideMapPopup();
-  applyUserOrgSelection(code);
+  if(selected === code){
+    applyUserOrgSelection(null);
+  }else{
+    applyUserOrgSelection(code);
+  }
 }
 
 function deselectOrg(){
