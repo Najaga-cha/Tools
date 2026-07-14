@@ -4825,11 +4825,26 @@ const REV_MAP = {
   'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
 };
 
+// Strips characters that are visually invisible but break exact string
+// matching: regular/non-breaking spaces, zero-width space/joiners, BOM.
+// Thai Google Sheets headers frequently pick these up from copy-paste
+// without it being visible on screen, which silently breaks a plain
+// REV_MAP[header] lookup even though the header "looks" identical.
+function normalizeHeaderKey(s){
+  return (s||'').toString().normalize('NFC').replace(/[\s\u00A0\u200B\u200C\u200D\uFEFF]+/g, '').trim();
+}
+const REV_MAP_NORM = {};
+Object.keys(REV_MAP).forEach(k=>{ REV_MAP_NORM[normalizeHeaderKey(k)] = REV_MAP[k]; });
+
 function normalizeRows(json){
+  if(json.length){
+    const unmapped = Object.keys(json[0]).filter(k=> !REV_MAP[k.trim()] && !REV_MAP_NORM[normalizeHeaderKey(k)]);
+    if(unmapped.length) console.log('[normalizeRows] คอลัมน์ที่ระบบไม่รู้จัก (จะถูกข้าม):', unmapped);
+  }
   return json.map(row=>{
     const out = {};
     Object.keys(row).forEach(k=>{
-      const mapped = REV_MAP[k.trim()] || null;
+      const mapped = REV_MAP[k.trim()] || REV_MAP_NORM[normalizeHeaderKey(k)] || null;
       if(mapped){
         let v = row[k];
         if(mapped==='year' || mapped==='age'){ v = parseInt(v); if(isNaN(v)) v=null; }
