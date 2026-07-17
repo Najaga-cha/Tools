@@ -130,6 +130,7 @@
   .caldays-badge{padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:700; display:inline-block; white-space:nowrap;}
   .caldays-badge.warn{background:#FFF3CD; color:#8A6D00;}
   .caldays-badge.expired{background:var(--err-bg); color:var(--err-text);}
+  .caldays-badge.ok{background:var(--soft-tint); color:var(--ok);}
   [data-theme="dark"] .caldays-badge.warn{background:#4A3C10; color:#F2CC66;}
 
   /* ===== Theme toggle button ===== */
@@ -2120,7 +2121,7 @@ function calDaysLeftCellHTML(val){
   const status = calDaysLeftStatus(val);
   if(status === "expired") return `<td class="colCalDays"><span class="caldays-badge expired">⛔ หมดอายุสอบเทียบ</span></td>`;
   if(status === "warning") return `<td class="colCalDays"><span class="caldays-badge warn">⚠️ เหลือ ${val}</span></td>`;
-  return `<td class="colCalDays">${val}</td>`;
+  return `<td class="colCalDays"><span class="caldays-badge ok">${val}</span></td>`;
 }
 // Aggregated cell (eq2 summary table): one compact column showing how many
 // items in this equipment group need attention, as small chips rather than
