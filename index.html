@@ -968,6 +968,7 @@
   #toolTableBody table.eq2{border-collapse:collapse; font-size:11px; width:100%; min-width:640px;}
   #toolTableBody table.eq2 .print-cat-row{display:none;}
   #toolTableBody table.eq2 caption{text-align:left; font-weight:700; font-size:12.5px; color:#fff; background:var(--map-teal); padding:7px 10px;}
+  #toolTableBody table.eq2 caption .cap-count{font-weight:400; opacity:.85; font-size:11px; margin-left:4px;}
   #toolTableBody table.eq2 th{background:#E7EAFB; color:var(--map-teal-deep); text-align:center; padding:6px 5px; font-weight:700; border:1px solid var(--map-line); line-height:1.3; white-space:nowrap;}
   #toolTableBody table.eq2 td{padding:5px; border:1px solid #E4E7F8; vertical-align:middle;}
   #toolTableBody table.eq2 td.num{text-align:center; font-weight:700; color:var(--map-teal-deep); width:38px;}
@@ -1765,11 +1766,12 @@
 
       <div class="tool-tab-pane active" data-pane="list">
         <div class="chart-controls-row" style="margin-bottom:4px;">
-          <div class="hint" style="margin:0;">แยกตามหน่วยงานที่ตรงกับตัวกรองปัจจุบัน · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกรูปภาพเพื่อดูภาพขยาย</div>
+          <div class="chart-switch" id="switchToolList" data-key="toolList"></div>
           <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็น PDF หรือสั่งพิมพ์" disabled>
             <span class="icon">🖨️</span><span class="label">บันทึก/พิมพ์ PDF</span>
           </button>
         </div>
+        <div class="hint" style="margin-top:-6px;">แยกตามหน่วยงานที่ตรงกับตัวกรองปัจจุบัน · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกรูปภาพเพื่อดูภาพขยาย</div>
         <div class="table-search">
           <span>🔎</span>
           <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
@@ -3012,7 +3014,8 @@ let chartTypes = {
   usePie: 'bar',         // pie | donut | bar  (เริ่มต้นที่ง่ายสุด)
   catPie: 'bar',         // pie | donut | bar  (เริ่มต้นที่ง่ายสุด)
   calBar: 'grouped',     // grouped | total
-  ageBar: 'grouped'      // grouped | total
+  ageBar: 'grouped',     // grouped | total
+  toolList: 'grouped'    // grouped (สรุปรวมตามชื่อเครื่องมือ) | items (รายชิ้น)
 };
 
 // จำนวนหน่วยงาน / รายการ / ปี (Top N) ที่จะแสดงในแต่ละกราฟ ผู้ใช้ปรับได้เอง
@@ -3037,7 +3040,8 @@ const CHART_TYPE_OPTIONS = {
   usePie: [ {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'}, {v:'bar', l:'แท่งแนวนอน'} ],
   catPie: [ {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'}, {v:'bar', l:'แท่งแนวนอน'} ],
   calBar: [ {v:'grouped', l:'แท่งเทียบ'}, {v:'total', l:'แท่งรวม (ง่ายสุด)'} ],
-  ageBar: [ {v:'grouped', l:'แท่งเทียบ'}, {v:'total', l:'แท่งรวม (ง่ายสุด)'} ]
+  ageBar: [ {v:'grouped', l:'แท่งเทียบ'}, {v:'total', l:'แท่งรวม (ง่ายสุด)'} ],
+  toolList: [ {v:'grouped', l:'📊 แบบสรุปรวม'}, {v:'items', l:'🔧 แบบรายชิ้น'} ]
 };
 
 function initChartSwitchers(){
@@ -4082,6 +4086,47 @@ function toolOrgHeaderHTML(code, recs){
   return head + statRow;
 }
 
+// Per-item (ไม่รวมกลุ่ม) equipment table: one row per physical instrument,
+// grouped only by category caption for readability — used when the "แบบรายชิ้น"
+// view is selected, as an alternative to the by-name aggregated eq2 table.
+function itemListTable(recs){
+  if(!recs.length) return `<div class="no-data">ไม่มีข้อมูลเครื่องมือระบุไว้สำหรับหน่วยงานนี้ในไฟล์ทะเบียนเครื่องมือ</div>`;
+  const byCat = {};
+  recs.forEach(r=>{ const c = r.type || "อื่นๆ"; (byCat[c]=byCat[c]||[]).push(r); });
+  const cats = Object.keys(byCat).sort((a,b)=>{
+    const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
+    return (ia<0?99:ia) - (ib<0?99:ib);
+  });
+  return cats.map(c=>{
+    const items = byCat[c];
+    let html = `<div class="eq2-wrap"><table class="eq2 item-list">
+      <caption>${CATEGORY_ICON[c]||"🔧"} ${CATEGORY_LABEL[c]||c} <span class="cap-count">(${fmt(items.length)} ชิ้น)</span></caption>
+      <thead><tr>
+        <th class="colTool">เครื่องมือ</th>
+        <th>ปีที่ได้มา</th>
+        <th>เกณฑ์อายุ</th>
+        <th>สถานะเครื่องมือ</th>
+        <th>สถานะสอบเทียบ</th>
+        <th>การใช้งาน</th>
+        <th class="colCalDays">วันคงเหลือสอบเทียบ<br>ครั้งถัดไป</th>
+      </tr></thead><tbody>`;
+    items.forEach(r=>{
+      const useTag = r.statusUse==="ใช้งานได้" ? `<span class="tag ok">ใช้งานได้</span>` : (r.statusUse==="ชำรุด" ? `<span class="tag bad">ชำรุด</span>` : (r.statusUse||"-"));
+      html += `<tr>
+        <td class="colTool"><div class="eq-tool-cell eq-tool-cell-noimg"><span>${r.name||"-"}</span></div></td>
+        <td class="num">${r.yearGot||"-"}</td>
+        <td>${r.age||"-"}</td>
+        <td>${r.statusEquip||"-"}</td>
+        <td>${r.statusCalib||"-"}</td>
+        <td>${useTag}</td>
+        ${calDaysLeftCellHTML(r.calDaysLeft)}
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    return html;
+  }).join('');
+}
+
 function renderTable(filtered){
   const container = document.getElementById('toolTableBody');
   const exportBtn = document.getElementById('exportListPdfBtn');
@@ -4097,10 +4142,12 @@ function renderTable(filtered){
   }
   if(exportBtn) exportBtn.disabled = false;
   const { byOrg, orderedCodes } = groupToolRowsByOrg(rows);
+  const isItemView = chartTypes.toolList === 'items';
 
   container.innerHTML = orderedCodes.map(code=>{
     const recs = byOrg[code];
-    return `<div class="tool-org-section">${toolOrgHeaderHTML(code, recs)}${categoryTablesFromRecords(recs, true, false)}</div>`;
+    const body = isItemView ? itemListTable(recs) : categoryTablesFromRecords(recs, true, false);
+    return `<div class="tool-org-section">${toolOrgHeaderHTML(code, recs)}${body}</div>`;
   }).join('');
 }
 
@@ -4133,13 +4180,15 @@ function exportToolListToPDF(){
   const { mapRecs, byOrg, orderedCodes } = groupToolRowsByOrg(rows);
   const now = new Date();
   const dateStr = now.toLocaleDateString('th-TH', {year:'numeric', month:'long', day:'numeric'});
+  const isItemView = chartTypes.toolList === 'items';
 
   const orgBlocks = orderedCodes.map((code, i)=>{
     const recs = byOrg[code];
     const cls = 'print-org-block' + (i>0 ? ' print-org-page-start' : '');
     // splitPhotoCol=true gives each row its own larger photo column, same
-    // as the per-org PDF export.
-    return `<div class="${cls}">${toolOrgHeaderHTML(code, recs)}${categoryTablesFromRecords(recs, true, true)}</div>`;
+    // as the per-org PDF export. Item view has no photo column either way.
+    const body = isItemView ? itemListTable(recs) : categoryTablesFromRecords(recs, true, true);
+    return `<div class="${cls}">${toolOrgHeaderHTML(code, recs)}${body}</div>`;
   }).join('');
 
   printArea.innerHTML = `
