@@ -1983,6 +1983,7 @@ function buildMapRecords(rows){
       statusCalib: r.cal || null,
       statusUse: r.use || null,
       calDaysLeft: (r.calDaysLeft===undefined || r.calDaysLeft===null || r.calDaysLeft==='') ? null : r.calDaysLeft,
+      usageDaysPerYear: (typeof r.usageDaysPerYear === 'number' && !isNaN(r.usageDaysPerYear)) ? r.usageDaysPerYear : null,
       brand: null, model: null, serial: null, assetCode: null, price: null,
       image: r.img || '',
       param: null
@@ -2141,7 +2142,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
-    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,calWarn:0,calExpired:0,total:0,recs:[],ageYearsSum:0,ageYearsCount:0};
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,calWarn:0,calExpired:0,total:0,recs:[],ageYearsSum:0,ageYearsCount:0,usageDaysSum:0,usageDaysCount:0};
     const row = byName[key];
     row.total++;
     row.recs.push(r);
@@ -2151,6 +2152,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     if(dstatus==='warning') row.calWarn++;
     else if(dstatus==='expired') row.calExpired++;
     if(typeof r.ageYears === 'number' && !isNaN(r.ageYears)){ row.ageYearsSum += r.ageYears; row.ageYearsCount++; }
+    if(typeof r.usageDaysPerYear === 'number' && !isNaN(r.usageDaysPerYear)){ row.usageDaysSum += r.usageDaysPerYear; row.usageDaysCount++; }
   });
   const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
   if(!names.length) return "";
@@ -2159,13 +2161,14 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
       <tr class="print-cat-row">
-        <th colspan="${splitPhotoCol?13:12}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
+        <th colspan="${splitPhotoCol?14:13}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
       </tr>
       <tr>
         ${splitPhotoCol?`<th rowspan="2" class="colPhoto">รูป</th>`:``}
         <th rowspan="2" class="colTool">เครื่องมือ</th>
         <th rowspan="2" class="colUse">ลักษณะการใช้งาน</th>
         <th rowspan="2" class="colAge">เกณฑ์อายุเฉลี่ย<br>(ปี)</th>
+        <th rowspan="2" class="colUsageDays">จำนวนวันใช้งาน<br>เฉลี่ย/ปี</th>
         <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
         <th colspan="3">สถานะสอบเทียบ</th>
         <th rowspan="2" class="colCalDays">วันคงเหลือ<br>สอบเทียบครั้งถัดไป</th>
@@ -2206,6 +2209,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
       <td class="colTool">${toolCell}</td>
       <td class="colUse">${usageDescFor(name,row.recs)}</td>
       <td class="num colAge">${row.ageYearsCount ? (row.ageYearsSum/row.ageYearsCount).toFixed(1) : '-'}</td>
+      <td class="num colUsageDays">${row.usageDaysCount ? Math.round(row.usageDaysSum/row.usageDaysCount) : '-'}</td>
       <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
       <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
       <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
@@ -2542,11 +2546,11 @@ function rawTable(code){
   if(!recs.length) return "";
   let html = `<details class="raw-list"><summary>ดูรายการเครื่องมือรายชิ้นทั้งหมด (${recs.length} รายการ)</summary>
     <div class="raw-table-wrap"><table class="raw">
-    <thead><tr><th>เครื่องมือ</th><th>ประเภท</th><th>ยี่ห้อ/รุ่น</th><th>Serial</th><th>รหัสครุภัณฑ์</th><th>ปีที่ได้มา</th><th>สถานะเครื่องมือ</th><th>การใช้งาน</th><th>วันคงเหลือสอบเทียบ</th></tr></thead><tbody>`;
+    <thead><tr><th>เครื่องมือ</th><th>ประเภท</th><th>ยี่ห้อ/รุ่น</th><th>Serial</th><th>รหัสครุภัณฑ์</th><th>ปีที่ได้มา</th><th>สถานะเครื่องมือ</th><th>การใช้งาน</th><th>จำนวนวันใช้งานต่อปี</th><th>วันคงเหลือสอบเทียบ</th></tr></thead><tbody>`;
   recs.forEach(r=>{
     const useTag = r.statusUse==="ใช้งานได้" ? `<span class="tag ok">ใช้งานได้</span>` : (r.statusUse==="ชำรุด" ? `<span class="tag bad">ชำรุด</span>` : (r.statusUse||"-"));
     const brandModel = [r.brand,r.model].filter(Boolean).join(" / ") || "-";
-    html += `<tr><td>${r.name||"-"}</td><td>${r.type||"-"}</td><td>${brandModel}</td><td>${r.serial||"-"}</td><td>${r.assetCode||"-"}</td><td>${r.yearGot||"-"}</td><td>${r.statusEquip||"-"}</td><td>${useTag}</td>${calDaysLeftCellHTML(r.calDaysLeft)}</tr>`;
+    html += `<tr><td>${r.name||"-"}</td><td>${r.type||"-"}</td><td>${brandModel}</td><td>${r.serial||"-"}</td><td>${r.assetCode||"-"}</td><td>${r.yearGot||"-"}</td><td>${r.statusEquip||"-"}</td><td>${useTag}</td><td class="num">${r.usageDaysPerYear!=null ? fmt(r.usageDaysPerYear) : "-"}</td>${calDaysLeftCellHTML(r.calDaysLeft)}</tr>`;
   });
   html += `</tbody></table></div></details>`;
   return html;
@@ -4108,6 +4112,7 @@ function itemListTable(recs){
         <th>สถานะเครื่องมือ</th>
         <th>สถานะสอบเทียบ</th>
         <th>การใช้งาน</th>
+        <th class="colUsageDays">จำนวนวันใช้งาน<br>ต่อปี</th>
         <th class="colCalDays">วันคงเหลือสอบเทียบ<br>ครั้งถัดไป</th>
       </tr></thead><tbody>`;
     items.forEach(r=>{
@@ -4119,6 +4124,7 @@ function itemListTable(recs){
         <td>${r.statusEquip||"-"}</td>
         <td>${r.statusCalib||"-"}</td>
         <td>${useTag}</td>
+        <td class="num">${r.usageDaysPerYear!=null ? fmt(r.usageDaysPerYear) : "-"}</td>
         ${calDaysLeftCellHTML(r.calDaysLeft)}
       </tr>`;
     });
@@ -5086,6 +5092,7 @@ const REV_MAP = {
   'อายุของเครื่อง':'age','เกณฑ์อายุของแต่ละเครื่อง':'ageYears','เกณฑ์อายุ':'ageYears',
   'สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
   'จำนวนวันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป':'calDaysLeft',
+  'จำนวนวันในการใช้งานต่อปี':'usageDaysPerYear',
   'ละติจูด':'lat','Latitude':'lat','latitude':'lat','lat':'lat',
   'ลองจิจูด':'lng','Longitude':'lng','longitude':'lng','lng':'lng','long':'lng',
   'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
@@ -5098,7 +5105,7 @@ function normalizeRows(json){
       const mapped = REV_MAP[k.trim()] || null;
       if(mapped){
         let v = row[k];
-        if(mapped==='year' || mapped==='ageYears'){ v = parseInt(v); if(isNaN(v)) v=null; }
+        if(mapped==='year' || mapped==='ageYears' || mapped==='usageDaysPerYear'){ v = parseInt(v); if(isNaN(v)) v=null; }
         else if(mapped==='lat' || mapped==='lng'){ v = parseFloat(v); if(isNaN(v)) v=null; }
         else if(typeof v === 'string'){ v = v.trim(); }
         out[mapped] = (v===undefined || v==='') ? null : v;
