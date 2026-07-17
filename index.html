@@ -124,13 +124,12 @@
   [data-theme="dark"] #mapSection .chip .count{background:var(--soft-tint);}
   [data-theme="dark"] #mapSection table.eq2 td.colTotal, [data-theme="dark"] #mapSection table.eq2 th.colTotal{background:var(--soft-tint);}
 
-  /* ===== วันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป — แจ้งเตือนสี ===== */
-  td.caldays-warning{background:#FFF3CD !important; color:#856404 !important; font-weight:700; text-align:center;}
-  td.caldays-expired{background:var(--err-bg) !important; color:var(--err-text) !important; font-weight:700; text-align:center;}
-  .caldays-badge{padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:700; display:inline-block;}
-  .caldays-badge.warn{background:#FFF3CD; color:#856404;}
+  /* ===== วันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป — แจ้งเตือนแบบชิป (badge) ===== */
+  td.colCalDays{white-space:nowrap; font-size:11px; color:var(--ink-soft);}
+  .caldays-ok{color:var(--ink-faint);}
+  .caldays-badge{padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:700; display:inline-block; white-space:nowrap;}
+  .caldays-badge.warn{background:#FFF3CD; color:#8A6D00;}
   .caldays-badge.expired{background:var(--err-bg); color:var(--err-text);}
-  [data-theme="dark"] td.caldays-warning{background:#4A3C10 !important; color:#F2CC66 !important;}
   [data-theme="dark"] .caldays-badge.warn{background:#4A3C10; color:#F2CC66;}
 
   /* ===== Theme toggle button ===== */
@@ -627,6 +626,17 @@
   }
   .chart-switch button.active{background:var(--surface);color:var(--teal-dark);font-weight:600;box-shadow:0 1px 2px rgba(20,25,64,0.12);}
   .chart-switch button:hover:not(.active){color:var(--ink);}
+
+  .panel-tabs{display:flex;gap:4px;background:var(--surface-soft);padding:4px;border-radius:11px;margin-bottom:16px;width:fit-content;}
+  .panel-tab-btn{
+    border:none;background:transparent;color:var(--ink-soft);
+    font-size:13.5px;padding:9px 18px;border-radius:8px;cursor:pointer;
+    font-family:'Sarabun',sans-serif;font-weight:500;white-space:nowrap;transition:.15s;
+  }
+  .panel-tab-btn.active{background:var(--surface);color:var(--teal-dark);font-weight:700;box-shadow:0 1px 3px rgba(20,25,64,0.14);}
+  .panel-tab-btn:hover:not(.active){color:var(--ink);}
+  .tool-tab-pane{display:none;}
+  .tool-tab-pane.active{display:block;}
 
   .chart-controls-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
   .chart-controls-row .chart-switch{margin-bottom:0;}
@@ -1748,34 +1758,39 @@
     </div>
 
     <div class="panel">
-      <div class="chart-controls-row" style="margin-bottom:4px;">
-        <h2 style="margin:0;">📋 รายการเครื่องมือ</h2>
-        <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็น PDF หรือสั่งพิมพ์" disabled>
-          <span class="icon">🖨️</span><span class="label">บันทึก/พิมพ์ PDF</span>
-        </button>
+      <div class="panel-tabs" id="toolPanelTabs">
+        <button type="button" class="panel-tab-btn active" data-pane="list">📋 รายการเครื่องมือ</button>
+        <button type="button" class="panel-tab-btn" data-pane="summary">📊 สรุปภาพรวม</button>
       </div>
-      <div class="hint">แยกตามหน่วยงานที่ตรงกับตัวกรองปัจจุบัน · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกรูปภาพเพื่อดูภาพขยาย</div>
-      <div class="table-search">
-        <span>🔎</span>
-        <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
-      </div>
-      <div id="toolTableBody" class="tool-report"></div>
-    </div>
 
-    <div class="panel" id="summarySection">
-      <h2 style="margin:0 0 4px;">📊 สรุปภาพรวมเครื่องมือ</h2>
-      <div class="hint">สรุปตามข้อมูลที่ตรงกับตัวกรองปัจจุบัน · จำนวนเครื่องมือแยกตามหน่วยงานและประเภท</div>
-      <div id="summaryPivotWrap" style="margin-top:10px;"></div>
-      <div class="grid2" style="margin-top:18px;">
-        <div>
-          <h3 style="margin:0 0 8px;">🏢 เครื่องมือแยกตามหน่วยงาน</h3>
-          <div class="hint" style="margin-bottom:8px;">แต่ละหน่วยงานมีเครื่องมือชนิดใดบ้าง และจำนวนเท่าไร</div>
-          <div id="summaryByUnit"></div>
+      <div class="tool-tab-pane active" data-pane="list">
+        <div class="chart-controls-row" style="margin-bottom:4px;">
+          <div class="hint" style="margin:0;">แยกตามหน่วยงานที่ตรงกับตัวกรองปัจจุบัน · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกรูปภาพเพื่อดูภาพขยาย</div>
+          <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็น PDF หรือสั่งพิมพ์" disabled>
+            <span class="icon">🖨️</span><span class="label">บันทึก/พิมพ์ PDF</span>
+          </button>
         </div>
-        <div>
-          <h3 style="margin:0 0 8px;">🔧 หน่วยงานที่มีเครื่องมือแต่ละชนิด</h3>
-          <div class="hint" style="margin-bottom:8px;">เครื่องมือแต่ละชนิดกระจายอยู่ที่หน่วยงานใดบ้าง</div>
-          <div id="summaryByItem"></div>
+        <div class="table-search">
+          <span>🔎</span>
+          <input type="text" id="tableSearch" placeholder="ค้นหาชื่อเครื่องมือ...">
+        </div>
+        <div id="toolTableBody" class="tool-report"></div>
+      </div>
+
+      <div class="tool-tab-pane" data-pane="summary" id="summarySection">
+        <div class="hint" style="margin:0 0 10px;">สรุปตามข้อมูลที่ตรงกับตัวกรองปัจจุบัน · จำนวนเครื่องมือแยกตามหน่วยงานและประเภท</div>
+        <div id="summaryPivotWrap"></div>
+        <div class="grid2" style="margin-top:18px;">
+          <div>
+            <h3 style="margin:0 0 8px;">🏢 เครื่องมือแยกตามหน่วยงาน</h3>
+            <div class="hint" style="margin-bottom:8px;">แต่ละหน่วยงานมีเครื่องมือชนิดใดบ้าง และจำนวนเท่าไร</div>
+            <div id="summaryByUnit"></div>
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px;">🔧 หน่วยงานที่มีเครื่องมือแต่ละชนิด</h3>
+            <div class="hint" style="margin-bottom:8px;">เครื่องมือแต่ละชนิดกระจายอยู่ที่หน่วยงานใดบ้าง</div>
+            <div id="summaryByItem"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2092,11 +2107,27 @@ function calDaysLeftStatus(val){
   if(!isNaN(n) && n <= 30) return "warning";
   return null;
 }
+// Per-instrument cell (raw table): plain text for normal values, a small
+// coloured chip only for the values that actually need attention — avoids
+// painting the whole cell solid when there's just one row to flag.
 function calDaysLeftCellHTML(val){
+  if(val===null || val===undefined || val===""){
+    return `<td class="colCalDays">-</td>`;
+  }
   const status = calDaysLeftStatus(val);
-  const text = (val===null || val===undefined || val==="") ? "-" : val;
-  const cls = status==="expired" ? "caldays-expired" : (status==="warning" ? "caldays-warning" : "");
-  return `<td class="${cls}">${text}</td>`;
+  if(status === "expired") return `<td class="colCalDays"><span class="caldays-badge expired">⛔ หมดอายุสอบเทียบ</span></td>`;
+  if(status === "warning") return `<td class="colCalDays"><span class="caldays-badge warn">⚠️ เหลือ ${val} วัน</span></td>`;
+  return `<td class="colCalDays">${val} วัน</td>`;
+}
+// Aggregated cell (eq2 summary table): one compact column showing how many
+// items in this equipment group need attention, as small chips rather than
+// two separate count columns — "-" when everything's fine.
+function calDaysGroupBadgeHTML(row){
+  const chips = [];
+  if(row.calExpired) chips.push(`<span class="caldays-badge expired">⛔ หมดอายุ ${row.calExpired} ชิ้น</span>`);
+  if(row.calWarn) chips.push(`<span class="caldays-badge warn">⚠️ ใกล้ครบกำหนด ${row.calWarn} ชิ้น</span>`);
+  if(!chips.length) return `<span class="caldays-ok">-</span>`;
+  return chips.join('<br>');
 }
 
 function equipmentImage(name, records){
@@ -2126,7 +2157,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
       <tr class="print-cat-row">
-        <th colspan="${splitPhotoCol?14:13}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
+        <th colspan="${splitPhotoCol?13:12}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
       </tr>
       <tr>
         ${splitPhotoCol?`<th rowspan="2" class="colPhoto">รูป</th>`:``}
@@ -2135,13 +2166,12 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
         <th rowspan="2" class="colAge">เกณฑ์อายุเฉลี่ย<br>(ปี)</th>
         <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
         <th colspan="3">สถานะสอบเทียบ</th>
-        <th colspan="2">วันคงเหลือสอบเทียบครั้งถัดไป</th>
+        <th rowspan="2" class="colCalDays">วันคงเหลือ<br>สอบเทียบครั้งถัดไป</th>
         <th rowspan="2" class="colTotal">รวม</th>
       </tr>
       <tr>
         <th>1-5 ปี</th><th>6-10 ปี</th><th>11-15 ปี</th><th>มากกว่า<br>16 ปี</th>
         <th>สอบเทียบ<br>แล้ว</th><th>ไม่เคย<br>สอบเทียบ</th><th>รอสอบ<br>เทียบ</th>
-        <th>ใกล้ครบกำหนด<br>(≤30 วัน)</th><th>หมดอายุ<br>(Expired)</th>
       </tr>
     </thead><tbody>`;
 
@@ -2177,8 +2207,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
       <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
       <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
       <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
-      <td class="num${row.calWarn?' caldays-warning':''}">${row.calWarn||0}</td>
-      <td class="num${row.calExpired?' caldays-expired':''}">${row.calExpired||0}</td>
+      <td class="colCalDays">${calDaysGroupBadgeHTML(row)}</td>
       <td class="num colTotal">${row.total}</td>
     </tr>`;
   });
@@ -3025,6 +3054,23 @@ function initChartSwitchers(){
         if(key === 'yearlyTrend') updateYearlyTrendControlsVisibility();
         refreshAll();
       };
+    });
+  });
+}
+
+// Toggles between "รายการเครื่องมือ" and "สรุปภาพรวม" inside the shared
+// bottom panel — a plain show/hide, no data refetch (both panes already
+// stay in sync with the dashboard's filters via refreshAll()).
+function initToolPanelTabs(){
+  const tabsWrap = document.getElementById('toolPanelTabs');
+  if(!tabsWrap) return;
+  tabsWrap.querySelectorAll('.panel-tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const target = btn.dataset.pane;
+      tabsWrap.querySelectorAll('.panel-tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      document.querySelectorAll('.tool-tab-pane').forEach(pane=>{
+        pane.classList.toggle('active', pane.dataset.pane === target);
+      });
     });
   });
 }
@@ -5457,6 +5503,7 @@ function init(){
   const today = new Date();
   document.getElementById('asOf').textContent = 'ข้อมูล ณ วันที่ ' + today.toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'});
   initChartSwitchers();
+  initToolPanelTabs();
   initTopNControls();
   initSearchableSelects();
   initGsheetSync();
