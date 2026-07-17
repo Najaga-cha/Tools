@@ -2119,8 +2119,8 @@ function calDaysLeftCellHTML(val){
   }
   const status = calDaysLeftStatus(val);
   if(status === "expired") return `<td class="colCalDays"><span class="caldays-badge expired">⛔ หมดอายุสอบเทียบ</span></td>`;
-  if(status === "warning") return `<td class="colCalDays"><span class="caldays-badge warn">⚠️ เหลือ ${val} วัน</span></td>`;
-  return `<td class="colCalDays">${val} วัน</td>`;
+  if(status === "warning") return `<td class="colCalDays"><span class="caldays-badge warn">⚠️ เหลือ ${val}</span></td>`;
+  return `<td class="colCalDays">${val}</td>`;
 }
 // Aggregated cell (eq2 summary table): one compact column showing how many
 // items in this equipment group need attention, as small chips rather than
