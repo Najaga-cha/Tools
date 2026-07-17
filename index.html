@@ -124,6 +124,15 @@
   [data-theme="dark"] #mapSection .chip .count{background:var(--soft-tint);}
   [data-theme="dark"] #mapSection table.eq2 td.colTotal, [data-theme="dark"] #mapSection table.eq2 th.colTotal{background:var(--soft-tint);}
 
+  /* ===== วันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป — แจ้งเตือนสี ===== */
+  td.caldays-warning{background:#FFF3CD !important; color:#856404 !important; font-weight:700; text-align:center;}
+  td.caldays-expired{background:var(--err-bg) !important; color:var(--err-text) !important; font-weight:700; text-align:center;}
+  .caldays-badge{padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:700; display:inline-block;}
+  .caldays-badge.warn{background:#FFF3CD; color:#856404;}
+  .caldays-badge.expired{background:var(--err-bg); color:var(--err-text);}
+  [data-theme="dark"] td.caldays-warning{background:#4A3C10 !important; color:#F2CC66 !important;}
+  [data-theme="dark"] .caldays-badge.warn{background:#4A3C10; color:#F2CC66;}
+
   /* ===== Theme toggle button ===== */
   .theme-toggle{
     display:flex;align-items:center;gap:8px;
@@ -966,6 +975,27 @@
   [data-theme="dark"] #toolTableBody table.eq2 td{border-color:var(--map-line);}
   [data-theme="dark"] #toolTableBody .eq-photo, [data-theme="dark"] #toolTableBody .eq-photo-fallback{background:var(--surface-soft);}
   [data-theme="dark"] #toolTableBody table.eq2 td.colTotal, [data-theme="dark"] #toolTableBody table.eq2 th.colTotal{background:var(--soft-tint);}
+
+  /* ===== Summary section (#summarySection) ===== */
+  #summarySection .summary-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+  table.summary-pivot{width:100%; border-collapse:collapse; font-size:12.5px; min-width:560px;}
+  table.summary-pivot th{background:var(--surface-soft); color:var(--teal-dark); text-align:center; padding:8px 6px; font-weight:700; border:1px solid var(--line); white-space:nowrap;}
+  table.summary-pivot td{padding:7px 6px; border:1px solid var(--line); text-align:center;}
+  table.summary-pivot td.orgname{text-align:left; font-weight:600; color:var(--ink);}
+  table.summary-pivot td.num{font-weight:700; color:var(--teal-dark);}
+  table.summary-pivot td.colTotal{background:var(--soft-tint); font-weight:800;}
+  table.summary-pivot th.colTotal{background:var(--soft-tint-strong);}
+  table.summary-pivot tbody tr:nth-child(even) td{background:var(--surface-soft);}
+  #summarySection .summary-unit{border:1px solid var(--line); border-radius:10px; margin-bottom:8px; padding:2px 12px; background:var(--surface);}
+  #summarySection .summary-unit summary{cursor:pointer; padding:9px 0; font-weight:600; color:var(--ink); display:flex; justify-content:space-between; align-items:center; gap:8px; list-style:none;}
+  #summarySection .summary-unit summary::-webkit-details-marker{display:none;}
+  #summarySection .summary-unit summary::before{content:"▸"; color:var(--teal); margin-right:6px; transition:.15s;}
+  #summarySection .summary-unit[open] summary::before{transform:rotate(90deg); display:inline-block;}
+  #summarySection .summary-unit summary .count{font-size:11.5px; font-weight:700; color:var(--teal-dark); background:var(--teal-tint); border-radius:999px; padding:2px 10px;}
+  #summarySection .summary-list{list-style:none; margin:0; padding:0 0 10px; font-size:12.5px; max-height:220px; overflow-y:auto;}
+  #summarySection .summary-list li{display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); color:var(--ink-soft);}
+  #summarySection .summary-list li:last-child{border-bottom:none;}
+  #summarySection .summary-list li .n{font-weight:700; color:var(--teal-dark);}
   #toggleBtn{
     position:absolute;
     top:16px;
@@ -1731,6 +1761,24 @@
       </div>
       <div id="toolTableBody" class="tool-report"></div>
     </div>
+
+    <div class="panel" id="summarySection">
+      <h2 style="margin:0 0 4px;">📊 สรุปภาพรวมเครื่องมือ</h2>
+      <div class="hint">สรุปตามข้อมูลที่ตรงกับตัวกรองปัจจุบัน · จำนวนเครื่องมือแยกตามหน่วยงานและประเภท</div>
+      <div id="summaryPivotWrap" style="margin-top:10px;"></div>
+      <div class="grid2" style="margin-top:18px;">
+        <div>
+          <h3 style="margin:0 0 8px;">🏢 เครื่องมือแยกตามหน่วยงาน</h3>
+          <div class="hint" style="margin-bottom:8px;">แต่ละหน่วยงานมีเครื่องมือชนิดใดบ้าง และจำนวนเท่าไร</div>
+          <div id="summaryByUnit"></div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px;">🔧 หน่วยงานที่มีเครื่องมือแต่ละชนิด</h3>
+          <div class="hint" style="margin-bottom:8px;">เครื่องมือแต่ละชนิดกระจายอยู่ที่หน่วยงานใดบ้าง</div>
+          <div id="summaryByItem"></div>
+        </div>
+      </div>
+    </div>
     </div>
   </main>
 </div>
@@ -1917,6 +1965,7 @@ function buildMapRecords(rows){
       statusEquip: r.cond || null,
       statusCalib: r.cal || null,
       statusUse: r.use || null,
+      calDaysLeft: (r.calDaysLeft===undefined || r.calDaysLeft===null || r.calDaysLeft==='') ? null : r.calDaysLeft,
       brand: null, model: null, serial: null, assetCode: null, price: null,
       image: r.img || '',
       param: null
@@ -1932,8 +1981,7 @@ function rebuildRecordsByOrg(){
   });
 }
 rebuildRecordsByOrg();
-function summarizeEquipment(code){
-  const recs = RECORDS_BY_ORG[code] || [];
+function summarizeEquipmentFromRecs(recs){
   const byName = {};
   recs.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
@@ -1948,6 +1996,9 @@ function summarizeEquipment(code){
       .map(([a,c])=> c>1 ? `${a} ปี(${c})` : `${a} ปี`).join(", ");
     return {name, count:info.count, ageStr, type:info.type};
   }).sort((a,b)=> b.count-a.count);
+}
+function summarizeEquipment(code){
+  return summarizeEquipmentFromRecs(RECORDS_BY_ORG[code] || []);
 }
 
 function orgStats(code){
@@ -2031,6 +2082,23 @@ function calibBucket(status){
   return "cal_never";
 }
 
+// จำนวนวันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป -> highlight rule:
+// <= 30 วัน (ตัวเลข) => เตือนสีเหลือง, ค่าเป็น "Expired" (ไม่ว่าตัวพิมพ์ใด) => แจ้งเตือนสีแดง
+function calDaysLeftStatus(val){
+  if(val===null || val===undefined || val==="") return null;
+  const s = val.toString().trim();
+  if(/expired/i.test(s)) return "expired";
+  const n = parseInt(s, 10);
+  if(!isNaN(n) && n <= 30) return "warning";
+  return null;
+}
+function calDaysLeftCellHTML(val){
+  const status = calDaysLeftStatus(val);
+  const text = (val===null || val===undefined || val==="") ? "-" : val;
+  const cls = status==="expired" ? "caldays-expired" : (status==="warning" ? "caldays-warning" : "");
+  return `<td class="${cls}">${text}</td>`;
+}
+
 function equipmentImage(name, records){
   const withImg = records.find(r=> r.name===name && r.image);
   return withImg ? withImg.image : null;
@@ -2040,12 +2108,15 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
   const byName = {};
   records.forEach(r=>{
     const key = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
-    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,total:0,recs:[],ageYearsSum:0,ageYearsCount:0};
+    if(!byName[key]) byName[key] = {b15:0,b610:0,b1115:0,b16p:0,cal_done:0,cal_wait:0,cal_never:0,calWarn:0,calExpired:0,total:0,recs:[],ageYearsSum:0,ageYearsCount:0};
     const row = byName[key];
     row.total++;
     row.recs.push(r);
     const ab = ageBucket(r.age); if(ab) row[ab]++;
     row[calibBucket(r.statusCalib)]++;
+    const dstatus = calDaysLeftStatus(r.calDaysLeft);
+    if(dstatus==='warning') row.calWarn++;
+    else if(dstatus==='expired') row.calExpired++;
     if(typeof r.ageYears === 'number' && !isNaN(r.ageYears)){ row.ageYearsSum += r.ageYears; row.ageYearsCount++; }
   });
   const names = Object.keys(byName).sort((a,b)=> byName[b].total-byName[a].total);
@@ -2055,7 +2126,7 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
     <caption>${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</caption>
     <thead>
       <tr class="print-cat-row">
-        <th colspan="${splitPhotoCol?12:11}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
+        <th colspan="${splitPhotoCol?14:13}">${CATEGORY_ICON[category]||"🔧"} ${CATEGORY_LABEL[category]||category}</th>
       </tr>
       <tr>
         ${splitPhotoCol?`<th rowspan="2" class="colPhoto">รูป</th>`:``}
@@ -2064,11 +2135,13 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
         <th rowspan="2" class="colAge">เกณฑ์อายุเฉลี่ย<br>(ปี)</th>
         <th colspan="4">จำนวนเครื่องมือตามเกณฑ์อายุ</th>
         <th colspan="3">สถานะสอบเทียบ</th>
+        <th colspan="2">วันคงเหลือสอบเทียบครั้งถัดไป</th>
         <th rowspan="2" class="colTotal">รวม</th>
       </tr>
       <tr>
         <th>1-5 ปี</th><th>6-10 ปี</th><th>11-15 ปี</th><th>มากกว่า<br>16 ปี</th>
         <th>สอบเทียบ<br>แล้ว</th><th>ไม่เคย<br>สอบเทียบ</th><th>รอสอบ<br>เทียบ</th>
+        <th>ใกล้ครบกำหนด<br>(≤30 วัน)</th><th>หมดอายุ<br>(Expired)</th>
       </tr>
     </thead><tbody>`;
 
@@ -2104,6 +2177,8 @@ function buildAgeCalibTable(category, records, withImages, splitPhotoCol, forceN
       <td class="num">${row.b15||0}</td><td class="num">${row.b610||0}</td>
       <td class="num">${row.b1115||0}</td><td class="num">${row.b16p||0}</td>
       <td class="num">${row.cal_done||0}</td><td class="num">${row.cal_never||0}</td><td class="num">${row.cal_wait||0}</td>
+      <td class="num${row.calWarn?' caldays-warning':''}">${row.calWarn||0}</td>
+      <td class="num${row.calExpired?' caldays-expired':''}">${row.calExpired||0}</td>
       <td class="num colTotal">${row.total}</td>
     </tr>`;
   });
@@ -2436,11 +2511,11 @@ function rawTable(code){
   if(!recs.length) return "";
   let html = `<details class="raw-list"><summary>ดูรายการเครื่องมือรายชิ้นทั้งหมด (${recs.length} รายการ)</summary>
     <div class="raw-table-wrap"><table class="raw">
-    <thead><tr><th>เครื่องมือ</th><th>ประเภท</th><th>ยี่ห้อ/รุ่น</th><th>Serial</th><th>รหัสครุภัณฑ์</th><th>ปีที่ได้มา</th><th>สถานะเครื่องมือ</th><th>การใช้งาน</th></tr></thead><tbody>`;
+    <thead><tr><th>เครื่องมือ</th><th>ประเภท</th><th>ยี่ห้อ/รุ่น</th><th>Serial</th><th>รหัสครุภัณฑ์</th><th>ปีที่ได้มา</th><th>สถานะเครื่องมือ</th><th>การใช้งาน</th><th>วันคงเหลือสอบเทียบ</th></tr></thead><tbody>`;
   recs.forEach(r=>{
     const useTag = r.statusUse==="ใช้งานได้" ? `<span class="tag ok">ใช้งานได้</span>` : (r.statusUse==="ชำรุด" ? `<span class="tag bad">ชำรุด</span>` : (r.statusUse||"-"));
     const brandModel = [r.brand,r.model].filter(Boolean).join(" / ") || "-";
-    html += `<tr><td>${r.name||"-"}</td><td>${r.type||"-"}</td><td>${brandModel}</td><td>${r.serial||"-"}</td><td>${r.assetCode||"-"}</td><td>${r.yearGot||"-"}</td><td>${r.statusEquip||"-"}</td><td>${useTag}</td></tr>`;
+    html += `<tr><td>${r.name||"-"}</td><td>${r.type||"-"}</td><td>${brandModel}</td><td>${r.serial||"-"}</td><td>${r.assetCode||"-"}</td><td>${r.yearGot||"-"}</td><td>${r.statusEquip||"-"}</td><td>${useTag}</td>${calDaysLeftCellHTML(r.calDaysLeft)}</tr>`;
   });
   html += `</tbody></table></div></details>`;
   return html;
@@ -4753,6 +4828,108 @@ function renderOverviewTopBars(filtered){
   topBarList('barTopItems', itemEntries, resolveCssColor('--teal'), chartTypes.topItems);
 }
 
+/* ======================= SUMMARY SECTION (bottom of page) ======================= */
+// Builds: 1) a หน่วยงาน x ประเภทเครื่องมือ pivot table, 2) an accordion of
+// equipment-per-unit, 3) an accordion of units-per-equipment-item.
+// All three read from whatever rows currently pass the dashboard's filters,
+// same source as the equipment-list table above it.
+function orgLabelFor(code){
+  if(!code) return "ไม่ระบุหน่วยงาน";
+  return ORGS[code] ? ORGS[code].label : code;
+}
+
+function renderSummarySection(rows){
+  const pivotEl = document.getElementById('summaryPivotWrap');
+  const byUnitEl = document.getElementById('summaryByUnit');
+  const byItemEl = document.getElementById('summaryByItem');
+  if(!pivotEl || !byUnitEl || !byItemEl) return;
+
+  const mapRecs = buildMapRecords(rows);
+  if(!mapRecs.length){
+    pivotEl.innerHTML = `<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>`;
+    byUnitEl.innerHTML = ""; byItemEl.innerHTML = "";
+    return;
+  }
+
+  // --- 1) Pivot: หน่วยงาน x ประเภทเครื่องมือ ---
+  const cats = [...CATEGORY_ORDER];
+  const extraCats = new Set();
+  const byOrgCat = {};
+  const orgOf = {};
+  mapRecs.forEach(r=>{
+    const label = orgLabelFor(r.org);
+    if(!byOrgCat[label]) byOrgCat[label] = {};
+    const cat = r.type || 'อื่นๆ';
+    if(!CATEGORY_ORDER.includes(cat)) extraCats.add(cat);
+    byOrgCat[label][cat] = (byOrgCat[label][cat]||0) + 1;
+    orgOf[label] = r.org;
+  });
+  const allCats = [...cats, ...[...extraCats].sort()];
+  const orgLabels = Object.keys(byOrgCat).sort((a,b)=>{
+    const oa = orgOf[a], ob = orgOf[b];
+    const ra = ORGS[oa] ? (ORGS[oa].kind==='region' ? ORGS[oa].num : 100+SPECIAL_CODES.indexOf(oa)) : 999;
+    const rb = ORGS[ob] ? (ORGS[ob].kind==='region' ? ORGS[ob].num : 100+SPECIAL_CODES.indexOf(ob)) : 999;
+    return ra - rb;
+  });
+  let pivotHtml = `<div class="summary-table-wrap"><table class="summary-pivot"><thead><tr><th style="text-align:left;">หน่วยงาน</th>${
+    allCats.map(c=>`<th>${CATEGORY_ICON[c]||'🔧'} ${CATEGORY_LABEL[c]||c}</th>`).join('')
+  }<th class="colTotal">รวม</th></tr></thead><tbody>`;
+  const colTotals = allCats.map(()=>0);
+  let grandTotal = 0;
+  orgLabels.forEach(label=>{
+    const data = byOrgCat[label];
+    let rowTotal = 0;
+    const cells = allCats.map((c,i)=>{
+      const v = data[c]||0; rowTotal += v; colTotals[i] += v;
+      return `<td class="num">${v ? fmt(v) : '-'}</td>`;
+    }).join('');
+    grandTotal += rowTotal;
+    pivotHtml += `<tr><td class="orgname">${label}</td>${cells}<td class="num colTotal">${fmt(rowTotal)}</td></tr>`;
+  });
+  pivotHtml += `<tr><td class="orgname" style="font-weight:800;">รวมทั้งหมด</td>${
+    colTotals.map(v=>`<td class="num colTotal">${fmt(v)}</td>`).join('')
+  }<td class="num colTotal">${fmt(grandTotal)}</td></tr>`;
+  pivotHtml += `</tbody></table></div>`;
+  pivotEl.innerHTML = pivotHtml;
+
+  // --- 2) หน่วยงานไหนมีเครื่องมืออะไรบ้าง ---
+  const byOrgRecs = {};
+  mapRecs.forEach(r=>{
+    const label = orgLabelFor(r.org);
+    (byOrgRecs[label] = byOrgRecs[label] || []).push(r);
+    orgOf[label] = r.org;
+  });
+  const byUnitHtml = orgLabels.map(label=>{
+    const items = summarizeEquipmentFromRecs(byOrgRecs[label] || []);
+    if(!items.length) return '';
+    const total = items.reduce((a,b)=>a+b.count,0);
+    return `<details class="summary-unit"><summary><span>${label}</span><span class="count">${fmt(total)} ชิ้น</span></summary>
+      <ul class="summary-list">${items.map(it=>`<li><span>${it.name}</span><span class="n">${fmt(it.count)}</span></li>`).join('')}</ul>
+    </details>`;
+  }).join('');
+  byUnitEl.innerHTML = byUnitHtml || `<div class="empty-state">ไม่พบข้อมูล</div>`;
+
+  // --- 3) เครื่องมือนี้อยู่กับหน่วยงานไหนบ้าง ---
+  const byItem = {};
+  mapRecs.forEach(r=>{
+    const name = r.name || "(ไม่ระบุชื่อเครื่องมือ)";
+    const label = orgLabelFor(r.org);
+    if(!byItem[name]) byItem[name] = {};
+    byItem[name][label] = (byItem[name][label]||0) + 1;
+  });
+  const itemNames = Object.keys(byItem).sort((a,b)=>a.localeCompare(b,'th'));
+  const byItemHtml = itemNames.map(name=>{
+    const orgsMap = byItem[name];
+    const total = Object.values(orgsMap).reduce((a,b)=>a+b,0);
+    const rows = Object.entries(orgsMap).sort((a,b)=>b[1]-a[1])
+      .map(([label,c])=>`<li><span>${label}</span><span class="n">${fmt(c)}</span></li>`).join('');
+    return `<details class="summary-unit"><summary><span>${name}</span><span class="count">${fmt(total)} ชิ้น</span></summary>
+      <ul class="summary-list">${rows}</ul>
+    </details>`;
+  }).join('');
+  byItemEl.innerHTML = byItemHtml || `<div class="empty-state">ไม่พบข้อมูล</div>`;
+}
+
 function refreshAll(){
   const hasData = currentData.length > 0;
   document.getElementById('emptyStateMain').style.display = hasData ? 'none' : 'block';
@@ -4768,6 +4945,7 @@ function refreshAll(){
   renderUsePie(filtered);
   renderCalBar(filtered);
   renderTable(filtered);
+  renderSummarySection(filtered);
   renderActiveFilters();
   syncSelectValues();
   updateYearlyTrendControlsVisibility();
@@ -4812,6 +4990,7 @@ const REV_MAP = {
   'ประเภทเครื่องมือ':'cat','เครื่องมือ':'item','หน่วยงาน':'unit','ปี พ.ศ. ที่ได้มา':'year',
   'อายุของเครื่อง':'age','เกณฑ์อายุของแต่ละเครื่อง':'ageYears','เกณฑ์อายุ':'ageYears',
   'สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
+  'จำนวนวันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป':'calDaysLeft',
   'ละติจูด':'lat','Latitude':'lat','latitude':'lat','lat':'lat',
   'ลองจิจูด':'lng','Longitude':'lng','longitude':'lng','lng':'lng','long':'lng',
   'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
