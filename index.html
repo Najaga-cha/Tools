@@ -307,6 +307,8 @@
     gap:20px;
     position:sticky;
     top:14px;
+    grid-column:1;
+    grid-row:1;
     height:calc(100vh - 28px);
     overflow-y:auto;
     overflow-x:hidden;
@@ -335,19 +337,26 @@
 
   /* Collapse/expand button — a SIBLING of .sidebar (not a child), so it's
      never clipped by the sidebar's own overflow-x:hidden even once that
-     sidebar's width collapses to 0. Positioned absolutely against .app
-     and its "left" is kept in sync with the current sidebar width by JS,
-     the same pattern used by the map panel's own #toggleBtn. */
+     sidebar's width collapses to 0. Placed in the SAME explicit grid cell
+     as the sidebar (col1/row1) so it overlaps at the sidebar's left edge
+     without disturbing the 2-column grid or needing JS to recalculate its
+     horizontal position when the sidebar is resized/collapsed. */
   .app-toggle-btn{
-    /* Locked in place: positioned absolutely against .app (its nearest
-       positioned ancestor) rather than the viewport, and anchored to a
-       constant spot at the sidebar's own left edge. Unlike the old
-       fixed+JS-recalculated approach, this position never depends on
-       the sidebar's current width, so it doesn't drift or jump when
-       the sidebar is resized, collapsed/expanded, or the page scrolls -
-       it always sits in the same spot on the left-hand strip. */
-    position:absolute;
-    top:58px; left:-15px;
+    /* position:sticky (not absolute) so it stays pinned in the viewport
+       as the page scrolls, matching the sidebar's own sticky behavior —
+       previously it was absolutely positioned against .app (a tall,
+       normal-flow container spanning the whole page), so its "top"
+       offset was measured from the very top of the page and it scrolled
+       out of view after a small amount of scrolling, making it
+       impossible to open/close the sidebar once scrolled down to view
+       data further below. */
+    position:sticky;
+    top:58px;
+    grid-column:1;
+    grid-row:1;
+    align-self:start;
+    justify-self:start;
+    margin-left:-15px;
     z-index:60;
     width:30px; height:52px;
     border-radius:10px;
@@ -609,7 +618,7 @@
   }
 
   /* ===== Main ===== */
-  .main{padding:0;}
+  .main{padding:0;grid-column:2;grid-row:1;}
   .topbar{
     display:flex;justify-content:space-between;align-items:center;
     margin-bottom:16px;flex-wrap:wrap;gap:14px;
@@ -1170,7 +1179,7 @@
     vector-effect:non-scaling-stroke;
     opacity:.85;
     cursor:pointer;
-  }#mapSection .pt.hi{fill:var(--map-amber); r:5;}#mapSection #mapStatus{
+  }#mapSection .pt:hover{stroke-width:1.6; opacity:1;}#mapSection .pt.hi{fill:var(--map-amber); r:5;}#mapSection #mapStatus{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     color:var(--map-muted); font-size:13px; background:var(--map-paper);
   }#mapSection /* ===== Zoom controls ===== */
@@ -2317,7 +2326,9 @@ function buildMapRecords(rows){
       usageDaysPerYear: (typeof r.usageDaysPerYear === 'number' && !isNaN(r.usageDaysPerYear)) ? r.usageDaysPerYear : null,
       brand: null, model: null, serial: null, assetCode: null, price: null,
       image: r.img || '',
-      param: null
+      param: null,
+      lat: (typeof r.lat === 'number' && !isNaN(r.lat)) ? r.lat : null,
+      lng: (typeof r.lng === 'number' && !isNaN(r.lng)) ? r.lng : null
     };
   });
 }
@@ -2727,6 +2738,7 @@ function buildGeoMap(gj){
     .text(d=> d.org ? ORGS[d.org].label : (d.feature.properties && Object.values(d.feature.properties)[0]) || "");
 
   renderOrgPoints();
+  renderEquipPoints();
   scheduleDrawLeaders();
 }
 
@@ -2801,6 +2813,29 @@ function renderOrgPoints(){
     .on("click", (ev,d)=>selectOrgOnMap(d.org, ev))
     .append("title")
     .text(d=> `${ORGS[d.org].label} — ${d.th} — เครื่องมือ ${(RECORDS_BY_ORG[d.org]||[]).length} รายการ (ตามตัวกรองปัจจุบัน)`);
+}
+
+// Plots individual equipment items that have their own lat/lng (from the
+// ละติจูด/ลองจิจูด columns) as small dots on the map, on top of the org
+// markers. Sourced from mapRecordsCache, which is already the dashboard's
+// currently-filtered data — so this is exactly "what's on the map updates
+// when a filter is picked", not just the org-level counts/highlighting.
+function renderEquipPoints(){
+  gPoints.selectAll("*").remove();
+  if(mapMode!=="geo" || !projection) return;
+  const pts = (mapRecordsCache||[]).filter(r=> typeof r.lat==="number" && typeof r.lng==="number");
+  gPoints.selectAll("circle")
+    .data(pts)
+    .join("circle")
+    .attr("class","pt")
+    .attr("r", 3)
+    .attr("fill", d=> (ORGS[d.org] && ORGS[d.org].color) || "#20201f")
+    .attr("data-org", d=> d.org || "")
+    .attr("cx", d=>projection([d.lng,d.lat])[0])
+    .attr("cy", d=>projection([d.lng,d.lat])[1])
+    .on("click", (ev,d)=>{ ev.stopPropagation(); if(d.org) selectOrgOnMap(d.org, ev); })
+    .append("title")
+    .text(d=> [d.name, orgLabelFor(d.org), d.statusUse].filter(Boolean).join(" — "));
 }
 
 /* =========================================================
@@ -3630,6 +3665,7 @@ function syncMapFromDashboard(){
   rebuildRecordsByOrg();
   buildLegend();
   renderOrgPoints();
+  renderEquipPoints();
   // The map can only highlight a single org, so it only lights up when exactly
   // one หน่วยงาน is selected; 0 or 2+ selections leave the map unhighlighted.
   const targetCode = (filters.unit && filters.unit.length === 1) ? matchOrgCode(filters.unit[0]) : null;
