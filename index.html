@@ -307,8 +307,6 @@
     gap:20px;
     position:sticky;
     top:14px;
-    grid-column:1;
-    grid-row:1;
     height:calc(100vh - 28px);
     overflow-y:auto;
     overflow-x:hidden;
@@ -337,26 +335,19 @@
 
   /* Collapse/expand button — a SIBLING of .sidebar (not a child), so it's
      never clipped by the sidebar's own overflow-x:hidden even once that
-     sidebar's width collapses to 0. Placed in the SAME explicit grid cell
-     as the sidebar (col1/row1) so it overlaps at the sidebar's left edge
-     without disturbing the 2-column grid or needing JS to recalculate its
-     horizontal position when the sidebar is resized/collapsed. */
+     sidebar's width collapses to 0. Positioned absolutely against .app
+     and its "left" is kept in sync with the current sidebar width by JS,
+     the same pattern used by the map panel's own #toggleBtn. */
   .app-toggle-btn{
-    /* position:sticky (not absolute) so it stays pinned in the viewport
-       as the page scrolls, matching the sidebar's own sticky behavior —
-       previously it was absolutely positioned against .app (a tall,
-       normal-flow container spanning the whole page), so its "top"
-       offset was measured from the very top of the page and it scrolled
-       out of view after a small amount of scrolling, making it
-       impossible to open/close the sidebar once scrolled down to view
-       data further below. */
-    position:sticky;
-    top:58px;
-    grid-column:1;
-    grid-row:1;
-    align-self:start;
-    justify-self:start;
-    margin-left:-15px;
+    /* Locked in place: positioned absolutely against .app (its nearest
+       positioned ancestor) rather than the viewport, and anchored to a
+       constant spot at the sidebar's own left edge. Unlike the old
+       fixed+JS-recalculated approach, this position never depends on
+       the sidebar's current width, so it doesn't drift or jump when
+       the sidebar is resized, collapsed/expanded, or the page scrolls -
+       it always sits in the same spot on the left-hand strip. */
+    position:absolute;
+    top:58px; left:-15px;
     z-index:60;
     width:30px; height:52px;
     border-radius:10px;
@@ -618,7 +609,7 @@
   }
 
   /* ===== Main ===== */
-  .main{padding:0;grid-column:2;grid-row:1;}
+  .main{padding:0;}
   .topbar{
     display:flex;justify-content:space-between;align-items:center;
     margin-bottom:16px;flex-wrap:wrap;gap:14px;
@@ -834,10 +825,12 @@
   .expand-overlay{position:fixed;inset:0;background:rgba(10,25,24,.55);z-index:590;display:none;}
   .expand-overlay.show{display:block;}
   .panel.expanded{
-    position:fixed; inset:16px; z-index:600; overflow:auto;
+    position:fixed; inset:0; z-index:600; overflow:auto;
+    width:100vw; height:100vh; max-width:none;
+    border-radius:0;
     box-shadow:0 24px 70px rgba(0,0,0,.4);
   }
-  @media (max-width:700px){ .panel.expanded{inset:8px;} }
+  @media (max-width:700px){ .panel.expanded{inset:0;} }
 
   .chart-flex{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;}
   .chart-flex.compact{max-width:640px;}
@@ -1179,7 +1172,7 @@
     vector-effect:non-scaling-stroke;
     opacity:.85;
     cursor:pointer;
-  }#mapSection .pt:hover{stroke-width:1.6; opacity:1;}#mapSection .pt.hi{fill:var(--map-amber); r:5;}#mapSection #mapStatus{
+  }#mapSection .pt.hi{fill:var(--map-amber); r:5;}#mapSection #mapStatus{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     color:var(--map-muted); font-size:13px; background:var(--map-paper);
   }#mapSection /* ===== Zoom controls ===== */
@@ -1217,25 +1210,56 @@
      visible; the data rows only fill in once a tool is clicked in
      the equipment list table further down the page. */
   #pdfDockLeft, #pdfDockRight{
-    position:absolute; top:10px; bottom:10px; width:220px;
+    position:absolute; top:10px; bottom:10px; width:270px;
     display:flex; flex-direction:column; gap:8px; overflow-y:auto;
     z-index:12; pointer-events:none;
   }#mapSection #pdfDockLeft{left:10px;}#mapSection #pdfDockRight{right:10px;}#mapSection #pdfDockLeft::-webkit-scrollbar, #mapSection #pdfDockRight::-webkit-scrollbar{width:5px;}#mapSection #pdfDockLeft::-webkit-scrollbar-thumb, #mapSection #pdfDockRight::-webkit-scrollbar-thumb{background:var(--map-line); border-radius:4px;}#mapSection .pdf-office-card{
     pointer-events:auto;
+    position:relative;
     background:var(--map-panel);
     border:1px solid var(--map-line);
     border-radius:8px;
     overflow:auto;
     box-shadow:0 1px 4px rgba(20,25,64,.10);
     flex-shrink:0;
-    resize:both;
+    resize:none;
     min-width:150px;
     min-height:60px;
     max-width:100%;
+  }#mapSection .pdf-office-card .card-resizer{
+    position:absolute; right:0; bottom:0; width:18px; height:18px;
+    cursor:nwse-resize; z-index:6; touch-action:none;
+    background:linear-gradient(135deg, transparent 0 40%, var(--map-line) 40% 52%, transparent 52% 60%, var(--map-line) 60% 72%, transparent 72% 100%);
+  }#mapSection .pdf-office-card .card-resizer:hover, #mapSection .pdf-office-card .card-resizer.active{
+    background:linear-gradient(135deg, transparent 0 40%, var(--map-teal) 40% 52%, transparent 52% 60%, var(--map-teal) 60% 72%, transparent 72% 100%);
   }#mapSection .pdf-office-card table{width:100%; border-collapse:collapse; font-size:9.5px; table-layout:fixed;}#mapSection .pdf-office-card caption{
     caption-side:top; text-align:left; font-weight:700; font-size:10.5px; color:#fff;
     padding:4px 7px; letter-spacing:.2px;
-  }#mapSection .pdf-office-card th{background:var(--soft-tint); color:var(--map-ink); font-weight:700; padding:3px 4px; text-align:center; border-bottom:1px solid var(--map-line); font-size:8.5px; line-height:1.2;}#mapSection .pdf-office-card td{padding:4px; border-top:1px solid var(--map-line); color:var(--map-ink); vertical-align:middle; word-break:break-word;}#mapSection .pdf-office-card td.pdf-org-name{font-weight:700; color:var(--map-teal-deep); font-size:8.5px;}#mapSection .pdf-office-card td.pdf-tool-name{font-weight:600;}#mapSection .pdf-office-card td.pdf-age{font-size:9px; font-weight:600; color:var(--map-ink);}#mapSection .pdf-office-card td.pdf-age .age-line{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:2px 6px; padding:2px 0;}#mapSection .pdf-office-card td.pdf-age .age-line:not(:last-child){border-bottom:1px dashed var(--map-line);}#mapSection .pdf-office-card td.pdf-age .age-label{flex-shrink:1; min-width:0; word-break:break-word;}#mapSection .pdf-office-card td.pdf-age .age-count{display:flex; align-items:baseline; gap:4px; flex-shrink:0;}#mapSection .pdf-office-card td.pdf-age .age-count b{font-weight:800; color:var(--map-teal-deep);}#mapSection .pdf-office-card td.pdf-age .age-broken{font-style:normal; font-weight:700; font-size:8px; color:#fff; background:var(--broken); border-radius:999px; padding:1px 5px; white-space:nowrap;}#mapSection .pdf-office-card td.pdf-photo{text-align:center; width:44px;}#mapSection .pdf-office-card td.pdf-empty{color:var(--map-ink); opacity:.75; font-style:italic; font-size:9.5px; text-align:center;}#mapSection .pdf-office-card .pdf-photo-img{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); background:#F2F4FC; cursor:zoom-in; display:block; margin:0 auto;}#mapSection .pdf-office-card .pdf-photo-fallback{width:34px; height:34px; border-radius:6px; background:var(--soft-tint); color:var(--map-teal); display:flex; align-items:center; justify-content:center; font-size:15px; margin:0 auto;}#mapSection
+  }#mapSection .pdf-office-card th{background:var(--soft-tint); color:var(--map-ink); font-weight:700; padding:3px 4px; text-align:center; border-bottom:1px solid var(--map-line); font-size:8.5px; line-height:1.2; position:relative;}#mapSection .pdf-office-card .col-resizer{position:absolute; top:0; right:-4px; width:8px; height:100%; cursor:col-resize; z-index:5; touch-action:none;}#mapSection .pdf-office-card .col-resizer:hover, #mapSection .pdf-office-card .col-resizer.active{background:var(--map-teal); opacity:.45;}#mapSection .pdf-office-card td{padding:4px; border-top:1px solid var(--map-line); color:var(--map-ink); vertical-align:middle; word-break:break-word;}#mapSection .pdf-office-card td.pdf-org-name{font-weight:700; color:var(--map-teal-deep); font-size:8.5px;}#mapSection .pdf-office-card td.pdf-tool-name{font-weight:600;}#mapSection .pdf-office-card td.pdf-age{font-size:9px; font-weight:600; color:var(--map-ink);}#mapSection .pdf-office-card td.pdf-age .age-line{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:2px 6px; padding:2px 0;}#mapSection .pdf-office-card td.pdf-age .age-line:not(:last-child){border-bottom:1px dashed var(--map-line);}#mapSection .pdf-office-card td.pdf-age .age-label{flex-shrink:1; min-width:0; word-break:break-word;}#mapSection .pdf-office-card td.pdf-age .age-count{display:flex; align-items:baseline; gap:4px; flex-shrink:0;}#mapSection .pdf-office-card td.pdf-age .age-count b{font-weight:800; color:var(--map-teal-deep);}#mapSection .pdf-office-card td.pdf-age .age-broken{font-style:normal; font-weight:700; font-size:8px; color:#fff; background:var(--broken); border-radius:999px; padding:1px 5px; white-space:nowrap;}#mapSection .pdf-office-card td.pdf-photo{text-align:center; width:44px;}#mapSection .pdf-office-card td.pdf-empty{color:var(--map-ink); opacity:.75; font-style:italic; font-size:9.5px; text-align:center;}#mapSection .pdf-office-card .pdf-photo-img{width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--map-line); background:#F2F4FC; cursor:zoom-in; display:block; margin:0 auto;}#mapSection .pdf-office-card .pdf-photo-fallback{width:34px; height:34px; border-radius:6px; background:var(--soft-tint); color:var(--map-teal); display:flex; align-items:center; justify-content:center; font-size:15px; margin:0 auto;}#mapSection{}
+
+  /* ===== Fullscreen (⛶) state: enlarge the docked equipment tables for
+     readability, and pull width back from the "อายุ" column since it grows
+     less than the others do — the extra pixels are better spent on the
+     name/count columns. !important is needed to beat the inline widths
+     that pdfOfficeCardHTML()/startColResize() set directly on the
+     <col> elements. ===== */
+  .panel.expanded#panelMapSection #pdfDockLeft,
+  .panel.expanded#panelMapSection #pdfDockRight{width:420px; overflow-y:auto;}
+  .panel.expanded#panelMapSection #pdfDockLeft::-webkit-scrollbar,
+  .panel.expanded#panelMapSection #pdfDockRight::-webkit-scrollbar{width:10px;}
+  .panel.expanded#panelMapSection #pdfDockLeft::-webkit-scrollbar-thumb,
+  .panel.expanded#panelMapSection #pdfDockRight::-webkit-scrollbar-thumb{background:var(--map-line); border-radius:6px;}
+  .panel.expanded#panelMapSection .pdf-office-card{min-width:260px;}
+  .panel.expanded#panelMapSection .pdf-office-card colgroup col:nth-child(1){width:170px !important;}
+  .panel.expanded#panelMapSection .pdf-office-card colgroup col:nth-child(2){width:74px !important;}
+  .panel.expanded#panelMapSection .pdf-office-card colgroup col:nth-child(3){width:74px !important;}
+  .panel.expanded#panelMapSection .pdf-office-card colgroup col:nth-child(4){width:46px !important;}
+  .panel.expanded#panelMapSection .pdf-office-card th{white-space:nowrap;}
+  .panel.expanded#panelMapSection .pdf-office-card caption{padding:6px 9px;}
+  .panel.expanded#panelMapSection .pdf-office-card th{padding:5px 6px;}
+  .panel.expanded#panelMapSection .pdf-office-card td{padding:6px 8px;}
+  .panel.expanded#panelMapSection .pdf-office-card .pdf-photo-img,
+  .panel.expanded#panelMapSection .pdf-office-card .pdf-photo-fallback{width:40px; height:40px;}
 
   #pdfDockBottom{margin:0 22px 0 56px;}#mapSection #pdfDockBottom .pdf-office-card{margin-top:10px;}#mapSection #pdfDockBottom table{font-size:10.5px;}#mapSection #pdfDockBottom caption{font-size:12px; padding:6px 10px;}#mapSection #pdfDockBottom th, #mapSection #pdfDockBottom td{padding:6px 8px;}#mapSection #pdfDockBottom td.pdf-tool-name{max-width:none;}#mapSection
 
@@ -1295,7 +1319,7 @@
 
   @media (max-width: 980px){
     #pdfDockLeft, #pdfDockRight{position:static; width:100%; height:auto; max-height:none; overflow:visible; flex-direction:row; flex-wrap:wrap;}
-    #pdfDockLeft .pdf-office-card, #pdfDockRight .pdf-office-card{flex:1 1 150px;}
+    #pdfDockLeft .pdf-office-card, #pdfDockRight .pdf-office-card{flex:1 1 272px;}
     #mapSection #equipCatalog{width:100%; height:220px; border-left:none; border-top:1px solid var(--map-line);}
     #mapSection #equipCatalogResizer{display:none;}
     #mapSection #equipCatalog .cat-list{display:flex; flex-wrap:wrap; gap:4px;}
@@ -1451,7 +1475,7 @@
 #mapSection #sidebar{height:100%;}
 #mapSection #main{height:100%;}
 #mapSection #toggleBtn{position:absolute;}
-.panel.expanded#panelMapSection #mapSection{height:calc(100vh - 190px);}
+.panel.expanded#panelMapSection #mapSection{height:calc(100vh - 175px); overflow:visible;}
 /* Left panel (หน่วยงานภาคสนาม / รายละเอียดหน่วยงานที่เลือก) removed from view —
    map area now takes the full panel width. Elements stay in the DOM (just
    hidden) so the existing detail-pane / export-PDF / resize JS still has
@@ -2326,9 +2350,7 @@ function buildMapRecords(rows){
       usageDaysPerYear: (typeof r.usageDaysPerYear === 'number' && !isNaN(r.usageDaysPerYear)) ? r.usageDaysPerYear : null,
       brand: null, model: null, serial: null, assetCode: null, price: null,
       image: r.img || '',
-      param: null,
-      lat: (typeof r.lat === 'number' && !isNaN(r.lat)) ? r.lat : null,
-      lng: (typeof r.lng === 'number' && !isNaN(r.lng)) ? r.lng : null
+      param: null
     };
   });
 }
@@ -2738,7 +2760,6 @@ function buildGeoMap(gj){
     .text(d=> d.org ? ORGS[d.org].label : (d.feature.properties && Object.values(d.feature.properties)[0]) || "");
 
   renderOrgPoints();
-  renderEquipPoints();
   scheduleDrawLeaders();
 }
 
@@ -2813,29 +2834,6 @@ function renderOrgPoints(){
     .on("click", (ev,d)=>selectOrgOnMap(d.org, ev))
     .append("title")
     .text(d=> `${ORGS[d.org].label} — ${d.th} — เครื่องมือ ${(RECORDS_BY_ORG[d.org]||[]).length} รายการ (ตามตัวกรองปัจจุบัน)`);
-}
-
-// Plots individual equipment items that have their own lat/lng (from the
-// ละติจูด/ลองจิจูด columns) as small dots on the map, on top of the org
-// markers. Sourced from mapRecordsCache, which is already the dashboard's
-// currently-filtered data — so this is exactly "what's on the map updates
-// when a filter is picked", not just the org-level counts/highlighting.
-function renderEquipPoints(){
-  gPoints.selectAll("*").remove();
-  if(mapMode!=="geo" || !projection) return;
-  const pts = (mapRecordsCache||[]).filter(r=> typeof r.lat==="number" && typeof r.lng==="number");
-  gPoints.selectAll("circle")
-    .data(pts)
-    .join("circle")
-    .attr("class","pt")
-    .attr("r", 3)
-    .attr("fill", d=> (ORGS[d.org] && ORGS[d.org].color) || "#20201f")
-    .attr("data-org", d=> d.org || "")
-    .attr("cx", d=>projection([d.lng,d.lat])[0])
-    .attr("cy", d=>projection([d.lng,d.lat])[1])
-    .on("click", (ev,d)=>{ ev.stopPropagation(); if(d.org) selectOrgOnMap(d.org, ev); })
-    .append("title")
-    .text(d=> [d.name, orgLabelFor(d.org), d.statusUse].filter(Boolean).join(" — "));
 }
 
 /* =========================================================
@@ -3283,6 +3281,7 @@ function exportMapAndTablesToPDF(){
     return h;
   }
   const MIN_SCALE = 0.4;
+  const MAX_SCALE = 2.2;
   let scale = 1;
   let prevH = null;
   for(let i=0; i<20; i++){
@@ -3304,6 +3303,27 @@ function exportMapAndTablesToPDF(){
     // small safety margin so it converges instead of hovering just over
     // the edge from rounding.
     scale = Math.max(MIN_SCALE, scale * (availablePx / h) * 0.97);
+  }
+  // ===== Grow to fill the page when there's room to spare =====
+  // The loop above only ever shrinks. When just a few หน่วยงาน/เครื่องมือ are
+  // selected, the dock content is much shorter than a full page and used to
+  // print tiny (scale still 1) with a lot of blank paper below — exactly
+  // what's shown in the screenshot the person sent. Mirror the shrink loop
+  // but multiply the scale UP toward the same target ratio, capped at
+  // MAX_SCALE so text doesn't blow up absurdly large for a single card.
+  prevH = null;
+  for(let i=0; i<20; i++){
+    printArea.style.setProperty('--pdf-scale', String(scale));
+    const h = measuredHeightPx();
+    if(h >= availablePx * 0.97 || scale >= MAX_SCALE) break;
+    // Same bail-out idea as the shrink loop: if growing the scale barely
+    // grew the measured height, something other than the card content
+    // (e.g. the map's own fixed size) is the real bottleneck — stop
+    // instead of cranking scale all the way to MAX_SCALE for no visible
+    // benefit.
+    if(prevH !== null && (h - prevH) < prevH * 0.02) break;
+    prevH = h;
+    scale = Math.min(MAX_SCALE, scale * (availablePx / h) * 0.97);
   }
   if(header) header.style.display = prevHeaderDisplay;
 
@@ -3576,7 +3596,7 @@ function selectOrgOnMap(code, evt){
 // Redraw whenever anything that could move the map markers or the dock
 // cards happens: window resize, the map panel's own size (sidebar/
 // equipment-catalog resizers), each dock card being manually resized
-// (they have CSS resize:both now), and scrolling the dock columns.
+// (they have a draggable resize grip now), and scrolling the dock columns.
 window.addEventListener("resize", scheduleDrawLeaders);
 new ResizeObserver(scheduleDrawLeaders).observe(document.getElementById("mapWrap"));
 ["pdfDockLeft","pdfDockRight"].forEach(id=>{
@@ -3665,7 +3685,6 @@ function syncMapFromDashboard(){
   rebuildRecordsByOrg();
   buildLegend();
   renderOrgPoints();
-  renderEquipPoints();
   // The map can only highlight a single org, so it only lights up when exactly
   // one หน่วยงาน is selected; 0 or 2+ selections leave the map unhighlighted.
   const targetCode = (filters.unit && filters.unit.length === 1) ? matchOrgCode(filters.unit[0]) : null;
@@ -3687,6 +3706,70 @@ function syncMapFromDashboard(){
    ========================================================= */
 function pdfOfficeDomId(code){ return "pdfOff_" + code.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g,""); }
 
+// Lets a person drag the little grip on the right edge of a table header
+// cell to widen/narrow just that one column (colIndex), e.g. in the small
+// per-office popup tables docked around the map. Only that column's <col>
+// width changes — the others stay put — so someone can, say, drag "อายุ"
+// wider without the "จำนวนที่มี" / "จำนวนที่ใช้ได้" columns moving at all.
+function startColResize(e, colIndex){
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  const table = handle.closest("table");
+  const colgroup = table && table.querySelector("colgroup");
+  const col = colgroup && colgroup.children[colIndex];
+  if(!col) return;
+  const startX = e.clientX;
+  const startWidth = col.getBoundingClientRect().width;
+  handle.classList.add("active");
+  handle.setPointerCapture && handle.setPointerCapture(e.pointerId);
+  function onMove(ev){
+    const delta = ev.clientX - startX;
+    col.style.width = Math.max(28, Math.round(startWidth + delta)) + "px";
+  }
+  function onUp(){
+    handle.classList.remove("active");
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+  }
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
+}
+
+// Lets a person drag the grip in the bottom-right corner of a whole
+// per-office popup card to make the entire box bigger/smaller (not just one
+// column), so cramped data — several tools, long age lists, etc. — gets more
+// breathing room. Works with touch as well as mouse (unlike the plain CSS
+// "resize:both" already on the card, which most touch browsers ignore).
+function startCardResize(e){
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  const card = handle.closest(".pdf-office-card");
+  if(!card) return;
+  const startX = e.clientX, startY = e.clientY;
+  const rect = card.getBoundingClientRect();
+  const startW = rect.width, startH = rect.height;
+  // Pin the card to a fixed size (instead of letting the flex layout keep
+  // stretching/shrinking it) so the dragged size actually sticks.
+  card.style.flex = "0 0 auto";
+  handle.classList.add("active");
+  handle.setPointerCapture && handle.setPointerCapture(e.pointerId);
+  function onMove(ev){
+    const w = Math.max(150, Math.round(startW + (ev.clientX - startX)));
+    const h = Math.max(60, Math.round(startH + (ev.clientY - startY)));
+    card.style.width = w + "px";
+    card.style.height = h + "px";
+  }
+  function onUp(){
+    handle.classList.remove("active");
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+  }
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
+}
+
 // Finds a photo for this tool within an org's records (falls back to a
 // generic icon when no record has an image URL).
 function pdfPhotoCellHTML(recs){
@@ -3700,15 +3783,27 @@ function pdfPhotoCellHTML(recs){
 function pdfOfficeCardHTML(code){
   const org = ORGS[code];
   const color = org.color || "#5F6693";
+  // Column widths are plain px (not %) so each column can be dragged wider
+  // independently (see startColResize below) instead of all four always
+  // scaling together in fixed proportion. "เครื่องมือ" (tool name) gets the
+  // most room since names are usually the longest text in the row; "อายุ"
+  // is kept narrower by default — anyone with several long age lists for
+  // one tool can still drag it wider themselves via its column handle.
   return `<div class="pdf-office-card" id="${pdfOfficeDomId(code)}" data-org-code="${code}" title="${org.label}">
     <table>
       <colgroup>
-        <col style="width:28%;"><col style="width:14%;"><col style="width:14%;"><col style="width:44%;">
+        <col style="width:128px;"><col style="width:40px;"><col style="width:40px;"><col style="width:58px;">
       </colgroup>
       <caption style="background:${color};">${code}</caption>
-      <thead><tr><th>เครื่องมือ</th><th>จำนวนที่มี</th><th>จำนวนที่ใช้ได้</th><th>อายุ</th></tr></thead>
+      <thead><tr>
+        <th>เครื่องมือ<span class="col-resizer" onpointerdown="startColResize(event,0)"></span></th>
+        <th>จำนวนที่มี<span class="col-resizer" onpointerdown="startColResize(event,1)"></span></th>
+        <th>จำนวนที่ใช้ได้<span class="col-resizer" onpointerdown="startColResize(event,2)"></span></th>
+        <th>อายุ<span class="col-resizer" onpointerdown="startColResize(event,3)"></span></th>
+      </tr></thead>
       <tbody><tr><td colspan="4" class="pdf-empty">คลิกเครื่องมือด้านขวาเพื่อแสดงข้อมูล</td></tr></tbody>
     </table>
+    <span class="card-resizer" onpointerdown="startCardResize(event)" title="ลากเพื่อขยาย/ย่อกล่องนี้"></span>
   </div>`;
 }
 
@@ -3857,7 +3952,7 @@ function buildPdfDockSkeleton(){
   // column too — same vertical name+photo card style as the region offices.
   right.innerHTML = REGION_CODES.slice(half).concat(SPECIAL_CODES).map(pdfOfficeCardHTML).join("");
   pdfDockBuilt = true;
-  // Each card can be manually resized (CSS resize:both) — watch them all so
+  // Each card can be manually resized (drag its corner grip) — watch them all so
   // the leader lines re-anchor immediately when a user drags one bigger.
   const cardObserver = new ResizeObserver(scheduleDrawLeaders);
   left.querySelectorAll(".pdf-office-card").forEach(c=>cardObserver.observe(c));
