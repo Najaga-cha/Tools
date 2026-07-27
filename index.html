@@ -1091,6 +1091,9 @@
   #toolTableBody table.eq2 td.colTotal, #toolTableBody table.eq2 th.colTotal{background:#EFF2FC; font-weight:800;}
   #toolTableBody table.eq2 td.colTool{min-width:150px;}
   #toolTableBody table.eq2 td.colUse{min-width:180px; color:var(--map-muted); font-size:10.5px; line-height:1.4;}
+  #toolTableBody table.eq2.item-list{table-layout:fixed;}
+  #toolTableBody table.eq2.item-list td.colTool, #toolTableBody table.eq2.item-list td.colUse{min-width:0;}
+  #toolTableBody table.eq2.item-list td, #toolTableBody table.eq2.item-list th{word-break:break-word; overflow-wrap:anywhere;}
   #toolTableBody table.eq2 tbody tr{cursor:pointer;}
   #toolTableBody table.eq2 tbody tr:hover td{background:var(--teal-tint);}
   #toolTableBody table.eq2 tbody tr.sel td{background:var(--teal-tint); box-shadow:inset 0 0 0 1px var(--teal);}
@@ -2348,7 +2351,7 @@ function buildMapRecords(rows){
       statusUse: r.use || null,
       calDaysLeft: (r.calDaysLeft===undefined || r.calDaysLeft===null || r.calDaysLeft==='') ? null : r.calDaysLeft,
       usageDaysPerYear: (typeof r.usageDaysPerYear === 'number' && !isNaN(r.usageDaysPerYear)) ? r.usageDaysPerYear : null,
-      brand: null, model: null, serial: null, assetCode: null, price: null,
+      brand: null, model: null, serial: null, assetCode: r.assetCode || null, price: null,
       image: r.img || '',
       param: null
     };
@@ -2473,6 +2476,14 @@ function calDaysLeftStatus(val){
   const n = parseInt(s, 10);
   if(!isNaN(n) && n <= 30) return "warning";
   return null;
+}
+// ใช้กับแท็บ "⏳ รอสอบเทียบ" — เครื่องมือที่ต้องให้ความสนใจเรื่องสอบเทียบ
+// รวมทั้งที่ยัง "รอสอบเทียบ" (สถานะสอบเทียบ), ที่ "หมดอายุ" และที่ "ใกล้ครบกำหนด"
+// (วันคงเหลือสอบเทียบ <= 30 วัน)
+function isPendingOrExpiredCalib(r){
+  if(calibBucket(r.statusCalib) === "cal_wait") return true;
+  const dstatus = calDaysLeftStatus(r.calDaysLeft);
+  return dstatus === "expired" || dstatus === "warning";
 }
 // Per-instrument cell (raw table): plain text for normal values, a small
 // coloured chip only for the values that actually need attention — avoids
@@ -4237,7 +4248,7 @@ const CHART_TYPE_OPTIONS = {
   catPie: [ {v:'pie', l:'วงกลม'}, {v:'donut', l:'โดนัท'}, {v:'bar', l:'แท่งแนวนอน'} ],
   calBar: [ {v:'grouped', l:'แท่งเทียบ'}, {v:'total', l:'แท่งรวม (ง่ายสุด)'} ],
   ageBar: [ {v:'grouped', l:'แท่งเทียบ'}, {v:'total', l:'แท่งรวม (ง่ายสุด)'} ],
-  toolList: [ {v:'grouped', l:'📊 แบบสรุปรวม'}, {v:'items', l:'🔧 แบบรายชิ้น'} ]
+  toolList: [ {v:'grouped', l:'📊 แบบสรุปรวม'}, {v:'items', l:'🔧 แบบรายชิ้น'}, {v:'pending', l:'⏳ รอสอบเทียบ'} ]
 };
 
 function initChartSwitchers(){
@@ -5296,9 +5307,21 @@ function itemListTable(recs){
   return cats.map(c=>{
     const items = byCat[c];
     let html = `<div class="eq2-wrap"><table class="eq2 item-list">
+      <colgroup>
+        <col style="width:19%">
+        <col style="width:12%">
+        <col style="width:7%">
+        <col style="width:9%">
+        <col style="width:12%">
+        <col style="width:11%">
+        <col style="width:8%">
+        <col style="width:11%">
+        <col style="width:11%">
+      </colgroup>
       <caption>${CATEGORY_ICON[c]||"🔧"} ${CATEGORY_LABEL[c]||c} <span class="cap-count">(${fmt(items.length)} ชิ้น)</span></caption>
       <thead><tr>
         <th class="colTool">เครื่องมือ</th>
+        <th>รหัสครุภัณฑ์</th>
         <th>ปีที่ได้มา</th>
         <th>เกณฑ์อายุ</th>
         <th>สถานะเครื่องมือ</th>
@@ -5311,6 +5334,7 @@ function itemListTable(recs){
       const useTag = r.statusUse==="ใช้งานได้" ? `<span class="tag ok">ใช้งานได้</span>` : (r.statusUse==="ชำรุด" ? `<span class="tag bad">ชำรุด</span>` : (r.statusUse||"-"));
       html += `<tr>
         <td class="colTool"><div class="eq-tool-cell eq-tool-cell-noimg"><span>${r.name||"-"}</span></div></td>
+        <td>${r.assetCode||"-"}</td>
         <td class="num">${r.yearGot||"-"}</td>
         <td>${r.age||"-"}</td>
         <td>${r.statusEquip||"-"}</td>
@@ -5333,14 +5357,18 @@ function renderTable(filtered){
     const q = tableSearchText.toLowerCase();
     rows = rows.filter(r => (r.item||'').toLowerCase().includes(q));
   }
+  const isPendingView = chartTypes.toolList === 'pending';
+  if(isPendingView){
+    rows = rows.filter(isPendingOrExpiredCalib);
+  }
   if(!rows.length){
-    container.innerHTML = `<div class="empty-state">ไม่พบข้อมูลที่ตรงกับตัวกรอง</div>`;
+    container.innerHTML = `<div class="empty-state">${isPendingView ? 'ไม่พบเครื่องมือที่รอสอบเทียบ ใกล้ครบกำหนด หรือหมดอายุสอบเทียบตามตัวกรองปัจจุบัน' : 'ไม่พบข้อมูลที่ตรงกับตัวกรอง'}</div>`;
     if(exportBtn) exportBtn.disabled = true;
     return;
   }
   if(exportBtn) exportBtn.disabled = false;
   const { byOrg, orderedCodes } = groupToolRowsByOrg(rows);
-  const isItemView = chartTypes.toolList === 'items';
+  const isItemView = chartTypes.toolList === 'items' || isPendingView;
 
   container.innerHTML = orderedCodes.map(code=>{
     const recs = byOrg[code];
@@ -5365,6 +5393,9 @@ function exportToolListToPDF(){
     const q = tableSearchText.toLowerCase();
     rows = rows.filter(r => (r.item||'').toLowerCase().includes(q));
   }
+  if(chartTypes.toolList === 'pending'){
+    rows = rows.filter(isPendingOrExpiredCalib);
+  }
   if(!rows.length) return;
 
   const printArea = document.getElementById('printArea');
@@ -5378,7 +5409,7 @@ function exportToolListToPDF(){
   const { mapRecs, byOrg, orderedCodes } = groupToolRowsByOrg(rows);
   const now = new Date();
   const dateStr = now.toLocaleDateString('th-TH', {year:'numeric', month:'long', day:'numeric'});
-  const isItemView = chartTypes.toolList === 'items';
+  const isItemView = chartTypes.toolList === 'items' || chartTypes.toolList === 'pending';
 
   const orgBlocks = orderedCodes.map((code, i)=>{
     const recs = byOrg[code];
@@ -6285,6 +6316,9 @@ const REV_MAP = {
   'สถานะเครื่องมือ':'cond','สถานะสอบเทียบ':'cal','สถานะการใช้งาน':'use',
   'จำนวนวันคงเหลือที่จะต้องสอบเทียบครั้งถัดไป':'calDaysLeft',
   'จำนวนวันในการใช้งานต่อปี':'usageDaysPerYear',
+  'รหัสครุภัณฑ์':'assetCode','เลขครุภัณฑ์':'assetCode','รหัสครุภัณฑ':'assetCode',
+  'หมายเลขครุภัณฑ์':'assetCode','เลขที่ครุภัณฑ์':'assetCode',
+  'Asset Code':'assetCode','AssetCode':'assetCode','asset_code':'assetCode','assetCode':'assetCode',
   'ละติจูด':'lat','Latitude':'lat','latitude':'lat','lat':'lat',
   'ลองจิจูด':'lng','Longitude':'lng','longitude':'lng','lng':'lng','long':'lng',
   'รูปภาพ':'img','ภาพเครื่องมือ':'img','ภาพ':'img','ลิงก์รูปภาพ':'img','URLรูปภาพ':'img','Image':'img','image':'img','img':'img'
