@@ -1767,9 +1767,6 @@
   }
 
 </style>
-<!-- ใช้สำหรับปุ่ม "บันทึกเป็น PDF" (บันทึกไฟล์ PDF ได้ทันทีแทนการเปิดหน้าต่างสั่งพิมพ์)
-     หากโหลดไม่สำเร็จ (เช่น ไม่มีอินเทอร์เน็ต) ระบบจะสลับไปใช้หน้าต่างสั่งพิมพ์แบบเดิมโดยอัตโนมัติ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="frame">
@@ -2144,8 +2141,8 @@
             <button type="button" class="list-pdf-btn list-xlsx-btn" id="exportListExcelBtn" title="ส่งออกรายการเครื่องมือนี้เป็นไฟล์ Excel" disabled>
               <span class="icon">📊</span><span class="label">ส่งออก Excel</span>
             </button>
-            <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็นไฟล์ PDF" disabled>
-              <span class="icon">📄</span><span class="label">บันทึกเป็น PDF</span>
+            <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็น PDF หรือสั่งพิมพ์" disabled>
+              <span class="icon">🖨️</span><span class="label">บันทึก/พิมพ์ PDF</span>
             </button>
           </div>
         </div>
@@ -5403,24 +5400,10 @@ function renderTable(filtered){
 // outside of an actual print job). Every selector inside that block is
 // scoped under #printArea, so applying them globally is safe — they
 // can't leak out and affect the rest of the on-screen dashboard.
-function extractPrintCSSText(){
-  let css = '';
-  for(const sheet of document.styleSheets){
-    let rules;
-    try{ rules = sheet.cssRules; }catch(e){ continue; }
-    if(!rules) continue;
-    for(const rule of rules){
-      try{
-        if(rule.type === CSSRule.MEDIA_RULE && rule.media && /print/i.test(rule.media.mediaText)){
-          for(const inner of rule.cssRules) css += inner.cssText + '\n';
-        }
-      }catch(e){ /* ignore rules we can't read (e.g. cross-origin sheets) */ }
-    }
-  }
-  return css;
-}
+function exportToolListToPDF(){
+  const exportBtn = document.getElementById('exportListPdfBtn');
+  if(exportBtn && exportBtn.disabled) return;
 
-function buildToolListPrintArea(){
   let rows = applyFilters(currentData);
   if(tableSearchText){
     const q = tableSearchText.toLowerCase();
@@ -5429,11 +5412,12 @@ function buildToolListPrintArea(){
   if(chartTypes.toolList === 'pending'){
     rows = rows.filter(isPendingOrExpiredCalib);
   }
-  if(!rows.length) return null;
+  if(!rows.length) return;
 
   const printArea = document.getElementById('printArea');
-  // printArea must be a direct child of <body> — see exportDetailToPDF —
-  // so hidden ancestors don't push the content down onto blank pages.
+  // Same reasoning as exportDetailToPDF: printArea must be a direct child
+  // of <body> before window.print() so hidden ancestors don't push the
+  // printed content down onto blank leading pages.
   if(printArea.parentElement !== document.body){
     document.body.appendChild(printArea);
   }
@@ -5468,62 +5452,7 @@ function buildToolListPrintArea(){
   if(mapRecs.length > 600) printArea.classList.add('print-density-3');
   else if(mapRecs.length > 200) printArea.classList.add('print-density-2');
 
-  return printArea;
-}
-
-// Saves the full equipment-list panel straight to a PDF file (no print
-// dialog). Uses html2pdf.js — loaded from a CDN in <head> — to render
-// #printArea with its normal print styling and download it directly.
-// If that library couldn't load (e.g. no internet connection), this
-// quietly falls back to the old window.print() flow instead.
-async function exportToolListToPDF(){
-  const exportBtn = document.getElementById('exportListPdfBtn');
-  if(exportBtn && exportBtn.disabled) return;
-
-  const printArea = buildToolListPrintArea();
-  if(!printArea) return;
-
-  if(typeof html2pdf === 'undefined'){
-    window.print();
-    return;
-  }
-
-  const label = exportBtn ? exportBtn.querySelector('.label') : null;
-  const origLabel = label ? label.textContent : '';
-  if(exportBtn){ exportBtn.disabled = true; if(label) label.textContent = 'กำลังบันทึก PDF…'; }
-
-  // Temporarily apply the print-only styling and give printArea a fixed
-  // width matching the printed A4-landscape page (297mm minus 8mm side
-  // margins), so the captured layout matches what actually prints.
-  const styleTag = document.createElement('style');
-  styleTag.textContent = extractPrintCSSText();
-  document.head.appendChild(styleTag);
-  const prevDisplay = printArea.style.display;
-  const prevWidth = printArea.style.width;
-  printArea.style.display = 'block';
-  printArea.style.width = '281mm';
-
-  const now = new Date();
-  const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-
-  try{
-    await html2pdf().set({
-      margin: 0,
-      filename: `รายการเครื่องมือ-${fileDate}.pdf`,
-      image: { type:'jpeg', quality:0.95 },
-      html2canvas: { scale:2, useCORS:true, backgroundColor:'#ffffff' },
-      jsPDF: { unit:'mm', format:'a4', orientation:'landscape' },
-      pagebreak: { mode:['css','legacy'] }
-    }).from(printArea).save();
-  }catch(err){
-    console.error('บันทึก PDF ไม่สำเร็จ กำลังสลับไปใช้หน้าต่างสั่งพิมพ์แทน', err);
-    window.print();
-  }finally{
-    styleTag.remove();
-    printArea.style.display = prevDisplay;
-    printArea.style.width = prevWidth;
-    if(exportBtn){ exportBtn.disabled = false; if(label) label.textContent = origLabel || 'บันทึกเป็น PDF'; }
-  }
+  window.print();
 }
 document.getElementById('exportListPdfBtn').addEventListener('click', exportToolListToPDF);
 
