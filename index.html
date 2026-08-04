@@ -3231,6 +3231,31 @@ function saveElementAsPDF(el, filename, orientation, scale){
   }).from(el).save().then(cleanup, err=>{ cleanup(); throw err; });
 }
 
+// Drives the browser's own print pipeline instead of html2canvas/html2pdf.js
+// (see the notes above saveElementAsPDF for why: html2canvas silently
+// produces a blank capture on this dashboard, while window.print() renders
+// the same #printArea markup correctly). Setting document.title first is a
+// low-cost hint most browsers pick up as the suggested filename when the
+// person chooses "Save as PDF" as the print destination; there's no
+// standards-backed way to name a browser-generated PDF from script, so this
+// is the closest a page can get to it.
+function printWithSuggestedFilename(filename){
+  const prevTitle = document.title;
+  document.title = filename.replace(/\.pdf$/i, '');
+  let restored = false;
+  const restore = ()=>{
+    if(restored) return;
+    restored = true;
+    document.title = prevTitle;
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  window.print();
+  // Fallback in case 'afterprint' never fires (some browsers/print-preview
+  // flows skip it, e.g. when the user cancels the dialog a certain way).
+  setTimeout(restore, 5000);
+}
+
 function exportDetailToPDF(mode){
   if(!selected) return;
   const printArea = document.getElementById("printArea");
@@ -3281,10 +3306,7 @@ function exportDetailToPDF(mode){
 
   if(mode === "save"){
     const orgLabel = org ? org.label : selected;
-    return saveElementAsPDF(printArea, `รายละเอียด-${orgLabel}.pdf`).catch(err=>{
-      console.error(err);
-      alert("สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-    });
+    printWithSuggestedFilename(`รายละเอียด-${orgLabel}.pdf`);
   } else {
     window.print();
   }
@@ -3498,10 +3520,7 @@ function exportMapAndTablesToPDF(mode){
   printArea.style.setProperty('--pdf-scale', String(scale));
 
   if(mode === "save"){
-    return saveElementAsPDF(printArea, `แผนที่เครื่องมือ.pdf`).catch(err=>{
-      console.error(err);
-      alert("สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-    });
+    printWithSuggestedFilename(`แผนที่เครื่องมือ.pdf`);
   } else {
     window.print();
   }
@@ -5611,55 +5630,21 @@ function exportToolListToPDF(mode){
     else if(mapRecs.length > 200) printArea.classList.add('print-density-2');
   };
 
+  // NOTE: this used to render via saveElementAsPDF (html2canvas rasterises
+  // the whole area to a canvas, then html2pdf.js slices that into pages).
+  // That path came back completely blank on this report even after
+  // splitting it into small batches, which rules out the canvas-size
+  // limit as the cause — something about how html2canvas clones/rasterises
+  // this specific page's content is failing silently. The browser's own
+  // print pipeline (window.print → "Save as PDF" in the print dialog)
+  // renders the exact same #printArea markup correctly, so "save" now
+  // just drives that instead of html2canvas. Setting document.title first
+  // makes most browsers pre-fill that as the suggested filename in the
+  // print dialog's Save dialog.
+  fillPrintArea(orderedCodes, '');
   if(mode === "save"){
-    // saveElementAsPDF rasterises the whole exported area into ONE canvas
-    // before slicing it into PDF pages. Browsers cap how tall a single
-    // canvas can be, and the full equipment list can run to 50-100+ pages
-    // — past that cap html2canvas silently hands back a blank canvas,
-    // which is exactly why "save PDF" on the complete list used to come
-    // out as an empty file (this is a long-documented html2pdf.js/
-    // html2canvas limitation, not something fixable via the scale option
-    // alone — lowering scale only delays the point of failure).
-    // window.print() below doesn't rasterise anything, so it was never
-    // affected. The fix here: split long lists into several smaller PDF
-    // files, each comfortably under the size that trips the bug. Batching
-    // by organization is safe because every org already forces its own
-    // page (print-org-page-start), so a batch boundary never splits a
-    // table awkwardly.
-    const ROWS_PER_BATCH = 150; // conservative row budget per PDF file
-    const batches = [];
-    let current = [], currentRows = 0;
-    orderedCodes.forEach(code=>{
-      const n = (byOrg[code]||[]).length;
-      if(current.length && currentRows + n > ROWS_PER_BATCH){
-        batches.push(current);
-        current = [];
-        currentRows = 0;
-      }
-      current.push(code);
-      currentRows += n;
-    });
-    if(current.length) batches.push(current);
-
-    let chain = Promise.resolve();
-    batches.forEach((codes, batchIdx)=>{
-      chain = chain.then(()=>{
-        const partLabel = batches.length > 1 ? ` — ส่วนที่ ${batchIdx+1}/${batches.length}` : '';
-        fillPrintArea(codes, partLabel);
-        const suffix = batches.length > 1 ? `-ส่วนที่${batchIdx+1}` : '';
-        // Lower raster scale here than the other two exports: even a
-        // single batch can run tens of pages, and scale:2 on that much
-        // content risks running the browser tab out of memory. scale:1.5
-        // still prints legibly.
-        return saveElementAsPDF(printArea, `รายการเครื่องมือ-${fileDate}${suffix}.pdf`, "landscape", 1.5);
-      });
-    });
-    return chain.catch(err=>{
-      console.error(err);
-      alert("สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-    });
+    printWithSuggestedFilename(`รายการเครื่องมือ-${fileDate}.pdf`);
   } else {
-    fillPrintArea(orderedCodes, '');
     window.print();
   }
 }
