@@ -823,6 +823,9 @@
   .list-pdf-btn .icon{font-size:14px;}
   .list-pdf-btn.list-xlsx-btn{background:#1D6F42;}
   .list-pdf-btn.list-xlsx-btn:hover{background:#155A34;}
+  .list-pdf-btn.list-print-btn{background:#fff; color:var(--teal); border:1.5px solid var(--teal);}
+  .list-pdf-btn.list-print-btn:hover{background:var(--surface);}
+  .list-pdf-btn.list-print-btn:disabled{background:#fff; color:#B9BFE0; border-color:#DCDFF3;}
   [data-mobile="on"] .list-pdf-btn .label{display:none;}
   [data-mobile="on"] .list-pdf-btn{padding:8px;border-radius:10px;}
   .expand-overlay{position:fixed;inset:0;background:rgba(10,25,24,.55);z-index:590;display:none;}
@@ -1388,8 +1391,11 @@
     padding:12px 20px;
     border-top:1px solid var(--map-line);
     background:var(--map-panel);
-  }#mapSection #exportPdfBtn{
-    width:100%;
+  }#mapSection #exportPdfBtnRow{
+    display:flex;
+    gap:8px;
+  }#mapSection #exportPdfBtn, #mapSection #printDetailBtn{
+    flex:1;
     display:flex; align-items:center; justify-content:center; gap:8px;
     border:none;
     background:var(--map-teal);
@@ -1400,7 +1406,13 @@
     font-weight:700;
     cursor:pointer;
     transition:.15s;
-  }#mapSection #exportPdfBtn:hover{background:var(--map-teal-deep);}#mapSection #exportPdfBtn:disabled{background:#B9BFE0; cursor:not-allowed;}#mapSection #exportPdfHint{font-size:11px; color:var(--map-muted); margin:7px 2px 0; text-align:center;}
+  }#mapSection #exportPdfBtn:hover{background:var(--map-teal-deep);}#mapSection #exportPdfBtn:disabled{background:#B9BFE0; cursor:not-allowed;}
+  #mapSection #printDetailBtn{
+    background:#fff;
+    color:var(--map-teal);
+    border:1.5px solid var(--map-teal);
+  }#mapSection #printDetailBtn:hover{background:var(--soft-tint);}#mapSection #printDetailBtn:disabled{background:#fff; color:#B9BFE0; border-color:#DCDFF3; cursor:not-allowed;}
+  #mapSection #exportPdfHint{font-size:11px; color:var(--map-muted); margin:7px 2px 0; text-align:center;}
   /* ===== Print output (A4 แนวนอน) ===== */
   #printArea{display:none;}
   .print-header{display:none;}
@@ -2060,7 +2072,10 @@
       <h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">🗺️ แผนที่ตำแหน่งหน่วยงานและเครื่องมือ <span class="clickable-note">ข้อมูลปรับตามตัวกรองด้านซ้ายอัตโนมัติ</span>
         <span style="margin-left:auto;display:inline-flex;gap:8px;flex-wrap:wrap;">
           <button type="button" id="mapOnlyPrintBtn" class="list-pdf-btn" title="บันทึกเฉพาะแผนที่และตารางข้างแผนที่เป็น PDF">
-            <span class="icon">🗺️</span><span class="label">บันทึก/พิมพ์แผนที่ PDF</span>
+            <span class="icon">💾</span><span class="label">บันทึกไฟล์ PDF</span>
+          </button>
+          <button type="button" id="mapOnlyPrintBtn2" class="list-pdf-btn list-print-btn" title="สั่งพิมพ์เฉพาะแผนที่และตารางข้างแผนที่">
+            <span class="icon">🖨️</span><span class="label">พิมพ์</span>
           </button>
           <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelMapSection')">⛶</button>
         </span>
@@ -2086,8 +2101,11 @@
     </div>
   </div>
   <div id="sidebarFooter">
-    <button id="exportPdfBtn" disabled>📄 บันทึกข้อมูลนี้เป็น PDF (A4)</button>
-    <div id="exportPdfHint">เลือกหน่วยงานก่อน แล้วกดปุ่มนี้เพื่อบันทึก/พิมพ์เป็นไฟล์ PDF ขนาด A4</div>
+    <div id="exportPdfBtnRow">
+      <button id="exportPdfBtn" disabled>💾 บันทึกไฟล์ PDF</button>
+      <button id="printDetailBtn" disabled>🖨️ พิมพ์</button>
+    </div>
+    <div id="exportPdfHint">เลือกหน่วยงานก่อน แล้วกดปุ่มนี้เพื่อบันทึกหรือสั่งพิมพ์เป็นไฟล์ PDF ขนาด A4</div>
   </div>
   <div id="sidebarResizer" title="ลากเพื่อปรับความกว้าง"></div>
 </div>
@@ -2141,8 +2159,11 @@
             <button type="button" class="list-pdf-btn list-xlsx-btn" id="exportListExcelBtn" title="ส่งออกรายการเครื่องมือนี้เป็นไฟล์ Excel" disabled>
               <span class="icon">📊</span><span class="label">ส่งออก Excel</span>
             </button>
-            <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็น PDF หรือสั่งพิมพ์" disabled>
-              <span class="icon">🖨️</span><span class="label">บันทึก/พิมพ์ PDF</span>
+            <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็นไฟล์ PDF" disabled>
+              <span class="icon">💾</span><span class="label">บันทึกไฟล์ PDF</span>
+            </button>
+            <button type="button" class="list-pdf-btn list-print-btn" id="printListBtn" title="สั่งพิมพ์รายการเครื่องมือนี้" disabled>
+              <span class="icon">🖨️</span><span class="label">พิมพ์</span>
             </button>
           </div>
         </div>
@@ -2988,13 +3009,16 @@ function buildDetailHTML(code, withImages, includeCategoryTable, splitPhotoCol){
 function renderDetail(){
   const pane = document.getElementById("detailPane");
   const exportBtn = document.getElementById("exportPdfBtn");
+  const printBtn = document.getElementById("printDetailBtn");
   if(!selected){
     pane.innerHTML=`<div class="empty">ยังไม่ได้เลือกหน่วยงาน<br>คลิกจังหวัดบนแผนที่ หรือชิปด้านล่างของแผนที่ เพื่อเริ่มต้น</div>`;
     if(exportBtn) exportBtn.disabled = true;
+    if(printBtn) printBtn.disabled = true;
     return;
   }
   pane.innerHTML = buildDetailHTML(selected, true); // sidebar keeps photos, zoomable
   if(exportBtn) exportBtn.disabled = false;
+  if(printBtn) printBtn.disabled = false;
 }
 
 /* =========================================================
@@ -3150,6 +3174,7 @@ function exportDetailToPDF(){
   window.print();
 }
 document.getElementById("exportPdfBtn").addEventListener("click", exportDetailToPDF);
+document.getElementById("printDetailBtn").addEventListener("click", exportDetailToPDF);
 
 /* =========================================================
    9a-2. Export ONLY the map graphic + the small per-หน่วยงาน dock
@@ -3359,6 +3384,7 @@ function exportMapAndTablesToPDF(){
   window.print();
 }
 document.getElementById("mapOnlyPrintBtn").addEventListener("click", exportMapAndTablesToPDF);
+document.getElementById("mapOnlyPrintBtn2").addEventListener("click", exportMapAndTablesToPDF);
 
 // Computes + draws the leader lines for the print-only layout built above.
 // Routed as tidy orthogonal ("elbow") connectors: each line leaves its own
@@ -5360,6 +5386,7 @@ function itemListTable(recs){
 function renderTable(filtered){
   const container = document.getElementById('toolTableBody');
   const exportBtn = document.getElementById('exportListPdfBtn');
+  const printBtn = document.getElementById('printListBtn');
   const exportXlsxBtn = document.getElementById('exportListExcelBtn');
   let rows = filtered;
   if(tableSearchText){
@@ -5373,10 +5400,12 @@ function renderTable(filtered){
   if(!rows.length){
     container.innerHTML = `<div class="empty-state">${isPendingView ? 'ไม่พบเครื่องมือที่รอสอบเทียบ ใกล้ครบกำหนด หรือหมดอายุสอบเทียบตามตัวกรองปัจจุบัน' : 'ไม่พบข้อมูลที่ตรงกับตัวกรอง'}</div>`;
     if(exportBtn) exportBtn.disabled = true;
+    if(printBtn) printBtn.disabled = true;
     if(exportXlsxBtn) exportXlsxBtn.disabled = true;
     return;
   }
   if(exportBtn) exportBtn.disabled = false;
+  if(printBtn) printBtn.disabled = false;
   if(exportXlsxBtn) exportXlsxBtn.disabled = false;
   const { byOrg, orderedCodes } = groupToolRowsByOrg(rows);
   const isItemView = chartTypes.toolList === 'items' || isPendingView;
@@ -5455,6 +5484,7 @@ function exportToolListToPDF(){
   window.print();
 }
 document.getElementById('exportListPdfBtn').addEventListener('click', exportToolListToPDF);
+document.getElementById('printListBtn').addEventListener('click', exportToolListToPDF);
 
 // Exports the same filtered equipment list as a file that opens directly
 // in Excel (an HTML table saved with an .xls extension — Excel opens
