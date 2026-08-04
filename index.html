@@ -5552,6 +5552,19 @@ function renderTable(filtered){
 // outside of an actual print job). Every selector inside that block is
 // scoped under #printArea, so applying them globally is safe — they
 // can't leak out and affect the rest of the on-screen dashboard.
+// Builds the "<org header><table>" blocks shared by both the on-screen
+// print job and the saved-PDF export, so the two stay in sync.
+function buildToolListOrgBlocksHTML(byOrg, codes, isItemView){
+  return codes.map((code, i)=>{
+    const recs = byOrg[code];
+    const cls = 'print-org-block' + (i>0 ? ' print-org-page-start' : '');
+    // splitPhotoCol=true gives each row its own larger photo column, same
+    // as the per-org PDF export. Item view has no photo column either way.
+    const body = isItemView ? itemListTable(recs) : categoryTablesFromRecords(recs, true, true);
+    return `<div class="${cls}">${toolOrgHeaderHTML(code, recs)}${body}</div>`;
+  }).join('');
+}
+
 function exportToolListToPDF(mode){
   const exportBtn = document.getElementById('exportListPdfBtn');
   if(exportBtn && exportBtn.disabled) return;
@@ -5578,42 +5591,75 @@ function exportToolListToPDF(mode){
   const now = new Date();
   const dateStr = now.toLocaleDateString('th-TH', {year:'numeric', month:'long', day:'numeric'});
   const isItemView = chartTypes.toolList === 'items' || chartTypes.toolList === 'pending';
+  const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
 
-  const orgBlocks = orderedCodes.map((code, i)=>{
-    const recs = byOrg[code];
-    const cls = 'print-org-block' + (i>0 ? ' print-org-page-start' : '');
-    // splitPhotoCol=true gives each row its own larger photo column, same
-    // as the per-org PDF export. Item view has no photo column either way.
-    const body = isItemView ? itemListTable(recs) : categoryTablesFromRecords(recs, true, true);
-    return `<div class="${cls}">${toolOrgHeaderHTML(code, recs)}${body}</div>`;
-  }).join('');
-
-  printArea.innerHTML = `
-    <div class="print-header">
-      <h1>รายการเครื่องมือตรวจวัดมลพิษ — กรมควบคุมมลพิษ</h1>
-      <div class="print-date">พิมพ์เมื่อวันที่ ${dateStr} · ทั้งหมด ${fmt(mapRecs.length)} รายการ · ${fmt(orderedCodes.length)} หน่วยงาน</div>
-    </div>
-    <div class="print-body">
-      <div class="print-tables">${orgBlocks}</div>
-    </div>
-  `;
-
-  // Same density-tiering as exportDetailToPDF, scaled up since the full
-  // list spans many more organizations/rows than a single selected one.
-  printArea.classList.remove('print-density-2','print-density-3');
-  if(mapRecs.length > 600) printArea.classList.add('print-density-3');
-  else if(mapRecs.length > 200) printArea.classList.add('print-density-2');
+  const fillPrintArea = (codes, partLabel)=>{
+    const orgBlocks = buildToolListOrgBlocksHTML(byOrg, codes, isItemView);
+    printArea.innerHTML = `
+      <div class="print-header">
+        <h1>รายการเครื่องมือตรวจวัดมลพิษ — กรมควบคุมมลพิษ${partLabel}</h1>
+        <div class="print-date">พิมพ์เมื่อวันที่ ${dateStr} · ทั้งหมด ${fmt(mapRecs.length)} รายการ · ${fmt(orderedCodes.length)} หน่วยงาน</div>
+      </div>
+      <div class="print-body">
+        <div class="print-tables">${orgBlocks}</div>
+      </div>
+    `;
+    // Same density-tiering as exportDetailToPDF, scaled up since the full
+    // list spans many more organizations/rows than a single selected one.
+    printArea.classList.remove('print-density-2','print-density-3');
+    if(mapRecs.length > 600) printArea.classList.add('print-density-3');
+    else if(mapRecs.length > 200) printArea.classList.add('print-density-2');
+  };
 
   if(mode === "save"){
-    const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-    // Lower raster scale here than the other two exports: this report can
-    // run to 50-100+ pages, and scale:2 on that much content risks running
-    // the browser tab out of memory. scale:1.5 still prints legibly.
-    return saveElementAsPDF(printArea, `รายการเครื่องมือ-${fileDate}.pdf`, "landscape", 1.5).catch(err=>{
+    // saveElementAsPDF rasterises the whole exported area into ONE canvas
+    // before slicing it into PDF pages. Browsers cap how tall a single
+    // canvas can be, and the full equipment list can run to 50-100+ pages
+    // — past that cap html2canvas silently hands back a blank canvas,
+    // which is exactly why "save PDF" on the complete list used to come
+    // out as an empty file (this is a long-documented html2pdf.js/
+    // html2canvas limitation, not something fixable via the scale option
+    // alone — lowering scale only delays the point of failure).
+    // window.print() below doesn't rasterise anything, so it was never
+    // affected. The fix here: split long lists into several smaller PDF
+    // files, each comfortably under the size that trips the bug. Batching
+    // by organization is safe because every org already forces its own
+    // page (print-org-page-start), so a batch boundary never splits a
+    // table awkwardly.
+    const ROWS_PER_BATCH = 150; // conservative row budget per PDF file
+    const batches = [];
+    let current = [], currentRows = 0;
+    orderedCodes.forEach(code=>{
+      const n = (byOrg[code]||[]).length;
+      if(current.length && currentRows + n > ROWS_PER_BATCH){
+        batches.push(current);
+        current = [];
+        currentRows = 0;
+      }
+      current.push(code);
+      currentRows += n;
+    });
+    if(current.length) batches.push(current);
+
+    let chain = Promise.resolve();
+    batches.forEach((codes, batchIdx)=>{
+      chain = chain.then(()=>{
+        const partLabel = batches.length > 1 ? ` — ส่วนที่ ${batchIdx+1}/${batches.length}` : '';
+        fillPrintArea(codes, partLabel);
+        const suffix = batches.length > 1 ? `-ส่วนที่${batchIdx+1}` : '';
+        // Lower raster scale here than the other two exports: even a
+        // single batch can run tens of pages, and scale:2 on that much
+        // content risks running the browser tab out of memory. scale:1.5
+        // still prints legibly.
+        return saveElementAsPDF(printArea, `รายการเครื่องมือ-${fileDate}${suffix}.pdf`, "landscape", 1.5);
+      });
+    });
+    return chain.catch(err=>{
       console.error(err);
       alert("สร้างไฟล์ PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     });
   } else {
+    fillPrintArea(orderedCodes, '');
     window.print();
   }
 }
