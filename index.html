@@ -274,6 +274,59 @@
   [data-mobile="on"] .table-wrap{overflow-x:auto;}
   [data-mobile="on"] .chart-switch button{font-size:10.5px;padding:5px 8px;}
   [data-mobile="on"] .legend-col{max-height:180px;}
+  /* ===== Equipment-list tables (.eq2) on phone =====
+     These tables are wide (12+ columns), so on a phone they have to
+     scroll horizontally. Plain overflow-x alone has two problems: the
+     tool-name column scrolls out of view so a user loses track of which
+     row they're reading, and there's no visual hint that more columns
+     exist off-screen. Freezing the tool-name column and adding a fading
+     edge indicator fixes both without touching the table's data/markup.
+     Scoped to #toolTableBody / #mapSection only (the interactive on-screen
+     views) — #printArea reuses the same .eq2/.eq2-wrap markup for the
+     PDF export and must keep its own full, unmodified layout regardless
+     of whether mobile mode happens to be on. */
+  [data-mobile="on"] #toolTableBody .eq2-wrap,
+  [data-mobile="on"] #mapSection .eq2-wrap{
+    position:relative;
+    -webkit-overflow-scrolling:touch;
+  }
+  [data-mobile="on"] #toolTableBody .eq2-wrap::after,
+  [data-mobile="on"] #mapSection .eq2-wrap::after{
+    content:"";
+    position:absolute; top:0; right:0; bottom:0; width:16px;
+    background:linear-gradient(to right, transparent, rgba(0,0,0,.14));
+    pointer-events:none;
+  }
+  [data-theme="dark"][data-mobile="on"] #toolTableBody .eq2-wrap::after,
+  [data-theme="dark"][data-mobile="on"] #mapSection .eq2-wrap::after{
+    background:linear-gradient(to right, transparent, rgba(0,0,0,.35));
+  }
+  [data-mobile="on"] #toolTableBody table.eq2 th.colTool,
+  [data-mobile="on"] #toolTableBody table.eq2 td.colTool,
+  [data-mobile="on"] #mapSection table.eq2 th.colTool,
+  [data-mobile="on"] #mapSection table.eq2 td.colTool{
+    position:sticky; left:0; z-index:3;
+    box-shadow:2px 0 5px rgba(0,0,0,.08);
+  }
+  [data-mobile="on"] #toolTableBody table.eq2 td.colTool,
+  [data-mobile="on"] #mapSection table.eq2 td.colTool{
+    background:var(--surface);
+    min-width:128px; max-width:150px;
+  }
+  /* Slightly larger type/padding than the desktop table so rows stay
+     comfortably tappable at phone scale. */
+  [data-mobile="on"] #toolTableBody table.eq2,
+  [data-mobile="on"] #mapSection table.eq2{font-size:12px;}
+  [data-mobile="on"] #toolTableBody table.eq2 th, [data-mobile="on"] #toolTableBody table.eq2 td,
+  [data-mobile="on"] #mapSection table.eq2 th, [data-mobile="on"] #mapSection table.eq2 td{padding:7px 7px;}
+  /* "ลักษณะการใช้งาน" is a free-text description column that's mostly
+     "-" and makes the already-wide table wider still; on phone it's
+     hidden to shorten the horizontal scroll to the columns people
+     actually compare (age buckets, calibration status, totals). */
+  [data-mobile="on"] #toolTableBody table.eq2 th.colUse,
+  [data-mobile="on"] #toolTableBody table.eq2 td.colUse,
+  [data-mobile="on"] #mapSection table.eq2 th.colUse,
+  [data-mobile="on"] #mapSection table.eq2 td.colUse{display:none;}
   /* iOS Safari auto-zooms the page when a focused input/select has a
      font-size under 16px, and since the viewport meta blocks manual
      pinch-zoom-out, the whole page can end up stuck zoomed-in until the
@@ -1170,6 +1223,31 @@
   table.summary-pivot td.colTotal{background:var(--soft-tint); font-weight:800;}
   table.summary-pivot th.colTotal{background:var(--soft-tint-strong);}
   table.summary-pivot tbody tr:nth-child(even) td{background:var(--surface-soft);}
+  /* On phone, freeze the "หน่วยงาน" (org name) column the same way the
+     equipment-list tables freeze the tool-name column, so it stays
+     visible while the numeric columns scroll horizontally underneath it. */
+  [data-mobile="on"] #summarySection .summary-table-wrap{
+    position:relative;
+    -webkit-overflow-scrolling:touch;
+  }
+  [data-mobile="on"] #summarySection .summary-table-wrap::after{
+    content:"";
+    position:absolute; top:0; right:0; bottom:0; width:16px;
+    background:linear-gradient(to right, transparent, rgba(0,0,0,.14));
+    pointer-events:none;
+  }
+  [data-theme="dark"][data-mobile="on"] #summarySection .summary-table-wrap::after{
+    background:linear-gradient(to right, transparent, rgba(0,0,0,.35));
+  }
+  [data-mobile="on"] table.summary-pivot th:first-child,
+  [data-mobile="on"] table.summary-pivot td.orgname{
+    position:sticky; left:0; z-index:3;
+    box-shadow:2px 0 5px rgba(0,0,0,.08);
+  }
+  [data-mobile="on"] table.summary-pivot td.orgname{background:var(--surface);}
+  [data-mobile="on"] table.summary-pivot tbody tr:nth-child(even) td.orgname{background:var(--surface-soft);}
+  [data-mobile="on"] table.summary-pivot{font-size:12px;}
+  [data-mobile="on"] table.summary-pivot td.orgname{min-width:120px; max-width:150px;}
   #summarySection .summary-unit{border:1px solid var(--line); border-radius:10px; margin-bottom:8px; padding:2px 12px; background:var(--surface);}
   #summarySection .summary-unit summary{cursor:pointer; padding:9px 0; font-weight:600; color:var(--ink); display:flex; justify-content:space-between; align-items:center; gap:8px; list-style:none;}
   #summarySection .summary-unit summary::-webkit-details-marker{display:none;}
