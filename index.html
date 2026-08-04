@@ -228,19 +228,41 @@
   [data-mobile="on"] .sidebar.open{transform:translateX(0);box-shadow:0 20px 60px rgba(0,0,0,.4);}
   [data-mobile="on"] .main{padding:0;}
   [data-mobile="on"] .topbar{
-    padding:12px 14px;gap:10px;
+    padding:10px 12px;gap:8px;
+    /* flex-nowrap is the actual fix: without it, once the left group
+       (hamburger+logo+title) plus the right group (mode/theme toggle
+       buttons) exceed the phone's width, the right group wraps onto a
+       second line right under the title. Since this header is sticky
+       (pinned while scrolling), that wrapped two-row header stays fixed
+       at the top and eats a large, inconsistent chunk of a small phone
+       screen — that's the "unstable / changes layout" look on real
+       phones. Keeping everything on one row and letting the title (below)
+       truncate instead fixes it. */
+    flex-wrap:nowrap;
     position:sticky; top:0; z-index:50;
     border-radius:0 0 16px 16px;
     margin-bottom:12px;
     box-shadow:0 4px 14px rgba(0,0,0,.18);
   }
-  [data-mobile="on"] .topbar h1{font-size:15px;line-height:1.3;}
+  /* The left group (hamburger+badge+title) must be allowed to shrink
+     below its content's natural width — otherwise it alone forces the
+     row wide enough to push the right-side buttons onto their own line. */
+  [data-mobile="on"] .topbar > div:first-child{min-width:0;flex:1 1 auto;}
+  [data-mobile="on"] .topbar h1{
+    font-size:14px;line-height:1.3;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    overflow:hidden;
+  }
   [data-mobile="on"] .topbar .sub{display:none;}
-  [data-mobile="on"] .topbar-badge{width:40px;height:40px;border-radius:10px;}
+  [data-mobile="on"] .topbar-badge{width:36px;height:36px;border-radius:9px;}
   [data-mobile="on"] .asof{display:none;}
   [data-mobile="on"] .theme-toggle .label,
   [data-mobile="on"] .mobile-toggle .label{display:none;}
-  [data-mobile="on"] .theme-toggle, [data-mobile="on"] .mobile-toggle{padding:8px;border-radius:10px;}
+  [data-mobile="on"] .theme-toggle, [data-mobile="on"] .mobile-toggle{
+    padding:8px;border-radius:10px;flex-shrink:0;
+  }
+  /* The right-side button group itself must not shrink or wrap either. */
+  [data-mobile="on"] .topbar > div:last-child{flex-shrink:0;flex-wrap:nowrap;}
   [data-mobile="on"] .kpi-row{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   [data-mobile="on"] .kpi{padding:12px 14px;}
   [data-mobile="on"] .kpi .value{font-size:21px;}
