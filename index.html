@@ -252,6 +252,19 @@
   [data-mobile="on"] .table-wrap{overflow-x:auto;}
   [data-mobile="on"] .chart-switch button{font-size:10.5px;padding:5px 8px;}
   [data-mobile="on"] .legend-col{max-height:180px;}
+  /* iOS Safari auto-zooms the page when a focused input/select has a
+     font-size under 16px, and since the viewport meta blocks manual
+     pinch-zoom-out, the whole page can end up stuck zoomed-in until the
+     page is reloaded. Bumping touch-device form controls to 16px removes
+     the trigger entirely. Scoped to coarse-pointer/no-hover devices so the
+     desktop 13px look is unchanged. */
+  @media (hover:none) and (pointer:coarse){
+    .field select, .field input[type=text],
+    .ss-wrap input.ss-input, .table-search input,
+    #searchInput, #tableSearch, #catalogSearchInput{
+      font-size:16px;
+    }
+  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   html{
@@ -2165,11 +2178,8 @@
             <button type="button" class="list-pdf-btn list-xlsx-btn" id="exportListExcelBtn" title="ส่งออกรายการเครื่องมือนี้เป็นไฟล์ Excel" disabled>
               <span class="icon">📊</span><span class="label">ส่งออก Excel</span>
             </button>
-            <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็นไฟล์ PDF" disabled>
-              <span class="icon">💾</span><span class="label">บันทึกไฟล์ PDF</span>
-            </button>
             <button type="button" class="list-pdf-btn list-print-btn" id="printListBtn" title="สั่งพิมพ์รายการเครื่องมือนี้" disabled>
-              <span class="icon">🖨️</span><span class="label">พิมพ์</span>
+              <span class="icon">🖨️</span><span class="label">บันทึกไฟล์PDF</span>
             </button>
           </div>
         </div>
@@ -2296,16 +2306,46 @@ function cv(name){
   // Re-check on rotation / real resizes (not on every pixel of a drag —
   // debounced) so the layout keeps matching the actual screen without a
   // manual toggle, as long as the person hasn't picked a mode themselves.
+  // matchMedia's own 'change' event is the most reliable signal here —
+  // unlike 'resize'/'orientationchange', it only fires once the browser has
+  // actually settled on the new viewport size, so it can't apply the mode
+  // based on stale (mid-rotation) dimensions the way a fixed setTimeout can.
+  function afterViewportSettle(){
+    if(!userOverride) apply(isPhoneLike());
+    // These depend on real pixel measurements taken after rotation, so
+    // re-run them here too rather than waiting for their own resize
+    // listeners, which can otherwise fire before the browser chrome
+    // (address bar, etc.) has finished resizing around the new orientation.
+    if(typeof pinCatalogListHeight === 'function') pinCatalogListHeight();
+    if(typeof scheduleDrawLeaders === 'function') scheduleDrawLeaders();
+  }
+  try{
+    const mq = window.matchMedia('(max-width:800px)');
+    (mq.addEventListener ? mq.addEventListener.bind(mq) : mq.addListener.bind(mq))('change', afterViewportSettle);
+  }catch(e){}
   let resizeTimer = null;
   window.addEventListener('resize', ()=>{
-    if(userOverride) return;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(()=>{ apply(isPhoneLike()); }, 150);
+    resizeTimer = setTimeout(afterViewportSettle, 150);
   });
   window.addEventListener('orientationchange', ()=>{
-    if(userOverride) return;
-    setTimeout(()=>{ apply(isPhoneLike()); }, 200);
+    // A real rotation (unlike an on-screen-keyboard resize) invalidates the
+    // drawer's fixed positioning/measurements, so re-close it here — it can
+    // reopen instantly via the hamburger button — rather than leaving it
+    // half-positioned for the new orientation.
+    setTimeout(()=>{ closeDrawer(); afterViewportSettle(); }, 250);
   });
+  if(window.visualViewport){
+    // Mobile browsers can resize the visual viewport (address bar
+    // show/hide, on-screen keyboard) without firing 'resize' on window —
+    // catching it here keeps pinned heights and leader lines from going
+    // stale in those cases too.
+    let vvTimer = null;
+    window.visualViewport.addEventListener('resize', ()=>{
+      clearTimeout(vvTimer);
+      vvTimer = setTimeout(afterViewportSettle, 150);
+    });
+  }
 })();
 
 /* ===================== embedded equipment map (linked to slicers) ===================== */
@@ -3938,9 +3978,16 @@ function startColResize(e, colIndex){
     handle.classList.remove("active");
     document.removeEventListener("pointermove", onMove);
     document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", onUp);
   }
   document.addEventListener("pointermove", onMove);
   document.addEventListener("pointerup", onUp);
+  // pointercancel fires instead of pointerup when the OS interrupts the
+  // gesture mid-drag (rotating the device, an incoming call/notification,
+  // a browser-chrome swipe, etc.) — without this, the listeners above would
+  // never get removed and the page would keep intercepting every future
+  // tap as a resize drag, which is exactly what "screen freezes" looks like.
+  document.addEventListener("pointercancel", onUp);
 }
 
 // Lets a person drag the grip in the bottom-right corner of a whole
@@ -3972,9 +4019,13 @@ function startCardResize(e){
     handle.classList.remove("active");
     document.removeEventListener("pointermove", onMove);
     document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", onUp);
   }
   document.addEventListener("pointermove", onMove);
   document.addEventListener("pointerup", onUp);
+  // See note in startColResize above — orientation changes and other OS
+  // interruptions send pointercancel instead of pointerup mid-drag.
+  document.addEventListener("pointercancel", onUp);
 }
 
 // Finds a photo for this tool within an org's records (falls back to a
@@ -4130,7 +4181,15 @@ function pinCatalogListHeight(){
   apply();
   requestAnimationFrame(apply);
 }
-window.addEventListener('resize', pinCatalogListHeight);
+// rAF-throttled so a burst of resize events (mobile browsers can fire many
+// in a row during a pinch-zoom, keyboard slide-in, or rotation animation)
+// triggers at most one layout read/write per frame instead of thrashing.
+let pinCatalogListHeightScheduled = false;
+window.addEventListener('resize', ()=>{
+  if(pinCatalogListHeightScheduled) return;
+  pinCatalogListHeightScheduled = true;
+  requestAnimationFrame(()=>{ pinCatalogListHeightScheduled = false; pinCatalogListHeight(); });
+});
 document.getElementById("equipCatalog").addEventListener("click",(ev)=>{
   const img = ev.target.closest(".cat-photo");
   if(img){
@@ -4298,15 +4357,20 @@ sidebarResizer.addEventListener("pointerdown",(ev)=>{
     applySidebarWidth(w);
   };
   const onUp = (up)=>{
-    sidebarResizer.releasePointerCapture(up.pointerId);
+    try{ sidebarResizer.releasePointerCapture(up.pointerId); }catch(e){}
     sidebarResizer.classList.remove("active");
     sidebar.classList.remove("resizing");
     toggleBtn.classList.remove("resizing");
     sidebarResizer.removeEventListener("pointermove", onMove);
     sidebarResizer.removeEventListener("pointerup", onUp);
+    sidebarResizer.removeEventListener("pointercancel", onUp);
   };
   sidebarResizer.addEventListener("pointermove", onMove);
   sidebarResizer.addEventListener("pointerup", onUp);
+  // Without this, an interrupted drag (device rotation, notification,
+  // browser-chrome swipe) leaves pointer capture stuck on the resizer and
+  // the rest of the page stops responding to touch until reload.
+  sidebarResizer.addEventListener("pointercancel", onUp);
 });
 
 // Free-drag resize for the equipment catalog panel on the right of the map —
@@ -4334,13 +4398,15 @@ equipCatalogResizer.addEventListener("pointerdown",(ev)=>{
     applyCatalogWidth(w);
   };
   const onUp = (up)=>{
-    equipCatalogResizer.releasePointerCapture(up.pointerId);
+    try{ equipCatalogResizer.releasePointerCapture(up.pointerId); }catch(e){}
     equipCatalogResizer.classList.remove("active");
     equipCatalogResizer.removeEventListener("pointermove", onMove);
     equipCatalogResizer.removeEventListener("pointerup", onUp);
+    equipCatalogResizer.removeEventListener("pointercancel", onUp);
   };
   equipCatalogResizer.addEventListener("pointermove", onMove);
   equipCatalogResizer.addEventListener("pointerup", onUp);
+  equipCatalogResizer.addEventListener("pointercancel", onUp);
 });
 
 // Click a tool photo in the sidebar table to view it enlarged
@@ -5660,7 +5726,6 @@ function exportToolListToPDF(mode){
     window.print();
   }
 }
-document.getElementById('exportListPdfBtn').addEventListener('click', ()=>withBusyLabel(document.getElementById('exportListPdfBtn'), exportToolListToPDF("save")));
 document.getElementById('printListBtn').addEventListener('click', ()=>exportToolListToPDF("print"));
 
 // Exports the same filtered equipment list as a file that opens directly
@@ -7136,16 +7201,18 @@ function initGsheetSync(){
       applyAppSidebarWidth(w);
     };
     const onUp = (up)=>{
-      appResizer.releasePointerCapture(up.pointerId);
+      try{ appResizer.releasePointerCapture(up.pointerId); }catch(e){}
       appResizer.classList.remove("active");
       appEl.classList.remove("resizing");
       appSidebar.classList.remove("resizing");
       appToggleBtn.classList.remove("resizing");
       appResizer.removeEventListener("pointermove", onMove);
       appResizer.removeEventListener("pointerup", onUp);
+      appResizer.removeEventListener("pointercancel", onUp);
     };
     appResizer.addEventListener("pointermove", onMove);
     appResizer.addEventListener("pointerup", onUp);
+    appResizer.addEventListener("pointercancel", onUp);
   });
 
   // When mobile-drawer mode toggles off, the JS-driven width was skipped
