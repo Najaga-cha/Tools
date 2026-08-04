@@ -811,8 +811,9 @@
   }
   .expand-btn:hover{background:var(--surface);color:var(--teal-dark);border-color:var(--teal);}
 
+  .list-export-group{margin-left:auto; display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;}
   .list-pdf-btn{
-    margin-left:auto; display:inline-flex; align-items:center; gap:7px;
+    display:inline-flex; align-items:center; gap:7px;
     background:var(--teal); border:none; color:#fff;
     border-radius:20px; padding:8px 15px; font-family:'Sarabun',sans-serif;
     font-size:12.5px; font-weight:600; cursor:pointer; transition:.15s; flex-shrink:0;
@@ -820,6 +821,8 @@
   .list-pdf-btn:hover{background:var(--teal-dark);}
   .list-pdf-btn:disabled{background:#B9BFE0; cursor:not-allowed;}
   .list-pdf-btn .icon{font-size:14px;}
+  .list-pdf-btn.list-xlsx-btn{background:#1D6F42;}
+  .list-pdf-btn.list-xlsx-btn:hover{background:#155A34;}
   [data-mobile="on"] .list-pdf-btn .label{display:none;}
   [data-mobile="on"] .list-pdf-btn{padding:8px;border-radius:10px;}
   .expand-overlay{position:fixed;inset:0;background:rgba(10,25,24,.55);z-index:590;display:none;}
@@ -1764,6 +1767,9 @@
   }
 
 </style>
+<!-- ใช้สำหรับปุ่ม "บันทึกเป็น PDF" (บันทึกไฟล์ PDF ได้ทันทีแทนการเปิดหน้าต่างสั่งพิมพ์)
+     หากโหลดไม่สำเร็จ (เช่น ไม่มีอินเทอร์เน็ต) ระบบจะสลับไปใช้หน้าต่างสั่งพิมพ์แบบเดิมโดยอัตโนมัติ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="frame">
@@ -2134,9 +2140,14 @@
       <div class="tool-tab-pane active" data-pane="list">
         <div class="chart-controls-row" style="margin-bottom:4px;">
           <div class="chart-switch" id="switchToolList" data-key="toolList"></div>
-          <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็น PDF หรือสั่งพิมพ์" disabled>
-            <span class="icon">🖨️</span><span class="label">บันทึก/พิมพ์ PDF</span>
-          </button>
+          <div class="list-export-group">
+            <button type="button" class="list-pdf-btn list-xlsx-btn" id="exportListExcelBtn" title="ส่งออกรายการเครื่องมือนี้เป็นไฟล์ Excel" disabled>
+              <span class="icon">📊</span><span class="label">ส่งออก Excel</span>
+            </button>
+            <button type="button" class="list-pdf-btn" id="exportListPdfBtn" title="บันทึกรายการเครื่องมือนี้เป็นไฟล์ PDF" disabled>
+              <span class="icon">📄</span><span class="label">บันทึกเป็น PDF</span>
+            </button>
+          </div>
         </div>
         <div class="hint" style="margin-top:-6px;">แยกตามหน่วยงานที่ตรงกับตัวกรองปัจจุบัน · คลิกแถวเพื่อกรองข้อมูลตามชนิดเครื่องมือ · คลิกรูปภาพเพื่อดูภาพขยาย</div>
         <div class="table-search">
@@ -5352,6 +5363,7 @@ function itemListTable(recs){
 function renderTable(filtered){
   const container = document.getElementById('toolTableBody');
   const exportBtn = document.getElementById('exportListPdfBtn');
+  const exportXlsxBtn = document.getElementById('exportListExcelBtn');
   let rows = filtered;
   if(tableSearchText){
     const q = tableSearchText.toLowerCase();
@@ -5364,9 +5376,11 @@ function renderTable(filtered){
   if(!rows.length){
     container.innerHTML = `<div class="empty-state">${isPendingView ? 'ไม่พบเครื่องมือที่รอสอบเทียบ ใกล้ครบกำหนด หรือหมดอายุสอบเทียบตามตัวกรองปัจจุบัน' : 'ไม่พบข้อมูลที่ตรงกับตัวกรอง'}</div>`;
     if(exportBtn) exportBtn.disabled = true;
+    if(exportXlsxBtn) exportXlsxBtn.disabled = true;
     return;
   }
   if(exportBtn) exportBtn.disabled = false;
+  if(exportXlsxBtn) exportXlsxBtn.disabled = false;
   const { byOrg, orderedCodes } = groupToolRowsByOrg(rows);
   const isItemView = chartTypes.toolList === 'items' || isPendingView;
 
@@ -5384,10 +5398,29 @@ function renderTable(filtered){
        exportDetailToPDF, but with every matching org instead
        of just the one selected on the map.
    ========================================================= */
-function exportToolListToPDF(){
-  const exportBtn = document.getElementById('exportListPdfBtn');
-  if(exportBtn && exportBtn.disabled) return;
+// Pulls the CSS rules that live inside the @media print block, without
+// their @media wrapper, so they can be applied unconditionally (i.e.
+// outside of an actual print job). Every selector inside that block is
+// scoped under #printArea, so applying them globally is safe — they
+// can't leak out and affect the rest of the on-screen dashboard.
+function extractPrintCSSText(){
+  let css = '';
+  for(const sheet of document.styleSheets){
+    let rules;
+    try{ rules = sheet.cssRules; }catch(e){ continue; }
+    if(!rules) continue;
+    for(const rule of rules){
+      try{
+        if(rule.type === CSSRule.MEDIA_RULE && rule.media && /print/i.test(rule.media.mediaText)){
+          for(const inner of rule.cssRules) css += inner.cssText + '\n';
+        }
+      }catch(e){ /* ignore rules we can't read (e.g. cross-origin sheets) */ }
+    }
+  }
+  return css;
+}
 
+function buildToolListPrintArea(){
   let rows = applyFilters(currentData);
   if(tableSearchText){
     const q = tableSearchText.toLowerCase();
@@ -5396,12 +5429,11 @@ function exportToolListToPDF(){
   if(chartTypes.toolList === 'pending'){
     rows = rows.filter(isPendingOrExpiredCalib);
   }
-  if(!rows.length) return;
+  if(!rows.length) return null;
 
   const printArea = document.getElementById('printArea');
-  // Same reasoning as exportDetailToPDF: printArea must be a direct child
-  // of <body> before window.print() so hidden ancestors don't push the
-  // printed content down onto blank leading pages.
+  // printArea must be a direct child of <body> — see exportDetailToPDF —
+  // so hidden ancestors don't push the content down onto blank pages.
   if(printArea.parentElement !== document.body){
     document.body.appendChild(printArea);
   }
@@ -5436,9 +5468,129 @@ function exportToolListToPDF(){
   if(mapRecs.length > 600) printArea.classList.add('print-density-3');
   else if(mapRecs.length > 200) printArea.classList.add('print-density-2');
 
-  window.print();
+  return printArea;
+}
+
+// Saves the full equipment-list panel straight to a PDF file (no print
+// dialog). Uses html2pdf.js — loaded from a CDN in <head> — to render
+// #printArea with its normal print styling and download it directly.
+// If that library couldn't load (e.g. no internet connection), this
+// quietly falls back to the old window.print() flow instead.
+async function exportToolListToPDF(){
+  const exportBtn = document.getElementById('exportListPdfBtn');
+  if(exportBtn && exportBtn.disabled) return;
+
+  const printArea = buildToolListPrintArea();
+  if(!printArea) return;
+
+  if(typeof html2pdf === 'undefined'){
+    window.print();
+    return;
+  }
+
+  const label = exportBtn ? exportBtn.querySelector('.label') : null;
+  const origLabel = label ? label.textContent : '';
+  if(exportBtn){ exportBtn.disabled = true; if(label) label.textContent = 'กำลังบันทึก PDF…'; }
+
+  // Temporarily apply the print-only styling and give printArea a fixed
+  // width matching the printed A4-landscape page (297mm minus 8mm side
+  // margins), so the captured layout matches what actually prints.
+  const styleTag = document.createElement('style');
+  styleTag.textContent = extractPrintCSSText();
+  document.head.appendChild(styleTag);
+  const prevDisplay = printArea.style.display;
+  const prevWidth = printArea.style.width;
+  printArea.style.display = 'block';
+  printArea.style.width = '281mm';
+
+  const now = new Date();
+  const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+  try{
+    await html2pdf().set({
+      margin: 0,
+      filename: `รายการเครื่องมือ-${fileDate}.pdf`,
+      image: { type:'jpeg', quality:0.95 },
+      html2canvas: { scale:2, useCORS:true, backgroundColor:'#ffffff' },
+      jsPDF: { unit:'mm', format:'a4', orientation:'landscape' },
+      pagebreak: { mode:['css','legacy'] }
+    }).from(printArea).save();
+  }catch(err){
+    console.error('บันทึก PDF ไม่สำเร็จ กำลังสลับไปใช้หน้าต่างสั่งพิมพ์แทน', err);
+    window.print();
+  }finally{
+    styleTag.remove();
+    printArea.style.display = prevDisplay;
+    printArea.style.width = prevWidth;
+    if(exportBtn){ exportBtn.disabled = false; if(label) label.textContent = origLabel || 'บันทึกเป็น PDF'; }
+  }
 }
 document.getElementById('exportListPdfBtn').addEventListener('click', exportToolListToPDF);
+
+// Exports the same filtered equipment list as a file that opens directly
+// in Excel (an HTML table saved with an .xls extension — Excel opens
+// this natively, no external library needed, works fully offline).
+function exportToolListToExcel(){
+  const exportBtn = document.getElementById('exportListExcelBtn');
+  if(exportBtn && exportBtn.disabled) return;
+
+  let rows = applyFilters(currentData);
+  if(tableSearchText){
+    const q = tableSearchText.toLowerCase();
+    rows = rows.filter(r => (r.item||'').toLowerCase().includes(q));
+  }
+  if(chartTypes.toolList === 'pending'){
+    rows = rows.filter(isPendingOrExpiredCalib);
+  }
+  if(!rows.length) return;
+
+  const { byOrg, orderedCodes } = groupToolRowsByOrg(rows);
+
+  const esc = v => String(v==null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const headCols = ['หน่วยงาน','ประเภทเครื่องมือ','ชื่อเครื่องมือ','รหัสครุภัณฑ์','ปีที่ได้มา','เกณฑ์อายุ','สถานะเครื่องมือ','สถานะสอบเทียบ','การใช้งาน','จำนวนวันใช้งานต่อปี','วันคงเหลือสอบเทียบครั้งถัดไป'];
+
+  let bodyRows = '';
+  orderedCodes.forEach(code=>{
+    const org = ORGS[code];
+    const orgLabel = org ? org.label : (code || 'ไม่ระบุหน่วยงาน');
+    (byOrg[code]||[]).forEach(r=>{
+      bodyRows += '<tr>'
+        + `<td>${esc(orgLabel)}</td>`
+        + `<td>${esc(CATEGORY_LABEL[r.type] || r.type || '-')}</td>`
+        + `<td>${esc(r.name || '-')}</td>`
+        + `<td>${esc(r.assetCode || '-')}</td>`
+        + `<td>${esc(r.yearGot || '-')}</td>`
+        + `<td>${esc(r.age || '-')}</td>`
+        + `<td>${esc(r.statusEquip || '-')}</td>`
+        + `<td>${esc(r.statusCalib || '-')}</td>`
+        + `<td>${esc(r.statusUse || '-')}</td>`
+        + `<td>${r.usageDaysPerYear!=null ? esc(r.usageDaysPerYear) : '-'}</td>`
+        + `<td>${r.calDaysLeft!=null ? esc(r.calDaysLeft) : '-'}</td>`
+        + '</tr>';
+    });
+  });
+  const headHTML = '<tr>' + headCols.map(h=>`<th>${esc(h)}</th>`).join('') + '</tr>';
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>รายการเครื่องมือ</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+<style>td,th{font-family:Tahoma,'Sarabun',sans-serif; font-size:12px; mso-number-format:"\\@";} th{background:#2E7D6B; color:#fff; font-weight:bold;}</style>
+</head><body><table border="1"><thead>${headHTML}</thead><tbody>${bodyRows}</tbody></table></body></html>`;
+
+  const blob = new Blob(['\ufeff' + html], {type:'application/vnd.ms-excel;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `รายการเครื่องมือ-${fileDate}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+document.getElementById('exportListExcelBtn').addEventListener('click', exportToolListToExcel);
 
 /* ======================= MASTER REFRESH ======================= */
 /* ======================= OVERVIEW SECTION (screenshot-style) ======================= */
