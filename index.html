@@ -622,7 +622,20 @@
   }
 
   /* ===== Main ===== */
-  .main{padding:0;}
+  /* min-width:0 overrides the grid item's default min-width:auto. Without
+     this, if ANY descendant anywhere inside .main has a wide intrinsic
+     min-content size (a table with min-width, the 380px map sidebar, a long
+     unbroken string, etc.), that width pushes the whole 1fr grid track —
+     and therefore the whole page — wider than the viewport. Because body
+     already has overflow-x:hidden, the symptom isn't a scrollbar, it's
+     silent clipping: rows/controls get cut off at the right edge instead of
+     wrapping, and which controls get cut off looks different depending on
+     which panel currently has the widest content — i.e. exactly the
+     "layout keeps changing on its own" instability seen on phones. Letting
+     .main shrink to the real viewport width lets each individual wide
+     element's own overflow-x:auto wrapper (tables, .eq2-wrap, etc.) handle
+     its own horizontal scroll locally instead. */
+  .main{padding:0; min-width:0;}
   .topbar{
     display:flex;justify-content:space-between;align-items:center;
     margin-bottom:16px;flex-wrap:wrap;gap:14px;
