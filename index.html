@@ -1557,6 +1557,58 @@
   #mapSection #toggleBtn{display:none;}
 }
 
+/* =========================================================
+   Phone-mode layout for the equipment map + its docked tables.
+   Everything below is scoped to [data-mobile="on"] (the same app-wide
+   attribute the rest of the dashboard already uses — see .hamburger-btn,
+   .kpi-row, table, etc. above) instead of a raw @media width query, so:
+     - switching the app into phone mode always reflows the map/tables
+       this way, even on a wide window (e.g. testing the toggle on desktop);
+     - every other mode (normal desktop/tablet, or just a narrow desktop
+       browser window with the toggle off) keeps rendering exactly as
+       before — nothing here fires unless the attribute is present.
+   The permanent leader lines that connect every หน่วยงาน's map marker to
+   its own docked table (drawAllLeaders() in the JS below) only read
+   cleanly in the desktop side-by-side layout; once the cards reflow to
+   sit underneath the map on a phone they just crisscross the whole
+   page, so the connector overlay is hidden here rather than force-fit. */
+[data-mobile="on"] #mapSection{
+  display:flex; flex-direction:column; height:auto; overflow:visible;
+}
+[data-mobile="on"] .panel.expanded#panelMapSection #mapSection{height:auto; max-height:none;}
+[data-mobile="on"] #mapSection #sidebar,
+[data-mobile="on"] #mapSection #sidebarResizer,
+[data-mobile="on"] #mapSection #toggleBtn{display:none !important;}
+[data-mobile="on"] #mapSection #main{width:100%; height:auto;}
+[data-mobile="on"] #mapSection #mapHead{padding:12px 14px 6px;}
+[data-mobile="on"] #mapSection #mapHead h2{font-size:15px;}
+[data-mobile="on"] #mapSection #mapWrap{
+  display:flex; flex-direction:column; flex:none;
+  height:auto; overflow:visible; border-radius:10px;
+}
+[data-mobile="on"] #mapSection #mapSvg{
+  flex:none; width:100%; height:320px; min-height:320px;
+}
+[data-mobile="on"] #mapSection #leaderSvg{display:none !important;}
+[data-mobile="on"] #mapSection #zoomControls{top:10px; right:10px;}
+[data-mobile="on"] #mapSection #mapStatus{top:10px; left:10px;}
+[data-mobile="on"] #mapSection #pdfDockLeft,
+[data-mobile="on"] #mapSection #pdfDockRight{
+  position:static !important; inset:auto; width:100%; height:auto;
+  max-height:none; overflow:visible; flex-direction:column; flex-wrap:nowrap;
+  gap:10px; padding:10px 10px 0; pointer-events:auto;
+}
+[data-mobile="on"] #mapSection #pdfDockLeft .pdf-office-card,
+[data-mobile="on"] #mapSection #pdfDockRight .pdf-office-card{flex:none; width:100%;}
+[data-mobile="on"] #mapSection #legendBar{padding:10px 14px 14px;}
+[data-mobile="on"] #mapSection #equipCatalog{
+  width:100%; height:auto; max-height:320px;
+  border-left:none; border-top:1px solid var(--map-line);
+}
+[data-mobile="on"] #mapSection #equipCatalogResizer{display:none;}
+[data-mobile="on"] #mapSection #equipCatalog .cat-list{display:flex; flex-wrap:wrap; gap:6px;}
+[data-mobile="on"] #mapSection #equipCatalog .cat-item{width:calc(50% - 6px); margin-bottom:0;}
+
   @media print{
     @page{ size:A4 landscape; margin:6mm 8mm; }
     html,body{height:auto; overflow:visible; background:#fff;}
@@ -2301,6 +2353,15 @@ function cv(name){
       btn.querySelector('.label').textContent = on ? 'โหมดปกติ' : 'โหมดมือถือ';
       btn.querySelector('.icon').textContent = on ? '🖥️' : '📱';
     }
+    // The equipment map's leader-line overlay is desktop-only (see
+    // [data-mobile="on"] #leaderSvg in the CSS); make sure it's cleared or
+    // redrawn right away rather than waiting for the next resize/scroll.
+    // Deferred via setTimeout because apply() can run during early page
+    // init, before the script below has reached the `let leaderDrawScheduled`
+    // declaration that scheduleDrawLeaders() depends on.
+    setTimeout(function(){
+      if(typeof scheduleDrawLeaders === 'function') scheduleDrawLeaders();
+    }, 0);
   }
   function openDrawer(){
     if(sidebar) sidebar.classList.add('open');
@@ -3818,6 +3879,14 @@ function drawAllLeaders(){
   const svg = document.getElementById("leaderSvg");
   const wrap = document.getElementById("mapWrap");
   if(!svg || !wrap) return;
+  // In phone mode the docked tables reflow underneath the map and the
+  // connector overlay is hidden via CSS ([data-mobile="on"] #leaderSvg) —
+  // skip the (pointless) recalculation there instead of just drawing into
+  // a hidden element every frame.
+  if(document.documentElement.getAttribute("data-mobile") === "on"){
+    svg.innerHTML = "";
+    return;
+  }
   const wrapRect = wrap.getBoundingClientRect();
   if(!wrapRect.width || !wrapRect.height) return;
   svg.setAttribute("viewBox", `0 0 ${wrapRect.width} ${wrapRect.height}`);
