@@ -3161,12 +3161,6 @@ function getForcedPrintCSS(){
       if(rule.type === CSSRule.MEDIA_RULE && rule.media && rule.media.mediaText.indexOf("print") !== -1){
         for(const inner of rule.cssRules){
           if(inner.type === CSSRule.STYLE_RULE){
-            // Skip the "hide every other direct child of <body>" rule pair:
-            // that's only meaningful for a real full-page print job. Our
-            // capture only ever reads #printArea itself (kept off-screen),
-            // so hiding the rest of the live dashboard here would just
-            // flash it blank for no benefit.
-            if(/body\s*>\s*\*/.test(inner.selectorText)) continue;
             const scoped = inner.selectorText.split(",").map(s=>"html.pdf-force-print "+s.trim()).join(", ");
             css += scoped + "{" + inner.style.cssText + "}\n";
           }
@@ -3194,6 +3188,17 @@ function withBusyLabel(btn, promise){
 
 // Renders `el` (normally #printArea, already filled in and moved to <body>
 // by the caller) straight to a downloaded PDF file. Returns a Promise.
+//
+// IMPORTANT: this deliberately puts #printArea on-screen (in normal
+// document flow, at the very top, with every other element on the page
+// hidden — exactly the same state the real @media print stylesheet
+// already produces for an actual print job) rather than trying to keep it
+// off-screen via a large negative offset. Screenshot/rasterising tools
+// like html2canvas draw a real canvas starting at (0,0); an element
+// positioned at e.g. left:-10000px sits entirely outside that canvas and
+// captures as a blank page — which is exactly what happened the first
+// time around. Being on-screen for the ~1-2 seconds a save takes is a
+// reasonable trade for actually getting content in the file.
 function saveElementAsPDF(el, filename, orientation, scale){
   orientation = orientation || "landscape";
   scale = scale || 2;
@@ -3201,24 +3206,27 @@ function saveElementAsPDF(el, filename, orientation, scale){
   styleTag.textContent = getForcedPrintCSS();
   document.head.appendChild(styleTag);
   document.documentElement.classList.add("pdf-force-print");
-  const prevCssText = el.style.cssText;
-  // Match the same @page box the print stylesheet targets (A4, 6mm/8mm
-  // margins) so text wraps/paginates identically to a real print job, while
-  // keeping the element off-screen (not display:none, which html2canvas
-  // can't rasterise) so nothing visibly flashes on screen during capture.
+  const prevWidth = el.style.width;
+  const prevMaxWidth = el.style.maxWidth;
+  // Pin the width to the same A4 content box the print stylesheet targets,
+  // so text wraps/paginates the same way a real print job would (on
+  // screen, with nothing hidden, #printArea would otherwise just take the
+  // full browser window's width instead).
   const pageWidthMM = (orientation === "landscape" ? 297 : 210) - 8*2;
-  el.style.cssText = `display:block !important; position:fixed !important; left:-10000px; top:0; visibility:visible !important; width:${pageWidthMM}mm; max-width:none !important;`;
+  el.style.width = pageWidthMM + "mm";
+  el.style.maxWidth = "none";
   const cleanup = ()=>{
     document.documentElement.classList.remove("pdf-force-print");
     styleTag.remove();
-    el.style.cssText = prevCssText;
+    el.style.width = prevWidth;
+    el.style.maxWidth = prevMaxWidth;
   };
   return html2pdf().set({
     margin:[6,8,6,8],
     filename: filename,
     image:{ type:"jpeg", quality:0.98 },
-    html2canvas:{ scale:scale, useCORS:true, backgroundColor:"#ffffff" },
-    jsPDF:{ unit:"mm", format:"a4", orientation: orientation || "landscape" },
+    html2canvas:{ scale:scale, useCORS:true, backgroundColor:"#ffffff", windowWidth: el.scrollWidth, windowHeight: el.scrollHeight },
+    jsPDF:{ unit:"mm", format:"a4", orientation: orientation },
     pagebreak:{ mode:["css","legacy"] }
   }).from(el).save().then(cleanup, err=>{ cleanup(); throw err; });
 }
