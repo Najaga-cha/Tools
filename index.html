@@ -323,14 +323,28 @@
   [data-mobile="on"] #toolTableBody table.eq2 td.colTool,
   [data-mobile="on"] #mapSection table.eq2 td.colTool{
     background:var(--surface);
-    min-width:128px; max-width:150px;
+    min-width:96px; max-width:112px;
   }
-  /* Slightly larger type/padding than the desktop table so rows stay
-     comfortably tappable at phone scale. */
+  /* Compact sizing for phones: the desktop table already uses 11px/5px
+     padding; the previous mobile override actually went the other way
+     (12px/7px, "bigger for tappability") which made the table wider and
+     forced more horizontal scrolling than the phone screen comfortably
+     shows. Dialing both back down — plus a lower overall min-width and
+     a smaller tool thumbnail/badges below — keeps rows tappable while
+     letting noticeably more of the table fit in view at once. */
   [data-mobile="on"] #toolTableBody table.eq2,
-  [data-mobile="on"] #mapSection table.eq2{font-size:12px;}
+  [data-mobile="on"] #mapSection table.eq2{font-size:10.5px; min-width:480px;}
   [data-mobile="on"] #toolTableBody table.eq2 th, [data-mobile="on"] #toolTableBody table.eq2 td,
-  [data-mobile="on"] #mapSection table.eq2 th, [data-mobile="on"] #mapSection table.eq2 td{padding:7px 7px;}
+  [data-mobile="on"] #mapSection table.eq2 th, [data-mobile="on"] #mapSection table.eq2 td{padding:5px 4px;}
+  [data-mobile="on"] #toolTableBody table.eq2 caption,
+  [data-mobile="on"] #mapSection table.eq2 caption{font-size:11px; padding:6px 8px;}
+  [data-mobile="on"] #toolTableBody .eq-photo, [data-mobile="on"] #toolTableBody .eq-photo-fallback,
+  [data-mobile="on"] #mapSection .eq-photo, [data-mobile="on"] #mapSection .eq-photo-fallback{
+    width:24px; height:24px; font-size:12px;
+  }
+  [data-mobile="on"] #toolTableBody .eq-tool-cell span:last-child,
+  [data-mobile="on"] #mapSection .eq-tool-cell span:last-child{font-size:10.5px;}
+  [data-mobile="on"] .caldays-badge{padding:2px 6px; font-size:9.5px;}
   /* "ลักษณะการใช้งาน" is a free-text description column that's mostly
      "-" and makes the already-wide table wider still; on phone it's
      hidden to shorten the horizontal scroll to the columns people
