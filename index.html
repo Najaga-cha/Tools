@@ -240,6 +240,13 @@
        truncate instead fixes it. */
     flex-wrap:nowrap;
     position:sticky; top:0; z-index:50;
+    /* Sticky elements on mobile WebKit are notorious for being repainted
+       from scratch on every scroll frame instead of being composited —
+       that's what shows up as a flicker, or a stray fragment of text
+       hanging in the wrong place for a frame. Promoting the sticky bar to
+       its own GPU layer avoids the repaint. */
+    transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
     border-radius:0 0 16px 16px;
     margin-bottom:12px;
     box-shadow:0 4px 14px rgba(0,0,0,.18);
@@ -306,6 +313,11 @@
   [data-mobile="on"] #mapSection table.eq2 th.colTool,
   [data-mobile="on"] #mapSection table.eq2 td.colTool{
     position:sticky; left:0; z-index:3;
+    /* Same compositing-layer fix as the sticky topbar (see its comment) —
+       without it, this frozen column can visibly lag or briefly detach
+       from the header row while the table scrolls sideways on a phone. */
+    transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
     box-shadow:2px 0 5px rgba(0,0,0,.08);
   }
   [data-mobile="on"] #toolTableBody table.eq2 td.colTool,
@@ -380,6 +392,15 @@
     grid-template-columns:280px 1fr;
     gap:14px;
     min-height:calc(100vh - 28px);
+    /* 100vh on phones is the *largest* possible viewport (address bar
+       hidden); as the user scrolls and the browser chrome shows/hides,
+       that number keeps changing under a plain vh value, so anything
+       sized off it visibly grows/shrinks or leaves a blank gap — this
+       is most of what reads as "unstable" on a real phone. dvh tracks
+       the *current* viewport instead, so it doesn't move around. Kept
+       as a second declaration (not a replacement) so browsers without
+       dvh support silently keep the vh fallback above. */
+    min-height:calc(100dvh - 28px);
     position:relative;
     transition:grid-template-columns .22s ease;
   }
@@ -396,8 +417,12 @@
     position:sticky;
     top:14px;
     height:calc(100vh - 28px);
+    height:calc(100dvh - 28px); /* see .app comment above — same fix */
     overflow-y:auto;
     overflow-x:hidden;
+    -webkit-overflow-scrolling:touch; /* momentum scrolling on iOS instead
+      of the stuttery/"stuck" default, which otherwise reads as jank when
+      the filter list inside is long */
     border-radius:18px;
     box-shadow:var(--shadow);
     transition:width .22s ease, min-width .22s ease, padding .22s ease;
@@ -933,7 +958,11 @@
   .expand-overlay.show{display:block;}
   .panel.expanded{
     position:fixed; inset:0; z-index:600; overflow:auto;
+    -webkit-overflow-scrolling:touch;
     width:100vw; height:100vh; max-width:none;
+    height:100dvh; /* same "moving 100vh" fix as .app/.sidebar above —
+      this is the fullscreen expand view, so it's the one most likely to
+      show a blank strip or clipped bottom on a phone if left as plain vh */
     border-radius:0;
     box-shadow:0 24px 70px rgba(0,0,0,.4);
   }
@@ -1242,6 +1271,8 @@
   [data-mobile="on"] table.summary-pivot th:first-child,
   [data-mobile="on"] table.summary-pivot td.orgname{
     position:sticky; left:0; z-index:3;
+    transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
     box-shadow:2px 0 5px rgba(0,0,0,.08);
   }
   [data-mobile="on"] table.summary-pivot td.orgname{background:var(--surface);}
@@ -1620,6 +1651,7 @@
 #mapSection #main{height:100%;}
 #mapSection #toggleBtn{position:absolute;}
 .panel.expanded#panelMapSection #mapSection{height:calc(100vh - 175px); overflow:visible;}
+.panel.expanded#panelMapSection #mapSection{height:calc(100dvh - 175px);} /* dvh fallback, see .app comment above */
 /* Left panel (หน่วยงานภาคสนาม / รายละเอียดหน่วยงานที่เลือก) removed from view —
    map area now takes the full panel width. Elements stay in the DOM (just
    hidden) so the existing detail-pane / export-PDF / resize JS still has
