@@ -6795,10 +6795,25 @@ function renderOverviewDonut(filtered){
   const onClick = (lab)=>{ if(lab !== 'อื่นๆ') toggleFilter('cat', lab); };
 
   if(mode === 'bar'){
-    el.style.display = 'block'; el.style.width = '100%'; el.style.height = 'auto';
-    hBarSVG(el, { labels, data, colors, onBarClick: onClick });
+    el.classList.remove('svgchart');
+    el.style.display = 'block'; el.style.width = '100%'; el.style.height = 'auto'; el.style.justifyContent = '';
+    const max = Math.max(1, ...data);
+    el.innerHTML = entries.map(([cat,count])=>{
+      const col = CAT_COLORS[cat] || '#8891C2';
+      const pct = Math.max(4, (count/max)*100);
+      const clickable = cat !== 'อื่นๆ';
+      return `<div class="top10-row" data-cat="${encodeURIComponent(cat)}" style="cursor:${clickable?'pointer':'default'};">
+        <div class="t-label" title="${cat}">${cat}</div>
+        <div class="t-track"><div class="t-fill" style="width:${pct.toFixed(1)}%;background:${col};"></div></div>
+        <div class="t-val">${fmt(count)}</div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.top10-row').forEach(row=>{
+      row.addEventListener('click', ()=>{ onClick(decodeURIComponent(row.dataset.cat)); });
+    });
   } else {
-    el.style.display = 'flex'; el.style.width = '190px'; el.style.height = '190px';
+    el.classList.remove('svgchart');
+    el.style.display = 'flex'; el.style.width = '190px'; el.style.height = '190px'; el.style.justifyContent = 'center';
     pieSVG(el, { labels, data, colors, donut: mode==='donut', size:190, onSliceClick: onClick });
   }
 
