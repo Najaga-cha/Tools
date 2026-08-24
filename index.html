@@ -205,6 +205,29 @@
   .theme-toggle:hover{border-color:var(--teal);color:var(--teal-dark);}
   .theme-toggle .icon{font-size:14px;}
 
+  /* ===== Font-size toggle button =====
+     Lets the user bump up the whole page's zoom level before taking a
+     screenshot, since the dashboard is dense and text reads small once
+     captured/shrunk into an image. Cycles 100% -> 115% -> 130% -> 150%
+     via the --ui-zoom custom property applied to <html> (see [data-font-scale]
+     rules further down), and remembers the choice in localStorage. */
+  .fontsize-toggle{
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--line);
+    color:var(--ink-soft);border-radius:20px;
+    padding:7px 14px;font-family:'Sarabun',sans-serif;font-size:12.5px;
+    cursor:pointer;transition:.15s;
+  }
+  .fontsize-toggle:hover{border-color:var(--teal);color:var(--teal-dark);}
+  .fontsize-toggle .icon{font-size:14px;font-weight:700;}
+
+  html[data-font-scale="1"]{ --ui-zoom:1.15; }
+  html[data-font-scale="2"]{ --ui-zoom:1.3; }
+  html[data-font-scale="3"]{ --ui-zoom:1.5; }
+  html[data-font-scale="1"],
+  html[data-font-scale="2"],
+  html[data-font-scale="3"]{ zoom: var(--ui-zoom); }
+
   /* ===== Mobile mode toggle + hamburger + drawer ===== */
   .mobile-toggle{
     display:flex;align-items:center;gap:8px;
@@ -275,8 +298,9 @@
   [data-mobile="on"] .topbar-badge{width:36px;height:36px;border-radius:9px;}
   [data-mobile="on"] .asof{display:none;}
   [data-mobile="on"] .theme-toggle .label,
-  [data-mobile="on"] .mobile-toggle .label{display:none;}
-  [data-mobile="on"] .theme-toggle, [data-mobile="on"] .mobile-toggle{
+  [data-mobile="on"] .mobile-toggle .label,
+  [data-mobile="on"] .fontsize-toggle .label{display:none;}
+  [data-mobile="on"] .theme-toggle, [data-mobile="on"] .mobile-toggle, [data-mobile="on"] .fontsize-toggle{
     padding:8px;border-radius:10px;flex-shrink:0;
   }
   /* The right-side button group itself must not shrink or wrap either. */
@@ -2292,6 +2316,9 @@
         <button class="theme-toggle" id="themeToggleBtn" type="button">
           <span class="icon">🌙</span><span class="label">โหมดมืด</span>
         </button>
+        <button class="fontsize-toggle" id="fontSizeToggleBtn" type="button" title="ขยายตัวอักษร/หน้าจอ เพื่อให้แคปหน้าจอแล้วอ่านง่ายขึ้น">
+          <span class="icon" id="fontSizeIcon">ก+</span><span class="label" id="fontSizeLabel">ขยายตัวอักษร</span>
+        </button>
         <div class="asof" id="asOf">ข้อมูล ณ วันที่ —</div>
       </div>
     </div>
@@ -2606,6 +2633,44 @@ function cv(name){
       // Re-draw SVG charts so their inline colors (axis text, gridlines)
       // follow the new theme — CSS alone can't reach into already-drawn SVG.
       if(typeof refreshAll === 'function') refreshAll();
+    });
+  }
+})();
+
+/* ===================== Font-size / zoom control ===================== */
+// Cycles the whole page's zoom level so text (and everything else) reads
+// bigger once the person takes a screenshot. Levels: 0 = 100% (off),
+// 1 = 115%, 2 = 130%, 3 = 150%, then back to 0. Persisted so the choice
+// survives a reload.
+(function initFontSizeControl(){
+  const root = document.documentElement;
+  const btn = document.getElementById('fontSizeToggleBtn');
+  const iconEl = document.getElementById('fontSizeIcon');
+  const labelEl = document.getElementById('fontSizeLabel');
+  const LEVELS = [
+    {attr:null, icon:'ก+', label:'ขยายตัวอักษร'},
+    {attr:'1',  icon:'115%', label:'ขนาด 115%'},
+    {attr:'2',  icon:'130%', label:'ขนาด 130%'},
+    {attr:'3',  icon:'150%', label:'ขนาด 150%'}
+  ];
+  function apply(idx){
+    const lv = LEVELS[idx];
+    if(lv.attr){ root.setAttribute('data-font-scale', lv.attr); }
+    else { root.removeAttribute('data-font-scale'); }
+    if(iconEl) iconEl.textContent = lv.icon;
+    if(labelEl) labelEl.textContent = lv.label;
+    if(btn) btn.classList.toggle('active', idx !== 0);
+  }
+  let saved = null;
+  try{ saved = localStorage.getItem('pcd_font_scale'); }catch(e){}
+  let idx = LEVELS.findIndex(function(lv){ return lv.attr === saved; });
+  if(idx < 0) idx = 0;
+  apply(idx);
+  if(btn){
+    btn.addEventListener('click', function(){
+      idx = (idx + 1) % LEVELS.length;
+      apply(idx);
+      try{ localStorage.setItem('pcd_font_scale', LEVELS[idx].attr || ''); }catch(e){}
     });
   }
 })();
