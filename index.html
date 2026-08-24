@@ -206,11 +206,16 @@
   .theme-toggle .icon{font-size:14px;}
 
   /* ===== Font-size toggle button =====
-     Lets the user bump up the whole page's zoom level before taking a
-     screenshot, since the dashboard is dense and text reads small once
-     captured/shrunk into an image. Cycles 100% -> 115% -> 130% -> 150%
-     via the --ui-zoom custom property applied to <html> (see [data-font-scale]
-     rules further down), and remembers the choice in localStorage. */
+     Lets the user bump up just the TEXT size before taking a screenshot,
+     since the dashboard is dense and text reads small once captured/shrunk
+     into an image. Cycles 100% -> 115% -> 130% -> 150%. Unlike the previous
+     implementation (CSS `zoom` on <html>, which blew up the entire page —
+     layout, images, spacing, everything), this only changes font-size on
+     each element, so the page layout stays put and only the letters get
+     bigger. See initFontSizeControl() near the end of the script for the
+     implementation; the choice is remembered in localStorage.
+     [data-font-scale] is kept only as a hook for styling the toggle button's
+     own "active" state — it no longer drives any zoom/scale itself. */
   .fontsize-toggle{
     display:flex;align-items:center;gap:8px;
     background:var(--surface);border:1px solid var(--line);
@@ -220,13 +225,6 @@
   }
   .fontsize-toggle:hover{border-color:var(--teal);color:var(--teal-dark);}
   .fontsize-toggle .icon{font-size:14px;font-weight:700;}
-
-  html[data-font-scale="1"]{ --ui-zoom:1.15; }
-  html[data-font-scale="2"]{ --ui-zoom:1.3; }
-  html[data-font-scale="3"]{ --ui-zoom:1.5; }
-  html[data-font-scale="1"],
-  html[data-font-scale="2"],
-  html[data-font-scale="3"]{ zoom: var(--ui-zoom); }
 
   /* ===== Mobile mode toggle + hamburger + drawer ===== */
   .mobile-toggle{
@@ -2316,7 +2314,7 @@
         <button class="theme-toggle" id="themeToggleBtn" type="button">
           <span class="icon">🌙</span><span class="label">โหมดมืด</span>
         </button>
-        <button class="fontsize-toggle" id="fontSizeToggleBtn" type="button" title="ขยายตัวอักษร/หน้าจอ เพื่อให้แคปหน้าจอแล้วอ่านง่ายขึ้น">
+        <button class="fontsize-toggle" id="fontSizeToggleBtn" type="button" title="ขยายเฉพาะขนาดตัวอักษรในหน้า (ไม่ขยายทั้งหน้า) เพื่อให้แคปหน้าจอแล้วอ่านง่ายขึ้น">
           <span class="icon" id="fontSizeIcon">ก+</span><span class="label" id="fontSizeLabel">ขยายตัวอักษร</span>
         </button>
         <div class="asof" id="asOf">ข้อมูล ณ วันที่ —</div>
@@ -2637,30 +2635,99 @@ function cv(name){
   }
 })();
 
-/* ===================== Font-size / zoom control ===================== */
-// Cycles the whole page's zoom level so text (and everything else) reads
-// bigger once the person takes a screenshot. Levels: 0 = 100% (off),
-// 1 = 115%, 2 = 130%, 3 = 150%, then back to 0. Persisted so the choice
-// survives a reload.
+/* ===================== Font-size (text-only) control ===================== */
+// Cycles just the TEXT size so it reads bigger once the person takes a
+// screenshot — without touching layout, images, cards, or spacing. Levels:
+// 0 = 100% (off), 1 = 115%, 2 = 130%, 3 = 150%, then back to 0. Persisted so
+// the choice survives a reload.
+//
+// How it avoids blowing up the whole page (unlike the old CSS `zoom`
+// approach): instead of zooming the viewport, it walks every element and
+// sets an explicit pixel font-size on it, computed from that element's own
+// *unscaled* size × the chosen factor. Everything else (widths, padding,
+// image sizes, chart dimensions) is left completely alone.
+//
+// Why it fully resets before every re-measure: many elements don't declare
+// their own font-size and simply inherit it from an ancestor. If we
+// measured a fresh/child element while an ancestor was still showing an
+// already-enlarged size, we'd capture that inflated number as the "base"
+// and scale it again on top — compounding the size every time. Resetting
+// every previously-scaled element back to no inline font-size first means
+// every measurement always reflects the stylesheet's true, un-scaled value.
 (function initFontSizeControl(){
   const root = document.documentElement;
   const btn = document.getElementById('fontSizeToggleBtn');
   const iconEl = document.getElementById('fontSizeIcon');
   const labelEl = document.getElementById('fontSizeLabel');
   const LEVELS = [
-    {attr:null, icon:'ก+', label:'ขยายตัวอักษร'},
-    {attr:'1',  icon:'115%', label:'ขนาด 115%'},
-    {attr:'2',  icon:'130%', label:'ขนาด 130%'},
-    {attr:'3',  icon:'150%', label:'ขนาด 150%'}
+    {attr:null, scale:1,    icon:'ก+',   label:'ขยายตัวอักษร'},
+    {attr:'1',  scale:1.15, icon:'115%', label:'ขนาด 115%'},
+    {attr:'2',  scale:1.3,  icon:'130%', label:'ขนาด 130%'},
+    {attr:'3',  scale:1.5,  icon:'150%', label:'ขนาด 150%'}
   ];
+  const SCALED_ATTR = 'pcdScaled';
+  let currentScale = 1;
+  let rescaleQueued = false;
+
+  function resetPreviouslyScaled(){
+    document.querySelectorAll('[data-' + SCALED_ATTR + '="1"]').forEach(function(el){
+      el.style.fontSize = '';
+      delete el.dataset[SCALED_ATTR];
+    });
+  }
+
+  // Full pass: reset anything we previously scaled, then re-measure every
+  // element's true font-size fresh, then (if scale != 1) apply the new size.
+  function applyScaleToDocument(){
+    resetPreviouslyScaled();
+    if(currentScale === 1) return;
+    const els = document.body.querySelectorAll('*');
+    for(let i = 0; i < els.length; i++){
+      const el = els[i];
+      const base = parseFloat(getComputedStyle(el).fontSize);
+      if(!base || isNaN(base)) continue;
+      el.style.fontSize = (base * currentScale).toFixed(2) + 'px';
+      el.dataset[SCALED_ATTR] = '1';
+    }
+  }
+
+  function queueRescale(){
+    if(currentScale === 1 || rescaleQueued) return;
+    rescaleQueued = true;
+    // Batch bursts of DOM changes (chart redraws, table rebuilds, filters)
+    // into a single rescale pass on the next animation frame.
+    requestAnimationFrame(function(){
+      rescaleQueued = false;
+      applyScaleToDocument();
+    });
+  }
+
+  // Charts, tables, and other sections get rebuilt/re-rendered dynamically
+  // (theme switch, new data upload, filters). Whenever that happens, newly
+  // inserted or changed nodes need the current scale re-applied.
+  const observer = new MutationObserver(function(mutations){
+    if(currentScale === 1) return;
+    for(const m of mutations){
+      // Ignore mutations that are just us setting style.fontSize / data-*.
+      if(m.type === 'attributes' &&
+         (m.attributeName === 'style' || m.attributeName === 'data-pcdscaled')) continue;
+      queueRescale();
+      return;
+    }
+  });
+  observer.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style']});
+
   function apply(idx){
     const lv = LEVELS[idx];
+    currentScale = lv.scale;
     if(lv.attr){ root.setAttribute('data-font-scale', lv.attr); }
     else { root.removeAttribute('data-font-scale'); }
+    applyScaleToDocument();
     if(iconEl) iconEl.textContent = lv.icon;
     if(labelEl) labelEl.textContent = lv.label;
     if(btn) btn.classList.toggle('active', idx !== 0);
   }
+
   let saved = null;
   try{ saved = localStorage.getItem('pcd_font_scale'); }catch(e){}
   let idx = LEVELS.findIndex(function(lv){ return lv.attr === saved; });
