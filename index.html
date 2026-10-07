@@ -2360,59 +2360,6 @@
       </div>
     </div>
 
-    <div class="chart-controls-row">
-      <div class="chart-switch" id="switchYearlyTrend" data-key="yearlyTrend"></div>
-      <label for="topn-yearlyTrend" style="font-size:calc(13px * var(--text-scale, 1));color:var(--muted,#667);">แสดงจำนวนหน่วยงาน:</label>
-      <select class="topn-select" id="topn-yearlyTrend" data-key="yearlyTrend">
-        <option value="5">5 หน่วยงาน</option>
-        <option value="8">8 หน่วยงาน</option>
-        <option value="10">10 หน่วยงาน</option>
-        <option value="15">15 หน่วยงาน</option>
-        <option value="9999">ทั้งหมด</option>
-      </select>
-      <div class="year-filter">
-        <span class="year-filter-icon">📅</span>
-        <label for="yearlyTrend-year">ปี พ.ศ.</label>
-        <select id="yearlyTrend-year"></select>
-      </div>
-      <label for="topn-yearlyTrendYears" style="font-size:calc(13px * var(--text-scale, 1));color:var(--muted,#667);margin-left:6px;">แสดงกี่ปีล่าสุด:</label>
-      <select class="topn-select" id="topn-yearlyTrendYears" data-key="yearlyTrendYears">
-        <option value="5">5 ปีล่าสุด</option>
-        <option value="10">10 ปีล่าสุด</option>
-        <option value="15">15 ปีล่าสุด</option>
-        <option value="20">20 ปีล่าสุด</option>
-        <option value="9999">ทั้งหมด</option>
-      </select>
-    </div>
-    <div class="panel" id="panelYearlyTotal" style="margin-bottom:18px;">
-      <div class="chart-controls-row" style="margin-bottom:4px;">
-        <h2 style="margin:0;">📈 แสดงข้อมูลปีพ.ศ.ที่หน่วยงานได้รับเครื่องมือ</h2>
-        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelYearlyTotal','chartYearlyTotal')" style="margin-left:auto;">⛶</button>
-      </div>
-      <div class="hint">ผลรวมจำนวนเครื่องมือทั้งหมดที่แต่ละหน่วยงานได้รับ ตามข้อมูลที่ตรงกับตัวกรอง</div>
-      <div class="svgchart" id="chartYearlyTotal" style="height:300px;"></div>
-      <div class="legend-wrap" id="legendYearlyStacked" style="display:none;"></div>
-    </div>
-
-    <div class="panel" id="panelAgeBar" style="margin-bottom:18px;">
-      <h2>📏 อายุของเครื่องมือ แยกตามหน่วยงาน <span class="clickable-note">คลิกแท่งเพื่อกรอง</span></h2>
-      <div class="hint">มากกว่า 16 ปี / ระหว่าง 11-15 ปี / ระหว่าง 1-5 ปี / ระหว่าง 6-10 ปี · แสดงหน่วยงานที่มีเครื่องมือมากที่สุดตามจำนวนที่เลือก</div>
-      <div class="chart-controls-row">
-        <div class="chart-switch" id="switchAgeBar" data-key="ageBar"></div>
-        <select class="topn-select" id="topn-ageBar" data-key="ageBar">
-          <option value="5">Top 5 หน่วยงาน</option>
-          <option value="8">Top 8 หน่วยงาน</option>
-          <option value="10">Top 10 หน่วยงาน</option>
-          <option value="15">Top 15 หน่วยงาน</option>
-          <option value="20">Top 20 หน่วยงาน</option>
-          <option value="9999">ทั้งหมด</option>
-        </select>
-        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelAgeBar','chartAgeBar')">⛶</button>
-      </div>
-      <div class="svgchart" id="chartAgeBar" style="height:600px;"></div>
-      <div class="legend-wrap" id="legendAgeBar"></div>
-    </div>
-
     <div class="grid-overview-3">
       <div class="panel" id="panelCatDonut">
         <div class="chart-controls-row" style="margin-bottom:4px;">
@@ -2461,27 +2408,6 @@
         </div>
         <div id="barTopItems"></div>
       </div>
-    </div>
-
-    <div class="section-divider">รายละเอียดเชิงลึก · ปรับมุมมองกราฟและกรองข้อมูลได้ด้านล่าง</div>
-
-    <div class="panel" id="panelCalBar" style="margin-bottom:18px;">
-      <h2>📏 แสดงข้อมูลการสอบเทียบของแต่ละหน่วยงาน <span class="clickable-note">คลิกแท่งเพื่อกรอง</span></h2>
-      <div class="hint">สอบเทียบแล้ว / ไม่ต้องส่งสอบเทียบ / รอสอบเทียบ / ไม่เคยสอบเทียบ · แสดงหน่วยงานที่มีเครื่องมือมากที่สุดตามจำนวนที่เลือก</div>
-      <div class="chart-controls-row">
-        <div class="chart-switch" id="switchCalBar" data-key="calBar"></div>
-        <select class="topn-select" id="topn-calBar" data-key="calBar">
-          <option value="5">Top 5 หน่วยงาน</option>
-          <option value="8">Top 8 หน่วยงาน</option>
-          <option value="10">Top 10 หน่วยงาน</option>
-          <option value="15">Top 15 หน่วยงาน</option>
-          <option value="20">Top 20 หน่วยงาน</option>
-          <option value="9999">ทั้งหมด</option>
-        </select>
-        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelCalBar','chartCalBar')">⛶</button>
-      </div>
-      <div class="svgchart" id="chartCalBar" style="height:600px;"></div>
-      <div class="legend-wrap" id="legendCalBar"></div>
     </div>
 
     <div class="panel" id="panelMapSection" style="margin-bottom:18px;">
@@ -2560,6 +2486,80 @@
 <div id="equipCatalogResizer" title="ลากเพื่อปรับความกว้าง — ขยายเพื่อดูแผนที่ให้ชัดขึ้น"></div>
 <div id="equipCatalog"></div>
 </div>
+    </div>
+
+    <div class="panel" id="panelAgeBar" style="margin-bottom:18px;">
+      <h2>📏 อายุของเครื่องมือ แยกตามหน่วยงาน <span class="clickable-note">คลิกแท่งเพื่อกรอง</span></h2>
+      <div class="hint">มากกว่า 16 ปี / ระหว่าง 11-15 ปี / ระหว่าง 1-5 ปี / ระหว่าง 6-10 ปี · แสดงหน่วยงานที่มีเครื่องมือมากที่สุดตามจำนวนที่เลือก</div>
+      <div class="chart-controls-row">
+        <div class="chart-switch" id="switchAgeBar" data-key="ageBar"></div>
+        <select class="topn-select" id="topn-ageBar" data-key="ageBar">
+          <option value="5">Top 5 หน่วยงาน</option>
+          <option value="8">Top 8 หน่วยงาน</option>
+          <option value="10">Top 10 หน่วยงาน</option>
+          <option value="15">Top 15 หน่วยงาน</option>
+          <option value="20">Top 20 หน่วยงาน</option>
+          <option value="9999">ทั้งหมด</option>
+        </select>
+        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelAgeBar','chartAgeBar')">⛶</button>
+      </div>
+      <div class="svgchart" id="chartAgeBar" style="height:600px;"></div>
+      <div class="legend-wrap" id="legendAgeBar"></div>
+    </div>
+
+    <div class="section-divider">รายละเอียดเชิงลึก · ปรับมุมมองกราฟและกรองข้อมูลได้ด้านล่าง</div>
+
+    <div class="panel" id="panelCalBar" style="margin-bottom:18px;">
+      <h2>📏 แสดงข้อมูลการสอบเทียบของแต่ละหน่วยงาน <span class="clickable-note">คลิกแท่งเพื่อกรอง</span></h2>
+      <div class="hint">สอบเทียบแล้ว / ไม่ต้องส่งสอบเทียบ / รอสอบเทียบ / ไม่เคยสอบเทียบ · แสดงหน่วยงานที่มีเครื่องมือมากที่สุดตามจำนวนที่เลือก</div>
+      <div class="chart-controls-row">
+        <div class="chart-switch" id="switchCalBar" data-key="calBar"></div>
+        <select class="topn-select" id="topn-calBar" data-key="calBar">
+          <option value="5">Top 5 หน่วยงาน</option>
+          <option value="8">Top 8 หน่วยงาน</option>
+          <option value="10">Top 10 หน่วยงาน</option>
+          <option value="15">Top 15 หน่วยงาน</option>
+          <option value="20">Top 20 หน่วยงาน</option>
+          <option value="9999">ทั้งหมด</option>
+        </select>
+        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelCalBar','chartCalBar')">⛶</button>
+      </div>
+      <div class="svgchart" id="chartCalBar" style="height:600px;"></div>
+      <div class="legend-wrap" id="legendCalBar"></div>
+    </div>
+
+    <div class="chart-controls-row">
+      <div class="chart-switch" id="switchYearlyTrend" data-key="yearlyTrend"></div>
+      <label for="topn-yearlyTrend" style="font-size:calc(13px * var(--text-scale, 1));color:var(--muted,#667);">แสดงจำนวนหน่วยงาน:</label>
+      <select class="topn-select" id="topn-yearlyTrend" data-key="yearlyTrend">
+        <option value="5">5 หน่วยงาน</option>
+        <option value="8">8 หน่วยงาน</option>
+        <option value="10">10 หน่วยงาน</option>
+        <option value="15">15 หน่วยงาน</option>
+        <option value="9999">ทั้งหมด</option>
+      </select>
+      <div class="year-filter">
+        <span class="year-filter-icon">📅</span>
+        <label for="yearlyTrend-year">ปี พ.ศ.</label>
+        <select id="yearlyTrend-year"></select>
+      </div>
+      <label for="topn-yearlyTrendYears" style="font-size:calc(13px * var(--text-scale, 1));color:var(--muted,#667);margin-left:6px;">แสดงกี่ปีล่าสุด:</label>
+      <select class="topn-select" id="topn-yearlyTrendYears" data-key="yearlyTrendYears">
+        <option value="5">5 ปีล่าสุด</option>
+        <option value="10">10 ปีล่าสุด</option>
+        <option value="15">15 ปีล่าสุด</option>
+        <option value="20">20 ปีล่าสุด</option>
+        <option value="9999">ทั้งหมด</option>
+      </select>
+    </div>
+    <div class="panel" id="panelYearlyTotal" style="margin-bottom:18px;">
+      <div class="chart-controls-row" style="margin-bottom:4px;">
+        <h2 style="margin:0;">📈 แสดงข้อมูลปีพ.ศ.ที่หน่วยงานได้รับเครื่องมือ</h2>
+        <button type="button" class="expand-btn" title="ขยายเต็มจอ" onclick="togglePanelExpand('panelYearlyTotal','chartYearlyTotal')" style="margin-left:auto;">⛶</button>
+      </div>
+      <div class="hint">ผลรวมจำนวนเครื่องมือทั้งหมดที่แต่ละหน่วยงานได้รับ ตามข้อมูลที่ตรงกับตัวกรอง</div>
+      <div class="svgchart" id="chartYearlyTotal" style="height:300px;"></div>
+      <div class="legend-wrap" id="legendYearlyStacked" style="display:none;"></div>
     </div>
 
     <div class="panel">
