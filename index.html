@@ -7497,8 +7497,8 @@ function collapseExpandedPanel(){
 /* ======================= GOOGLE SHEET LIVE SYNC ======================= */
 // เชื่อมต่อกับ Google Sheet ที่แชร์แบบ "ทุกคนที่มีลิงก์ - ดูได้" โดยตรง ไม่ต้องกดปุ่มเอง
 // ใช้ Google Visualization API (gviz) รูปแบบ CSV ซึ่งอนุญาตให้เรียกข้ามโดเมนจากเบราว์เซอร์ได้โดยไม่ต้องใช้ API key
-const GOOGLE_SHEET_ID = '1ssqSHSeRIIkdBnWyzYfQyotNWpWJMxM2NKTeS7zu4Dw';
-const GOOGLE_SHEET_GID = '1130129068'; // แท็บที่มีข้อมูลจริง (Sheet1)
+const GOOGLE_SHEET_ID = '1T-o-DiCJOkDfqhEqfl2ZTX40wWYtyLXfkYStUQi096o';
+const GOOGLE_SHEET_GID = ''; // ว่าง = ใช้แท็บแรกของชีต (ถ้าต้องการแท็บอื่น ใส่เลข gid จาก URL)
 const SHEET_REFRESH_MS = 45 * 60000; // ซิงก์อัตโนมัติทุก 45 นาที
 
 let dataSource = 'sheet'; // 'sheet' = ใช้ข้อมูลจาก Google Sheet, 'file' = ผู้ใช้อัปโหลดไฟล์เอง
@@ -7507,8 +7507,8 @@ let sheetPollTimer = null;
 function sheetCsvUrls(){
   const ts = Date.now();
   return [
-    `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GOOGLE_SHEET_GID}&_ts=${ts}`,
-    `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&id=${GOOGLE_SHEET_ID}&gid=${GOOGLE_SHEET_GID}&_ts=${ts}`
+    `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv${GOOGLE_SHEET_GID?'&gid='+GOOGLE_SHEET_GID:''}&_ts=${ts}`,
+    `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&id=${GOOGLE_SHEET_ID}${GOOGLE_SHEET_GID?'&gid='+GOOGLE_SHEET_GID:''}&_ts=${ts}`
   ];
 }
 
